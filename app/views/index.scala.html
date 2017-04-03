@@ -1,0 +1,106 @@
+@(prod: Int)
+@import java.net._
+
+<!doctype html>
+<html class="no-js" lang="">
+
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title>ObSec Interpreter </title>
+  <meta name="description" content="Google's material design UI components built with React.">
+
+  <!-- Use minimum-scale=1 to enable GPU rasterization -->
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1, user-scalable=0, maximum-scale=1, minimum-scale=1"
+  >
+
+  <script type="text/x-mathjax-config">
+    MathJax.Hub.Config({ TeX: { extensions: ["color.js", "action.js"] }});
+  </script>
+  <script type="text/javascript"
+     src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+  </script>
+  <link rel="stylesheet" type="text/css" href="@routes.Assets.versioned("stylesheets/flexboxgrid.min.css")">
+
+  <!--<link rel="stylesheet" type="text/css" href="main.css">-->
+  <!--<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">-->
+</head>
+
+<body>
+  <div style="display:none">
+    \[
+      \definecolor{leff}{RGB}{255,107,102}
+      \definecolor{lcoeff}{RGB}{78,206,88}
+
+      \definecolor{ltyp}{RGB}{255,202,79}
+      \definecolor{lkvd}{RGB}{127,165,255}
+
+      \definecolor{eff}{RGB}{177,35,43}
+      \definecolor{coeff}{RGB}{35,177,53}
+      \definecolor{typ}{RGB}{177,93,43}
+      \definecolor{expr}{RGB}{0,0,0}
+      \definecolor{kvd}{RGB}{0,45,177}
+      \definecolor{num}{RGB}{43,177,93}
+      \newcommand{\highlightType}[1]{{\color{typ} #1}}
+
+      \newcommand{\highlight}[1]{\bbox[yellow]{#1}}
+
+      \newcommand{\Int}{\mathsf{Int}}
+      \newcommand{\Boolean}{\mathsf{Bool}}
+      \newcommand{\Bool}{\mathsf{Bool}}
+      \newcommand{\Unit}{\mathsf{Unit}}
+      \newcommand{\Ref}[1]{\mathsf{Ref}~#1}
+      \newcommand{\Refl}[2]{\mathsf{Ref}_{#1}~#2}
+      
+      \newcommand{\true}{\mathsf{true}}
+      \newcommand{\false}{\mathsf{false}}
+      \newcommand{\reff}{{\mathsf{ref}~}}
+      \newcommand{\prot}[6]{{\mathsf{prot}^{{#5,#2,#3}}_{#6,#1} #4}}
+      \newcommand{\ite}[3]{\mathsf{if} ~#1~ \mathsf{then} ~#2 ~\mathsf{else}~ #3}
+      \newcommand{\TermT}[1]{{\color{kvd} \oblset{Term}_{#1}}}
+      \newcommand{\oblset}[1]{\textsf{#1}}
+      \newcommand{\ljoin}{\style{display: inline-block; margin-top:3px; transform:rotate(-0.25turn);}{\prec}}
+      \newcommand{\lmeet}{\style{display: inline-block; transform:rotate(0.25turn);}{\prec}}
+      \newcommand{\cjoin}{\widetilde{\ljoin}}
+      \newcommand{\cmeet}{\widetilde{\lmeet}}
+      \newcommand{\gsum}{\oplus}
+      \newcommand{\evidence}[1]{\style{font-size:80%;opacity: 0.8}{\color{lcoeff} #1}~}
+
+      \newcommand{\sub}{<:}
+      \newcommand{\csub}{\widetilde{\sub}}
+      \newcommand{\subl}{\preccurlyeq}
+      \newcommand{\csubl}{\widetilde{\subl}}
+      \newcommand{\vunit}{\mathsf{unit}}
+
+    \]
+  </div>
+
+  <div id="app"></div>
+
+  <!-- This script adds the Roboto font to our project. For more detail go to this site:  http://www.google.com/fonts#UsePlace:use/Collection:Roboto:400,300,500 -->
+  <script>
+    var WebFontConfig = {
+      google: { families: [ 'Roboto:400,300,500:latin' ] }
+    };
+    (function() {
+      var wf = document.createElement('script');
+      wf.src = ('https:' == document.location.protocol ? 'https' : 'http') +
+      '://ajax.googleapis.com/ajax/libs/webfont/1/webfont.js';
+      wf.type = 'text/javascript';
+      wf.async = 'true';
+      var s = document.getElementsByTagName('script')[0];
+      s.parentNode.insertBefore(wf, s);
+    })();
+  </script>
+  @if(prod==1){
+    <script src="@routes.Assets.versioned("javascripts/app.js")"></script>
+  }else{
+    <script src="http://@{InetAddress.getLocalHost.getHostAddress}:3000/app.js"></script>
+    @{/*<script src="http://localhost:3000/app.js"></script>*/}
+  }
+
+</body>
+
+</html>

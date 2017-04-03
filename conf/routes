@@ -1,0 +1,15 @@
+# Routes
+# This file defines all application routes (Higher priority routes first)
+# ~~~~
+
+# An example controller showing how to write asynchronous code
+GET     /favicon.ico                      controllers.Assets.at(path="/public/images", file="favicon.ico")
+GET     /                                 controllers.ApplicationController.index(prod: Int = 1)
+GET     /:prod                            controllers.ApplicationController.index(prod: Int)
+
+POST    /typecheck                       controllers.ApplicationController.typecheck
+POST    /reduce                           controllers.ApplicationController.reduce
+
+# Map static resources from the /public folder to the /assets URL path
+
+GET     /assets/*file                     controllers.Assets.versioned(path="/public", file: Asset)
