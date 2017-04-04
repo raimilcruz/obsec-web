@@ -16,6 +16,11 @@ class SubtypingSpec extends FlatSpec{
       subtyping.<::(BooleanType,BooleanType)&&
       subtyping.<::(StringType,StringType))
   }
+  "Subtyping for security type" must "work" in{
+    var subtyping =new AmadioCardelliSubtyping
+    assert(subtyping.<::(SType(IntType,IntType),SType(IntType,IntType)))
+  }
+
   "Top " must "be top :-)" in {
     var subtyping =new AmadioCardelliSubtyping
     assert(subtyping.<::(IntType,ObjType.top)&&

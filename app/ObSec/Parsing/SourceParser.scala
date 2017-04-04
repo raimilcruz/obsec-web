@@ -27,6 +27,7 @@ object ObSecParser extends JavaTokenParsers with PackratParsers with DebugPackra
   def RIGHTPAREN = ")"
   def LESSTHAN = "<"
   def DOT = "."
+  def COMMMA =","
   def EQUALSSIGN = "="
   def IF = "if"
   def THEN = "then"
@@ -56,8 +57,8 @@ object ObSecParser extends JavaTokenParsers with PackratParsers with DebugPackra
 
 
   lazy val methodInvExpr :PackratParser[ObSecExpr]={
-    (expr <~ DOT) ~ (identifier | operator) ~ ((LEFTPAREN ~> expr) <~ RIGHTPAREN)^^
-      {case e1 ~ id ~ e2 => MethodInv(e1,e2,id)}
+    (expr <~ DOT) ~ (identifier | operator) ~ ((LEFTPAREN ~> repsep(expr, COMMMA)) <~ RIGHTPAREN)^^
+      {case e1 ~ id ~ args => MethodInv(e1,args,id)}
   }
 
   lazy val ifThenElse :PackratParser[ObSecExpr]= {
@@ -72,8 +73,8 @@ object ObSecParser extends JavaTokenParsers with PackratParsers with DebugPackra
     rep(methodDef)
   }
   lazy val methodDef : PackratParser[MethodDef] = {
-    LEFTBRACKET ~> (identifier ~ identifier) ~ ((EQUALSSIGN ~> expr ) <~ RIGHTBRACKET) ^^
-      { case mName ~ vName ~ expr => MethodDef(mName,vName,expr)}
+    LEFTBRACKET ~> (identifier ~ rep(identifier)) ~ ((EQUALSSIGN ~> expr ) <~ RIGHTBRACKET) ^^
+      { case mName ~ args ~ expr => MethodDef(mName,args,expr)}
   }
   lazy val stype : PackratParser[SType] ={
     ((singleType <~ LESSTHAN) ~ labelType) ^^ {case t1 ~ t2  => SType(t1,t2)}
@@ -111,8 +112,8 @@ object ObSecParser extends JavaTokenParsers with PackratParsers with DebugPackra
     rep(methodSignature)
   }
   lazy val methodSignature : PackratParser[MethodDeclaration]={
-    ((LEFTBRACKET ~> identifier) <~ COLON) ~ (stype <~ ARROW) ~ (stype <~ RIGHTBRACKET) ^^
-      {case  mName ~ t1 ~ t2 => MethodDeclaration(mName,MType(t1,t2))}
+    ((LEFTBRACKET ~> identifier) <~ COLON) ~ (rep(stype) <~ ARROW) ~ (stype <~ RIGHTBRACKET) ^^
+      {case  mName ~ argTypes ~ t2 => MethodDeclaration(mName,MType(argTypes,t2))}
   }
 
   /**
@@ -134,6 +135,17 @@ object ObSecParser extends JavaTokenParsers with PackratParsers with DebugPackra
     */
   def parseType(string:String):Either[ObSecParserError, Type] = {
     parseAll(singleType,string) match {
+      case NoSuccess(msg, next) => Left(ObSecParserError(msg))
+      case Success(result, next) => Right(result)
+    }
+  }
+  /**
+    * Api method: Parses a type from a source
+    * @param string The type syntax
+    * @return The expression representing the type
+    */
+  def parseSType(string:String):Either[ObSecParserError, SType] = {
+    parseAll(stype,string) match {
       case NoSuccess(msg, next) => Left(ObSecParserError(msg))
       case Success(result, next) => Right(result)
     }

@@ -20,9 +20,10 @@ trait SubTypingAlgorithm {
   def <::(s1: SType, s2: SType): Boolean = <::(s1.privateType, s2.publicType) && <::(s1.privateType, s2.publicType)
 
   protected def <::(m1: MType, m2: MType): Boolean = {
-    <::(m2.domain, m1.domain) && <::(m1.codomain, m2.codomain)
+    m1.domain.size ==  m2.domain.size && m2.domain.zip(m1.domain).forall(pair => <::(pair._1, pair._2)) && <::(m1.codomain, m2.codomain)
   }
   def alphaEq(t1:Type,t2:Type):Boolean = recAlphaEq(Set(),t1,t2)
+  def alphaEq(s1:SType,s2:SType):Boolean = alphaEq(s1.privateType,s2.privateType) && alphaEq(s1.publicType,s2.publicType)
   def recAlphaEq(set: Set[Tuple2[String, String]], t1: Type, t2: Type): Boolean = (t1, t2) match {
     case (TypeVar(x), TypeVar(y)) => x == y || set.contains(Tuple2(x, y))
     case (ObjType(x, methods1), ObjType(y, methods2)) =>
@@ -32,8 +33,9 @@ trait SubTypingAlgorithm {
       else
         methods1.forall(m => {
           val method2 = methods2.find(m2 => m2.name == m.name).get
-          recAlphaEq(newSet, m.mtype.domain.privateType, method2.mtype.domain.privateType) &&
-            recAlphaEq(newSet, m.mtype.domain.publicType, method2.mtype.domain.publicType) &&
+          m.mtype.domain.zip(method2.mtype.domain).forall(pair =>
+            recAlphaEq(newSet,pair._1.privateType,pair._2.privateType) &&
+              recAlphaEq(newSet,pair._1.publicType,pair._2.publicType)) &&
             recAlphaEq(newSet, m.mtype.codomain.privateType, method2.mtype.codomain.privateType) &&
             recAlphaEq(newSet, m.mtype.codomain.publicType, method2.mtype.codomain.publicType)
         })
@@ -43,8 +45,9 @@ trait SubTypingAlgorithm {
       else
         methods1.forall(m => {
           val method2 = methods2.find(m2 => m2.name == m.name).get
-          recAlphaEq(set, m.mtype.domain.privateType, method2.mtype.domain.privateType) &&
-            recAlphaEq(set, m.mtype.domain.publicType, method2.mtype.domain.publicType) &&
+          m.mtype.domain.zip(method2.mtype.domain).forall(pair =>
+            recAlphaEq(set,pair._1.privateType,pair._2.privateType) &&
+              recAlphaEq(set,pair._1.publicType,pair._2.publicType)) &&
             recAlphaEq(set, m.mtype.codomain.privateType, method2.mtype.codomain.privateType) &&
             recAlphaEq(set, m.mtype.codomain.publicType, method2.mtype.codomain.publicType)
         })
@@ -77,7 +80,7 @@ class AmadioCardelliSubtyping extends SubTypingAlgorithm {
               case Some(m11) =>
                 println(s"methods1 $methodsR1")
                 println(s"methods2 $methodsR2")
-                <::(alreadySeen, m2.mtype.domain, m11.mtype.domain) &&
+                m2.mtype.domain.zip(m11.mtype.domain).forall(pair=> <::(alreadySeen, pair._1, pair._2)) &&
                   <::(alreadySeen, m11.mtype.codomain, m2.mtype.codomain)
             }
           })
@@ -108,20 +111,24 @@ class AmadioCardelliSubtyping extends SubTypingAlgorithm {
     case ObjType(tv, methods) =>
       val newSet = set + tv.name
       var result = List[String]()
-      val res = methods.map(m =>
-        freeVars(newSet, m.mtype.domain.privateType) ++ freeVars(newSet, m.mtype.domain.publicType)
-          ++ freeVars(newSet, m.mtype.codomain.privateType)
-          ++ freeVars(newSet, m.mtype.codomain.privateType))
+      val res = methods.map(m => {
+        val l1 = m.mtype.domain.foldLeft(List[String]())((acc: List[String], t: SType) => acc ++ freeVars(newSet, t.privateType) ++ freeVars(newSet, t.publicType))
+        val l2 = freeVars(newSet, m.mtype.codomain.privateType)
+        val l3 = freeVars(newSet, m.mtype.codomain.privateType)
+        l1 ++ l2 ++ l3
+      })
       for (l <- res) {
         result = result ++ l
       }
       result
     case RecordType(methods) =>
       var result = List[String]()
-      val res = methods.map(m =>
-        freeVars(set, m.mtype.domain.privateType) ++ freeVars(set, m.mtype.domain.publicType)
-          ++ freeVars(set, m.mtype.codomain.privateType)
-          ++ freeVars(set, m.mtype.codomain.privateType))
+      val res = methods.map(m => {
+        val l1 = m.mtype.domain.foldLeft(List[String]())((acc: List[String], t: SType) => acc ++ freeVars(set, t.privateType) ++ freeVars(set, t.publicType))
+        val l2 = freeVars(set, m.mtype.codomain.privateType)
+        val l3 = freeVars(set, m.mtype.codomain.privateType)
+        l1 ++ l2 ++ l3
+      })
       for (l <- res) {
         result = result ++ l
       }
@@ -139,9 +146,10 @@ class AmadioCardelliSubtyping extends SubTypingAlgorithm {
     case RecordType(methods) =>
       RecordType(methods.map(m => MethodDeclaration(m.name,
         MType(
-          SType(
-            subst(m.mtype.domain.privateType, x, t2),
-            subst(m.mtype.domain.publicType, x, t2)),
+          m.mtype.domain.map(stype =>
+            SType(
+              subst(stype.privateType, x, t2),
+              subst(stype.publicType, x, t2))),
           SType(
             subst(m.mtype.codomain.privateType, x, t2),
             subst(m.mtype.codomain.publicType, x, t2)
@@ -153,11 +161,11 @@ class AmadioCardelliSubtyping extends SubTypingAlgorithm {
         ObjType(TypeVar(newVar), methods.map(m =>
           MethodDeclaration(m.name,
             MType(
-              SType(
-                subst(subst(m.mtype.domain.privateType, y.name, TypeVar(newVar)),
+              m.mtype.domain.map(stype => SType(
+                subst(subst(stype.privateType, y.name, TypeVar(newVar)),
                   x, t2),
-                subst(subst(m.mtype.domain.publicType, y.name, TypeVar(newVar)),
-                  x, t2)),
+                subst(subst(stype.publicType, y.name, TypeVar(newVar)),
+                  x, t2))),
               SType(
                 subst(subst(m.mtype.codomain.privateType, y.name, TypeVar(newVar)),
                   x, t2),

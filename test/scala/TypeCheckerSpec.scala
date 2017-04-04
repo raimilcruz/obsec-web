@@ -2,7 +2,7 @@
 
 import ObSec.Ast._
 import ObSec.Parsing.ObSecParser
-import ObSec.Static.{TypeChecker, TypeError}
+import ObSec.Static.{AmadioCardelliSubtyping, TypeChecker, TypeError}
 import org.scalatest.FlatSpec
 
 /**
@@ -32,7 +32,7 @@ class TypeCheckerSpec extends FlatSpec {
             TypeVar("X"),
             List(MethodDeclaration(
               "add",
-              MType(SType(IntType, IntType), SType(IntType, IntType))))),
+              MType(List(SType(IntType, IntType)), SType(IntType, IntType))))),
           ObjType(TypeVar("X"), List()))
 
         assert(res == expected)
@@ -103,6 +103,20 @@ class TypeCheckerSpec extends FlatSpec {
           TypeChecker(ast)
         }
       }
+    }
+  }
+
+  "type checker" must "work with multiple method parameters" in {
+    var expr = ObSecParser("{z : {ot X {login : String<String String<String -> Int<Int}}<{ot X} => {login password guess = if password.==(guess) then 1 else 0}}.login(\"qwe123\",\"qwe123\")")
+
+    var expectedType = ObSecParser.parseSType("Int<{ot X}")
+
+    var subtyping = new AmadioCardelliSubtyping
+    (expr,expectedType) match {
+      case (Right(ast),Right(t)) =>
+        var aType = TypeChecker(ast)
+        assert(subtyping.alphaEq(aType,t))
+      case _ => fail("parsing error")
     }
   }
 }

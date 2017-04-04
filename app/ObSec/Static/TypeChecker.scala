@@ -9,6 +9,8 @@ import scala.collection.mutable
   * Created by rcc on 3/30/2017.
   */
 class TypeChecker () {
+
+
   val subTypingAlgorithm = new AmadioCardelliSubtyping()
   def typeCheck(x: ObSecExpr) = internalTypeCheck(new Scope, x)
 
@@ -17,18 +19,29 @@ class TypeChecker () {
     case IntExpr(_) => SType(IntType,IntType)
     case BooleanExpr(_) => SType(BooleanType,BooleanType)
     case StringExpr(_) => SType(StringType,StringType)
-    case MethodInv(e1, e2, m) => {
+    case MethodInv(e1, args, m) => {
       val s1 = internalTypeCheck(scope, e1)
-      val s2 = internalTypeCheck(scope, e2)
+      val argTypes =  args.map(param=> internalTypeCheck(scope,param))
       //facet analysis
       if(s1.privateType.containsMethod(m)){
         var mType = s1.privateType.methSig(m)
         if(s1.publicType.containsMethod(m)){
-          mType = s1.privateType.methSig(m)
+          mType = s1.publicType.methSig(m)
         }
+
+        println(s"Checking subtyping between: ${args} and ${mType.domain}")
+        //check the argument count
+        if(mType.domain.size != args.size) throw TypeError(s"Method '${m}' : Actual arguments amount must match the formal arguments amount")
         //check subtyping between $mType.domain and s2
-        if(subTypingAlgorithm.<::(s2,mType.domain))mType.codomain
-        else throw TypeError(s"Type ${s2} is not subtyping of ${mType.domain} in ${expr}")
+        for(pair <- argTypes.zip(mType.domain)){
+          if(!subTypingAlgorithm.<::(pair._1,pair._2)) {
+            throw TypeError(s"""Invocation of ${m}: Type ${pair._1} (of actual argument) is not subtyping of ${pair._2}""")
+          }
+        }
+
+        if(s1.publicType.containsMethod(m))mType.codomain
+        else SType(mType.codomain.privateType,ObjType.top)
+
       }
       else
         throw TypeError(s"Method ${m} not in ${s1.privateType}")
@@ -46,17 +59,19 @@ class TypeChecker () {
       //both methods list: in type and in definition must have the same elements
       if(stype.privateType.asInstanceOf[ObjType].methods.map(x=>x.name).toSet != methods.map(x=>x.name).toSet)
         throw TypeError("The private facet must have a method type for each method definition")
-      //each method must be well-typed with respect the objec type
+      //each method must be well-typed with respect the object type
       for(m <- methods)
       {
         val mType = stype.privateType.methSig(m.name)
+        if(mType.domain.size != m.args.size)throw TypeError(s"Method '${m.name}': Mismatch in amount of arguments between definition and signature")
+
         val methodScope = new NestedScope[SType](scope)
         methodScope.add(self, stype)
-        methodScope.add(m.argName, mType.domain)
+        m.args.zip(mType.domain).foreach(a => methodScope.add(a._1, a._2))
 
         var s = internalTypeCheck(methodScope, m.mBody)
         if(!subTypingAlgorithm.<::(s, mType.codomain))
-          throw TypeError(s"Method ${m.name} in object $expr")
+          throw TypeError(s"Method ${m.name}: the return type in the implementation is not subtype of the return type in the signature")
       }
       stype
     }
@@ -64,8 +79,8 @@ class TypeChecker () {
       val sCond = internalTypeCheck(scope, cond)
       if(sCond.privateType != BooleanType)
         throw TypeError("Condition of if expression must be boolean")
-      val sE1 = internalTypeCheck(scope,e1);
-      val sE2 = internalTypeCheck(scope,e2);
+      val sE1 = internalTypeCheck(scope,e1)
+      val sE2 = internalTypeCheck(scope,e2)
       if(sE1 != sE2)
         throw TypeError("Both expression in a if must have the same type")
       //depending on the type of the condiction we should lift the public type of the resulting type
@@ -75,9 +90,26 @@ class TypeChecker () {
       else sE1
     }
   }
+
+  //TODO: Finish the inner recursion
+  def removeLabelShortcut(stype: SType): SType = stype match {
+    case SType(x,LowLabel) => SType(x,x)
+    case SType(x,HighLabel)=> SType(x,ObjType.top)
+    case x => x
+  }
+
+  //TODO: Finish the inner recursion
+  def removeLabelShortcutFromExpr(x: ObSecExpr) = x match {
+    case Obj(self,stype,methods)=> Obj(self,removeLabelShortcut(stype),methods)
+    case x =>x
+  }
 }
 object TypeChecker{
-  def apply(x: ObSecExpr) = new TypeChecker().typeCheck(x)
+  def apply(x: ObSecExpr) = {
+    val tp = new TypeChecker()
+    val expr = tp.removeLabelShortcutFromExpr(x)
+    tp.typeCheck(expr)
+  }
 }
 
 

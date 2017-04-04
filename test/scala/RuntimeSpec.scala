@@ -91,5 +91,19 @@ class RuntimeSpec extends FlatSpec with Matchers with GivenWhenThen {
       }
     }
   }
+  "Multiple parameters" must "work 1" in {
+    val expr1 = ObSecParser("{z : {ot X {login : String<String String<String -> Bool<Bool}}<L =>" +
+      "{login password guess = if password.==(guess) then 1 else 0}}.login(\"qwe123\",\"qwe123\")")
+    val expr2 = ObSecParser("{z : {ot X {login : String<String String<String -> Bool<Bool}}<L =>" +
+      "{login password guess = if password.==(guess) then 1 else 0}}.login(\"qwe123\",\"abc\")")
+    (expr1,expr2) match {
+      case (Right(ast1),Right(ast2)) =>
+        val res = interpreter.eval(ast1)
+        assert(res.asInstanceOf[RuntimeInt].v == 1)
 
+        val res2 = interpreter.eval(ast2)
+        assert(res2.asInstanceOf[RuntimeInt].v == 0)
+      case (Left(error),_) => fail(s"We expected an ast $error")
+    }
+  }
 }

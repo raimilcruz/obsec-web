@@ -18,9 +18,6 @@ import AppBar from 'material-ui/AppBar';
 
 
 
-import Test from './Test';
-
-
 
 import darkBaseTheme from 'material-ui/styles/baseThemes/darkBaseTheme';
 import lightBaseTheme from 'material-ui/styles/baseThemes/lightBaseTheme';

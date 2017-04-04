@@ -52,13 +52,16 @@ const HelpIcon = (props) => (
     </SvgIcon>
 );
 
+function replaceCurlyBracket(str){
+    return str.replace(/@;/g, "{").replace(/#;/g,"}");
+}
 
 const examples = [
     {
         value: 1,
-        text: "Introducing type-based declassification policies",
-        program: "1",
-        desc: "A descrption about the example will added soon!"
+        text: "Introducing type-based declassification policies: Password policy",
+        program: replaceCurlyBracket("@;z : @;ot X @;login : String<String String<String -> Int<Int#;#;<{ot x} => @;login password guess = if password.==(guess) then 1 else 0#;#;.login(\"qwe123\",\"qwe123\")"),
+        desc: "This is the first example of the paper."
     },
     {
         value: 2,
@@ -71,17 +74,6 @@ const examplesItems = examples.map((e) => {
     return <MenuItem key={e.value} value={e.value} primaryText={e.text}/>
 });
 
-const pcs = [
-    {value: "?", text: "?"},
-    {value: "B", text: "⊥"},
-    {value: "L", text: "L"},
-    {value: "H", text: "H"},
-    {value: "T", text: "⊤"}
-];
-
-const pcsItems = pcs.map((e) => {
-    return <MenuItem key={e.value} value={e.value} primaryText={e.text}/>
-});
 
 export default class Main extends React.Component {
     state = {
@@ -131,7 +123,7 @@ export default class Main extends React.Component {
         this.setState({defaultProgram, program: p.program, desc: p.desc})
     };
 
-    intrinsify = () => {
+    typecheck = () => {
         this.setState({error: "", executionState: 0, typingState: 0}, () => {
             request.post('/typecheck')
                 .send({program: this.state.program})
@@ -240,7 +232,7 @@ export default class Main extends React.Component {
                         <tr>
                             <td>M</td>
                             <td>::=</td>
-                            <td>{this.lcb()} name : S -> S {this.rcb()}</td>
+                            <td>{this.lcb()} name : S* -> S {this.rcb()}</td>
                             <td>(Method signature)</td>
                         </tr>
                         <tr>
@@ -253,7 +245,7 @@ export default class Main extends React.Component {
                         <tr>
                             <td>o</td>
                             <td>::=</td>
-                            <td> {this.lcb()} x : S => {this.lcb()} name x = t {this.rcb()}* {this.rcb()}
+                            <td> {this.lcb()} x : S => {this.lcb()} name x* = t {this.rcb()}* {this.rcb()}
                             </td>
                             <td>(Terms)</td>
                         </tr>
@@ -304,7 +296,7 @@ export default class Main extends React.Component {
                         <IconButton tooltip="See syntax" onClick={this.syntaxHandleOpen}>
                             <HelpIcon />
                         </IconButton>
-                        <RaisedButton label="Typecheck!" secondary={true} onClick={this.intrinsify}
+                        <RaisedButton label="Typecheck!" secondary={true} onClick={this.typecheck}
                                       style={{position: "absolute", bottom: "12px"}}/>
                     </div>
                 </div>

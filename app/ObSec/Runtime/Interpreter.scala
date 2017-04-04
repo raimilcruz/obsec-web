@@ -28,11 +28,11 @@ package ObSec.Runtime {
       //OBJ
       case obj @ Obj(_, _, _) => ObjClosure(obj, env)
       //e.m(e)
-      case MethodInv(e1, e2, m) => {
+      case MethodInv(e1, args, m) => {
         val r1 = internalEval(env, e1)
-        val r2 = internalEval(env, e2)
+        var argValues = args.map(x=>internalEval(env,x))
 
-        r1.invoke(m,r2,internalEval)
+        r1.invoke(m,argValues,internalEval)
       }
       case IfExpr(c,thenPart,elsePart)=>{
         var cond = internalEval(env,c).asInstanceOf[RuntimeBoolean]

@@ -7,14 +7,20 @@ package ObSec.Ast
   /**
     * Top Algebraic Data Type for expression in ObSec
     */
-  sealed trait ObSecExpr
+  sealed trait ObSecExpr{
+
+  }
 
   /**
     * Represents a variable expression.
     *
     * @param name
     */
-  case class Var(name: String) extends ObSecExpr
+  case class Var(name: String) extends ObSecExpr{
+    override def toString: String = name
+
+
+  }
 
   /**
     * Represents an object in ObSec
@@ -37,30 +43,34 @@ package ObSec.Ast
         throw new Exception("Stuck")
       res.get
     }
+
+    override def toString: String = s"{$selfName : $selfAscription => ${methods.foldLeft("")((acc,x)=> acc+x)} }"
+
+
   }
 
   /**
     * Represent an a method invocation expression
     *
-    * @param e1
-    * @param e2
-    * @param method
+    * @param e1 The receiver
+    * @param args The actual arguments
+    * @param method The method to invoke
     */
-  case class MethodInv(e1: ObSecExpr, e2: ObSecExpr, method: String) extends ObSecExpr {
+  case class MethodInv(e1: ObSecExpr, args: List[ObSecExpr], method: String) extends ObSecExpr {
+    def map[T](f: ObSecExpr => ObSecExpr) = new MethodInv(f(e1), args.map(f), method)
 
-    def map[T](f: ObSecExpr => ObSecExpr) =
-      new MethodInv(f(e1), f(e2), method)
+    override def toString: String = s"${e1}.$method(${if(args.size==0)"" else args(0) + args.drop(1).foldLeft("")((acc,x)=> acc+","+ x)})"
   }
 
   /**
     * Represent a method definition
     *
-    * @param name    The name of the method
-    * @param argName The argument name
-    * @param mBody   The body expression
+    * @param name   The name of the method
+    * @param args   The list of formal arguments
+    * @param mBody  The body expression
     */
-  case class MethodDef(name: String, argName: String, mBody: ObSecExpr) {
-    def mapOnBody(f: ObSecExpr => ObSecExpr) = new MethodDef(name, argName, f(mBody))
+  case class MethodDef(name: String, args: List[String], mBody: ObSecExpr){
+    override def toString: String = s"{${name} : ${args.foldLeft("")((acc,x)=> acc + " " +x)} = $mBody}"
   }
 
   case class IfExpr(cond:ObSecExpr,thenPart:ObSecExpr,elsePart:ObSecExpr) extends ObSecExpr

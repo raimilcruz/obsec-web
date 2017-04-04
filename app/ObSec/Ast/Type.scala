@@ -58,8 +58,8 @@ trait PrimType{
 }
 case object IntType extends Type with PrimType {
   override def methSig(x: String): MType = x match {
-    case "+" => MType(SType(IntType, IntType), SType(IntType, IntType))
-    case "-" => MType(SType(IntType, IntType), SType(IntType, IntType))
+    case "+" => MType(List(SType(IntType, IntType)), SType(IntType, IntType))
+    case "-" => MType(List(SType(IntType, IntType)), SType(IntType, IntType))
     case _ => throw new Error("Message not understood")
   }
 
@@ -75,22 +75,33 @@ case object IntType extends Type with PrimType {
       List(
         MethodDeclaration("add",
           MType(
-            SType(TypeVar("x"), TypeVar("x")),
+            List(SType(TypeVar("x"), TypeVar("x"))),
             SType(TypeVar("x"), TypeVar("x")))),
         MethodDeclaration("minus",
           MType(
-            SType(TypeVar("x"), TypeVar("x")),
+            List(SType(TypeVar("x"), TypeVar("x"))),
             SType(TypeVar("x"), TypeVar("x"))))))
 }
 
 case object StringType extends Type with PrimType {
-  override def methSig(x: String): MType = throw new NotImplementedError()
+  override def methSig(x: String): MType = x match {
+    case "==" => MType(
+      List(SType(StringType,StringType)),SType(BooleanType,BooleanType)
+    )
+  }
 
-  override def containsMethod(x: String): Boolean = throw new NotImplementedError()
+  override def containsMethod(x: String): Boolean = x match {
+    case "==" => true
+    case _ => false
+  }
 
   override def toString: String = "String"
 
-  override def toObjType(): ObjType = ObjType(TypeVar("x"),List())
+  override def toObjType(): ObjType = ObjType(
+    TypeVar("x"),
+    List(MethodDeclaration("==",MType(
+      List(SType(TypeVar("x"),TypeVar("x"))),SType(BooleanType,BooleanType)
+    ))))
 }
 case object BooleanType extends Type with PrimType{
   override def methSig(x: String): MType = throw new NotImplementedError()
@@ -107,8 +118,12 @@ sealed trait LabelType extends Type{
   override def methSig(x: String): MType = throw new Error("It does not sense")
   override def containsMethod(x: String): Boolean = throw new Error("It does not sense")
 }
-case object LowLabel extends LabelType
-case object HighLabel extends LabelType
+case object LowLabel extends LabelType{
+  override def toString: String = "L"
+}
+case object HighLabel extends LabelType{
+  override def toString: String = "H"
+}
 
 /**
   * Represent a method signature
@@ -126,9 +141,9 @@ case class MethodDeclaration(name: String, mtype: MType){
   * @param domain The domain type
   * @param codomain The codomain type
   */
-case class MType(domain : SType, codomain: SType) {
+case class MType(domain : List[SType], codomain: SType) {
   def map(f: SType => SType): MType =
-    MType(f(domain), f(codomain))
+    MType(domain.map(f), f(codomain))
 
-  override def toString: String = s"$domain -> $codomain"
+  override def toString: String = s"${domain.foldLeft("")((acc,x)=> acc + " " + x)} -> $codomain"
 }

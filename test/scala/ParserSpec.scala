@@ -2,6 +2,7 @@
 
 import ObSec.Ast._
 import ObSec.Parsing.ObSecParser
+import ObSec.Static.TypeChecker
 import org.scalatest.{FlatSpec, Matchers}
 
 /**
@@ -10,7 +11,7 @@ import org.scalatest.{FlatSpec, Matchers}
 class ParserSpec extends FlatSpec with Matchers {
   "parser" should "work with x.m(x)" in {
     val res = ObSecParser("x.m(x)")
-    assert(res == Right(MethodInv(Var("x"), Var("x"), "m")))
+    assert(res == Right(MethodInv(Var("x"), List(Var("x")), "m")))
   }
   "parser" should "work with {self : {ot x }<{ot x} => }" in {
     val res = ObSecParser("{self : {ot x }<{ot x} => }")
@@ -28,9 +29,9 @@ class ParserSpec extends FlatSpec with Matchers {
           ObjType(TypeVar("X"),
             List(MethodDeclaration(
               "eq", MType(
-                SType(
+                List(SType(
                   ObjType(TypeVar("X"), List()),
-                  ObjType(TypeVar("X"), List())),
+                  ObjType(TypeVar("X"), List()))),
                 SType(
                   ObjType(TypeVar("X"), List()),
                   ObjType(TypeVar("X"), List())))))),
@@ -49,16 +50,16 @@ class ParserSpec extends FlatSpec with Matchers {
               List(
                 MethodDeclaration("eq",
                   MType(
-                    SType(
+                    List(SType(
                       ObjType(TypeVar("X"), List()),
-                      ObjType(TypeVar("X"), List())),
+                      ObjType(TypeVar("X"), List()))),
                     SType(
                       ObjType(TypeVar("X"), List()),
                       ObjType(TypeVar("X"), List())))))),
             ObjType(TypeVar("X"), List())),
           List(
-            MethodDef("eq", "x", Var("x")))),
-        Var("z"),
+            MethodDef("eq", List("x"), Var("x")))),
+        List(Var("z")),
         "eq")
     assert(res == Right(expeted))
   }
@@ -112,10 +113,30 @@ class ParserSpec extends FlatSpec with Matchers {
     assert(res1 == Right(expeted1))
 
   }
-  /*"primitive types" should "work" in {
-    val res1 = ObSecParser("{z1 : Int<Int => }")
-    var expeted1 = Obj("z1",SType(IntType,IntType)BooleanExpr(true),IntExpr(1),IntExpr(2))
+  "parser " must "accept method type with multiple arguments" in {
+    val res1 = ObSecParser.parseType("{ot x {add : Int<Int Int<Int -> Int<Int}}")
+    var expeted1 = ObjType(TypeVar("x"),
+                    List(MethodDeclaration("add",
+                      MType(
+                        List(SType(IntType,IntType),SType(IntType,IntType)),
+                        SType(IntType,IntType)))))
     assert(res1 == Right(expeted1))
 
-  }*/
+  }
+  "parser" must "accept method definition with multiple arguments" in {
+    val res1 = ObSecParser("{z : {ot X}<L => {foo x y = x}}")
+    var expeted1 = Obj("z",
+                      SType(ObjType(TypeVar("X"),List()),LowLabel),
+                      List(MethodDef("foo",List("x","y"),Var("x"))))
+    assert(res1 == Right(expeted1))
+
+  }
+  "parser" must "accept method invocation with multiple arguments" in {
+    val res1 = ObSecParser("{z : {ot X}<L => }.add(x,y)")
+    var expeted1 = MethodInv(
+                    Obj("z",SType(ObjType(TypeVar("X"),List()),LowLabel),List()),
+                    List(Var("x"),Var("y")),"add")
+    assert(res1 == Right(expeted1))
+
+  }
 }
