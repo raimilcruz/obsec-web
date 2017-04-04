@@ -22,6 +22,7 @@ import SvgIcon from 'material-ui/SvgIcon';
 import IconButton from 'material-ui/IconButton';
 import Dialog from 'material-ui/Dialog';
 import FlatButton from 'material-ui/FlatButton';
+import AceEditor from 'react-ace';
 
 
 class MyTextField extends React.Component {
@@ -293,6 +294,19 @@ export default class Main extends React.Component {
                                      onKeyDown={this.onKeyDown}
                                      ref={(c) => this._program = c}
                         />
+                       {
+                           /* <AceEditor
+                            name="formula"
+                            value={this.state.program}
+                            mode="java"
+                            theme="github"
+                            width = "70%"
+                            onChange={this.onChangeProgram}
+                            minLines={5}
+                            maxLines={20}
+                            editorProps={{$blockScrolling: true}}
+                        />
+                        */}
                         <IconButton tooltip="See syntax" onClick={this.syntaxHandleOpen}>
                             <HelpIcon />
                         </IconButton>

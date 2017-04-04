@@ -61,14 +61,24 @@ class SubtypingSpec extends FlatSpec{
   }
   "Spec for int type" must "work" in {
     var subtyping =new AmadioCardelliSubtyping
-    var t1 = ObSecParser.parseType("{ot X {add : Int<Int -> Int<Int}{minus: Int<Int -> Int<Int}}")
+    var t1 = ObSecParser.parseType("{ot X {+ : Int<Int -> Int<Int}{-: Int<Int -> Int<Int}}")
 
     t1 match {
       case Right(t11) => assert(subtyping.<::(IntType,t11))
       case _ => fail("types are not recognized!!")
     }
   }
-  "Subtyping recursive type 0" must "work" in{
+  "Spec for string type" must "work" in {
+    var subtyping = new AmadioCardelliSubtyping
+    var t1 = ObSecParser.parseType("{ot X {== : String<String -> Bool<Bool}}")
+
+    t1 match {
+      case Right(t11) => assert(subtyping.<::(StringType, t11))
+      case _ => fail("types are not recognized!!")
+    }
+  }
+
+    "Subtyping recursive type 0" must "work" in{
     var subtyping =new AmadioCardelliSubtyping
     var t1 = ObSecParser.parseType("{ot X {foo : Int<Int -> X<X}}")
     var t2 = ObSecParser.parseType("{ot Y {foo : Int<Int -> Y<Y}}")

@@ -2,7 +2,7 @@
 
 import ObSec.Ast._
 import ObSec.Parsing.ObSecParser
-import ObSec.Static.TypeChecker
+import ObSec.Static.{TypeEquivalence, AmadioCardelliSubtyping, TypeChecker}
 import org.scalatest.{FlatSpec, Matchers}
 
 /**
@@ -64,26 +64,26 @@ class ParserSpec extends FlatSpec with Matchers {
     assert(res == Right(expeted))
   }
   "parser" should "undestand LOW and HIGH labels" in {
-    val res1 = ObSecParser("{z : {ot X }<H =>}")
-    val res2 = ObSecParser("{z : {ot X }<L =>}")
+
+    val res1 = ObSecParser.parseSType("{ot X }<H")
+    val res2 = ObSecParser.parseSType("{ot X }<L")
+
     var expeted1 =
-        Obj("z",
           SType(
             ObjType(
               TypeVar("X"),
               List()),
-            HighLabel),
-          List())
-    var expeted2 =
-      Obj("z",
-        SType(
-          ObjType(
-            TypeVar("X"),
-            List()),
-          LowLabel),
-        List())
-    assert(res1 == Right(expeted1))
-    assert(res2 == Right(expeted2))
+            ObjType(
+              TypeVar("X"),
+              List()))
+    (res1,res2) match{
+      case (Right(r1),Right(r2))=> {
+        assert(TypeEquivalence.alphaEq(r1, expeted1))
+        assert(TypeEquivalence.alphaEq(r2, expeted1))
+      }
+      case _ => fail("parse error")
+    }
+
   }
 
   "parser" should "undestand integers, boolean and string" in {
@@ -124,19 +124,28 @@ class ParserSpec extends FlatSpec with Matchers {
 
   }
   "parser" must "accept method definition with multiple arguments" in {
-    val res1 = ObSecParser("{z : {ot X}<L => {foo x y = x}}")
+    val res1 = ObSecParser("{z : {ot X}<{ot X} => {foo x y = x}}")
     var expeted1 = Obj("z",
-                      SType(ObjType(TypeVar("X"),List()),LowLabel),
+                      SType(ObjType(TypeVar("X"),List()),ObjType(TypeVar("X"),List())),
                       List(MethodDef("foo",List("x","y"),Var("x"))))
     assert(res1 == Right(expeted1))
 
   }
   "parser" must "accept method invocation with multiple arguments" in {
-    val res1 = ObSecParser("{z : {ot X}<L => }.add(x,y)")
+    val res1 = ObSecParser("{z : {ot X}<{ot X} => }.add(x,y)")
     var expeted1 = MethodInv(
-                    Obj("z",SType(ObjType(TypeVar("X"),List()),LowLabel),List()),
+                    Obj("z",SType(ObjType(TypeVar("X"),List()),ObjType(TypeVar("X"),List())),List()),
                     List(Var("x"),Var("y")),"add")
     assert(res1 == Right(expeted1))
 
+  }
+
+  "parse" should "accept extended identifier in method names in types" in {
+    var t = ObSecParser.parseType("{ot x {== : String<String -> Bool<Bool }}")
+    t match{
+      case Right(tt) => ObjType(TypeVar("x"),List(MethodDeclaration("==",
+        MType(List(SType(StringType,StringType)),SType(StringType,StringType)))))
+      case Left(error) => fail(s"parse error: ${error.msg}")
+    }
   }
 }

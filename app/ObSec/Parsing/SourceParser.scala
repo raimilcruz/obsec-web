@@ -1,6 +1,7 @@
 package ObSec.Parsing
 
 import ObSec.Ast.{ObSecExpr, _}
+import ObSec.Parsing.ObSecParser.rep1
 
 import scala.util.parsing.combinator.{JavaTokenParsers, PackratParsers}
 
@@ -15,6 +16,11 @@ object ObSecParser extends JavaTokenParsers with PackratParsers with DebugPackra
   {"if" | "then" | "else" | "true" | "false" | "Ref" | "Unit | ot | Int | String | Boolean | L | H"}
 
   lazy val identifier: PackratParser[String] = not(reserved) ~> ident ^^ { str => str}
+
+  lazy val symIdentifier =  """(\+|-|=|<|/)*""".r
+
+  lazy val extendedIdentifier : PackratParser[String] =
+    (identifier | symIdentifier) ^^ {str => str}
 
   //PARSERS FOR tokens
   def OT = "ot"
@@ -73,11 +79,15 @@ object ObSecParser extends JavaTokenParsers with PackratParsers with DebugPackra
     rep(methodDef)
   }
   lazy val methodDef : PackratParser[MethodDef] = {
-    LEFTBRACKET ~> (identifier ~ rep(identifier)) ~ ((EQUALSSIGN ~> expr ) <~ RIGHTBRACKET) ^^
+    LEFTBRACKET ~> (extendedIdentifier ~ rep(identifier)) ~ ((EQUALSSIGN ~> expr ) <~ RIGHTBRACKET) ^^
       { case mName ~ args ~ expr => MethodDef(mName,args,expr)}
   }
   lazy val stype : PackratParser[SType] ={
-    ((singleType <~ LESSTHAN) ~ labelType) ^^ {case t1 ~ t2  => SType(t1,t2)}
+    ((singleType <~ LESSTHAN) ~ labelType) ^^ {case t1 ~ t2  => t2 match {
+      case LowLabel => SType(t1,t1)
+      case HighLabel => SType(t1,ObjType.top)
+      case _ => SType(t1,t2)
+    } }
   }
   lazy val singleType : PackratParser[Type] ={
     objType |  primType | varType
@@ -112,7 +122,7 @@ object ObSecParser extends JavaTokenParsers with PackratParsers with DebugPackra
     rep(methodSignature)
   }
   lazy val methodSignature : PackratParser[MethodDeclaration]={
-    ((LEFTBRACKET ~> identifier) <~ COLON) ~ (rep(stype) <~ ARROW) ~ (stype <~ RIGHTBRACKET) ^^
+    ((LEFTBRACKET ~> extendedIdentifier) <~ COLON) ~ (rep(stype) <~ ARROW) ~ (stype <~ RIGHTBRACKET) ^^
       {case  mName ~ argTypes ~ t2 => MethodDeclaration(mName,MType(argTypes,t2))}
   }
 

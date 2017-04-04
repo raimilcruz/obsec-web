@@ -10,8 +10,9 @@ import scala.collection.mutable
   */
 class TypeChecker () {
 
-
   val subTypingAlgorithm = new AmadioCardelliSubtyping()
+  val wfChecker = new WellFormedChecker(new ErrorCollector)
+
   def typeCheck(x: ObSecExpr) = internalTypeCheck(new Scope, x)
 
   private def internalTypeCheck(scope: Scope[SType], expr: ObSecExpr): SType = expr match {
@@ -48,8 +49,8 @@ class TypeChecker () {
     }
     case Obj(self,stype,methods)=>{
       //verify well-formed for stype
-      if(!WellFormedChecker.isWellFormed(stype))
-        throw TypeError(s"Object type is not well-formed in ${expr}")
+      if(!wfChecker.isWellFormed(stype))
+        throw TypeError(s"Security type is not well-formed : ${wfChecker.errorCollector.errors}")
       //the private type must be an object type
       if(!stype.privateType.isInstanceOf[ObjType])
         throw TypeError("The private facet must be an object type")

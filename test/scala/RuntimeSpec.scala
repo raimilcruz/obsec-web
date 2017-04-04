@@ -17,7 +17,7 @@ class RuntimeSpec extends FlatSpec with Matchers with GivenWhenThen {
     assert(res.asInstanceOf[RuntimeInt].v == 3)
   }
   "eval" should "get 3 with 1.+(2)" in {
-    val res = interpreter.eval(PrimOp("+",IntExpr(1),IntExpr(2)))
+    val res = interpreter.eval(MethodInv(IntExpr(1),List(IntExpr(2)),"+"))
     assert(res.asInstanceOf[RuntimeInt].v == 3)
   }
   "eval" should "get 3 with {self : {ot X}<L => {add x = 1.+(x)}}.add(3)" in {

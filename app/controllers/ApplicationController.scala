@@ -49,7 +49,7 @@ class ApplicationController extends Controller {
                 Ok(Json.obj("status" -> "KO", "error" -> e.getMessage))
             }
 
-          case Left(error) => Ok(Json.obj("status" -> "KO", "error" -> "Parse error"))
+          case Left(error) => Ok(Json.obj("status" -> "KO", "error" -> s"Parse error: ${error.msg}"))
         }
 
       }
@@ -65,11 +65,17 @@ class ApplicationController extends Controller {
       f => {
         ObSecParser(f.program) match {
           case Right(term) =>
-            val result = Interpreter.run(term)
-            Ok(Json.obj("status" -> "OK",
-              "program" -> f.program,
-              "result"-> result.toString
-            ))
+            try {
+              val result = Interpreter.run(term)
+              Ok(Json.obj("status" -> "OK",
+                "program" -> f.program,
+                "result"-> result.toString
+              ))
+            }
+            catch {
+              case e: Throwable =>
+                Ok(Json.obj("status" -> "KO", "error" -> e.getMessage))
+            }
           //throw new  Exception(confs.last.toString+ " "+error.toString)
           case Left(error) => Ok(Json.obj("status" -> "KO", "error" -> "Parse error"))
         }

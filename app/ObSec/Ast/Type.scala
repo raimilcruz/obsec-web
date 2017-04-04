@@ -1,5 +1,7 @@
 package ObSec.Ast
 
+import ObSec.Static.TypeSubst
+
 /**
   * Represents a security type
   *
@@ -30,7 +32,12 @@ trait Type{
   */
 case class ObjType(typeVar: TypeVar, methods: List[MethodDeclaration]) extends Type {
   override def methSig(x: String): MType = {
-    methods.find(m=>m.name==x).get.mtype
+    //we must close the type
+    val mt = methods.find(m=>m.name==x).get.mtype
+    MType(
+      mt.domain.map(s => SType(TypeSubst.subst(s.privateType,typeVar.name,this),TypeSubst.subst(s.publicType,typeVar.name,this))),
+      SType(TypeSubst.subst(mt.codomain.privateType,typeVar.name,this),TypeSubst.subst(mt.codomain.publicType,typeVar.name,this))
+    )
   }
   override def containsMethod(m: String):Boolean = methods.exists(x => x.name == m)
 
@@ -60,11 +67,12 @@ case object IntType extends Type with PrimType {
   override def methSig(x: String): MType = x match {
     case "+" => MType(List(SType(IntType, IntType)), SType(IntType, IntType))
     case "-" => MType(List(SType(IntType, IntType)), SType(IntType, IntType))
+    case "==" => MType(List(SType(IntType, IntType)), SType(BooleanType, BooleanType))
     case _ => throw new Error("Message not understood")
   }
 
   override def containsMethod(x: String): Boolean = x match {
-    case "+" | "-" => true
+    case "+" | "-" | "==" => true
     case _ => false
   }
 
@@ -73,14 +81,19 @@ case object IntType extends Type with PrimType {
   override def toObjType(): ObjType =
     ObjType(TypeVar("x"),
       List(
-        MethodDeclaration("add",
+        MethodDeclaration("+",
           MType(
             List(SType(TypeVar("x"), TypeVar("x"))),
             SType(TypeVar("x"), TypeVar("x")))),
-        MethodDeclaration("minus",
+        MethodDeclaration("-",
           MType(
             List(SType(TypeVar("x"), TypeVar("x"))),
-            SType(TypeVar("x"), TypeVar("x"))))))
+            SType(TypeVar("x"), TypeVar("x")))),
+        MethodDeclaration("==",
+          MType(
+            List(SType(TypeVar("x"), TypeVar("x"))),
+            SType(BooleanType, BooleanType)))
+      ))
 }
 
 case object StringType extends Type with PrimType {

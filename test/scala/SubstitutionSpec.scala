@@ -1,7 +1,7 @@
 
 
 import ObSec.Parsing.ObSecParser
-import ObSec.Static.AmadioCardelliSubtyping
+import ObSec.Static.{TypeEquivalence, AmadioCardelliSubtyping, TypeSubst}
 import org.scalatest.FlatSpec
 
 /**
@@ -9,17 +9,15 @@ import org.scalatest.FlatSpec
   */
 class SubstitutionSpec extends FlatSpec {
   "Substitution test" must "1" in {
-    val subtyping = new AmadioCardelliSubtyping
     val t1  = ObSecParser.parseType("x")
     val t2 = ObSecParser.parseType("{ot x {add: Int<Int -> x<x}}")
     (t1,t2) match{
       case (Right(type1),Right(type2)) =>
-        assert(subtyping.alphaEq(subtyping.subst(type1,"x",type2),type2))
+        assert(TypeEquivalence.alphaEq(TypeSubst.subst(type1,"x",type2),type2))
       case _ => fail("parser error")
     }
   }
   "Substitution test" must "2" in {
-    val subtyping = new AmadioCardelliSubtyping
     val t1  = ObSecParser.parseType("{ot y {min : String<String -> {ot x}<{ot x}}" +
                                            "{foo : x<x -> y<y}}")
     val t2 = ObSecParser.parseType("{ot x {add: Int<Int -> x<x}}")
@@ -28,7 +26,7 @@ class SubstitutionSpec extends FlatSpec {
       "{foo : {ot x {add: Int<Int -> x<x}}<{ot x {add: Int<Int -> x<x}} -> y<y}}")
     (t1,t2,t3) match{
       case (Right(type1),Right(type2),Right(type3)) =>
-        assert(subtyping.alphaEq(subtyping.subst(type1,"x",type2),type3))
+        assert(TypeEquivalence.alphaEq(TypeSubst.subst(type1,"x",type2),type3))
       case _ => fail("parser error")
     }
   }
