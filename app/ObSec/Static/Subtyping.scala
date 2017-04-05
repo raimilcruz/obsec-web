@@ -27,6 +27,8 @@ class AmadioCardelliSubtyping extends SubTypingAlgorithm {
   }
 
   private def innerSubType(alreadySeen: Set[Tuple2[Type, Type]], t1: Type, t2: Type): Boolean = {
+    println(s"Already seen: ${alreadySeen}")
+    println(s"st goal: ${t1} and ${t2}")
     if (alreadySeen.exists((x)=> TypeEquivalence.alphaEq(x._1,t1) && TypeEquivalence.alphaEq(x._2,t2))) true
     else {
       val newSet = alreadySeen + Tuple2(t1, t2)
@@ -40,15 +42,14 @@ class AmadioCardelliSubtyping extends SubTypingAlgorithm {
             m1 match {
               case None => false
               case Some(m11) =>
-                println(s"m1: ${m11}")
-                println(s"m1: ${m2}")
-
-                m2.mtype.domain.zip(m11.mtype.domain).forall(pair=> <::(alreadySeen, pair._1, pair._2)) &&
-                  <::(alreadySeen, m11.mtype.codomain, m2.mtype.codomain)
+                m2.mtype.domain.zip(m11.mtype.domain).forall(pair=> <::(newSet, pair._1, pair._2)) &&
+                  <::(newSet, m11.mtype.codomain, m2.mtype.codomain)
             }
           })
         case (ot1@ObjType(_, _), _) => innerSubType(newSet, unfold(ot1), t2)
         case (_, ot2@ObjType(_, _)) => innerSubType(newSet, t1, unfold(ot2))
+        case (p1: PrimType, p2:PrimType) => p1 == p2
+        case (_,p2:PrimType) => innerSubType(newSet,t1,p2.toObjType)
         case (p1: PrimType, _) => innerSubType(newSet,p1.toObjType,t2)
         case (_,p2:PrimType) => innerSubType(newSet,t1,p2.toObjType)
         case _ => false

@@ -2,7 +2,7 @@
 
 import ObSec.Ast._
 import ObSec.Parsing.ObSecParser
-import ObSec.Static.{TypeEquivalence, AmadioCardelliSubtyping, TypeChecker, TypeError}
+import ObSec.Static._
 import org.scalatest.FlatSpec
 
 /**
@@ -118,6 +118,32 @@ class TypeCheckerSpec extends FlatSpec {
       case _ => fail("parsing error")
     }
   }
+  "type checker" must "update to high " in {
+    var expr = ObSecParser("if password.==(guess) then 1 else 0")
+
+    var typeChecker = new TypeChecker
+    val scope = new NestedScope[SType](new Scope[SType])
+    scope.add("password",SType(StringType,ObjType.top))
+    scope.add("guess",SType(StringType,StringType))
+
+    expr match {
+      case Right(ast) =>
+        assert(TypeEquivalence.alphaEq(typeChecker.internalTypeCheck(scope,ast),SType(IntType,ObjType.top)))
+      case _ => fail("parsing error")
+    }
+  }
+  "type checker" must "fail " in {
+    var expr = ObSecParser("{z : {ot X {login : String<H -> Int<Int}}<L => {login password = if password.==(\"a\") then 1 else 0}}")
+
+    expr match {
+      case Right(ast) =>
+        intercept[TypeError] {
+          TypeChecker(ast)
+        }
+      case _ => fail("parsing error")
+    }
+  }
+
   "type checker" must "verify well-formedness of security type" in{
     var t =  ObSecParser("{z : {ot x}<Int =>}")
     t match {
@@ -128,6 +154,8 @@ class TypeCheckerSpec extends FlatSpec {
       case _ => fail("parsing error")
     }
   }
+
+
   "recursive type in deep" must "work 1" in {
     var expr = ObSecParser("{z : {ot x {add : x<x -> x<x}}<{ot x} => {add x = z}}")
     expr match {
@@ -152,4 +180,5 @@ class TypeCheckerSpec extends FlatSpec {
       case _ => fail("parsing error")
     }
   }
+
 }

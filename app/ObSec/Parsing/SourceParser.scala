@@ -41,7 +41,7 @@ object ObSecParser extends JavaTokenParsers with PackratParsers with DebugPackra
 
   def INT = "Int"
   def STRING = "String"
-  def BOOLEAN = "Boolean"
+  def BOOLEAN = "Bool"
 
   def LOW ="L"
   def HIGH ="H"

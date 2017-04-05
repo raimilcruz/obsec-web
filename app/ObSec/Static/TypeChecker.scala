@@ -15,7 +15,9 @@ class TypeChecker () {
 
   def typeCheck(x: ObSecExpr) = internalTypeCheck(new Scope, x)
 
-  private def internalTypeCheck(scope: Scope[SType], expr: ObSecExpr): SType = expr match {
+
+
+  def internalTypeCheck(scope: Scope[SType], expr: ObSecExpr): SType = expr match {
     case Var(x) => scope.lookup(x)
     case IntExpr(_) => SType(IntType,IntType)
     case BooleanExpr(_) => SType(BooleanType,BooleanType)

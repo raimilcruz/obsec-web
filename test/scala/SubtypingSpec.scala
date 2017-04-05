@@ -20,6 +20,16 @@ class SubtypingSpec extends FlatSpec{
     var subtyping =new AmadioCardelliSubtyping
     assert(subtyping.<::(SType(IntType,IntType),SType(IntType,IntType)))
   }
+  "Subtyping for security type" must "fail" in{
+    var subtyping =new AmadioCardelliSubtyping
+    var t1 = ObSecParser.parseType("Int<{ot x}}")
+    var t2 = ObSecParser.parseType("Int<Int}}")
+
+    (t1,t2) match {
+      case (Right(t11),Right(t22)) => assert(!subtyping.<::(t11,t22))
+      case (_,_) => fail("types are not recognized!!")
+    }
+  }
 
   "Top " must "be top :-)" in {
     var subtyping =new AmadioCardelliSubtyping

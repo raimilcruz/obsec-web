@@ -28,6 +28,17 @@ class WellFormedSpec extends FlatSpec{
     }
   }
 
+  "WF for ST" must "work 2" in {
+    val t = ObSecParser.parseSType("String<{ot x {== : String<String -> Bool<Bool}}")
+    t match{
+      case Right(tt) =>
+        val r = wellFormedChecker.isWellFormed(tt)
+        println(wellFormedChecker.errorCollector.errors)
+        assert(r)
+      case _ => fail("parsing error")
+    }
+  }
+
   "WF for ST" must "fail 2" in {
     val t = ObSecParser.parseSType("{ot y {f : Int<Int -> Int<Int}{g : String<Int -> Int<Int}}<{ot x {f : Int<Int -> Int<Int}}")
     t match{

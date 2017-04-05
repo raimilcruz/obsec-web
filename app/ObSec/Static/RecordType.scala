@@ -7,6 +7,7 @@ import ObSec.Ast.{MType, MethodDeclaration, Type}
   * Internal record type (used when a object recursive type is unfolded
   */
 case class RecordType(methods: List[MethodDeclaration]) extends Type {
+  override def toString: String =  s"{${methods.map(x=>x.toString).fold("")((x:String,y:String)=> x+y).toString()}}"
   override def methSig(x: String): MType = throw new NotImplementedError("Not important")
   override def containsMethod(x: String): Boolean = throw new NotImplementedError("Not important")
 }

@@ -143,8 +143,18 @@ class ParserSpec extends FlatSpec with Matchers {
   "parse" should "accept extended identifier in method names in types" in {
     var t = ObSecParser.parseType("{ot x {== : String<String -> Bool<Bool }}")
     t match{
-      case Right(tt) => ObjType(TypeVar("x"),List(MethodDeclaration("==",
-        MType(List(SType(StringType,StringType)),SType(StringType,StringType)))))
+      case Right(tt) =>
+        assert(tt == ObjType(TypeVar("x"),List(MethodDeclaration("==",
+        MType(List(SType(StringType,StringType)),SType(BooleanType,BooleanType))))))
+      case Left(error) => fail(s"parse error: ${error.msg}")
+    }
+  }
+  "parse" should "work with this" in {
+    var t = ObSecParser.parseSType("String<{ot x {== : String<String -> Bool<Bool }}")
+    t match{
+      case Right(tt) =>
+        assert(tt == SType(StringType,ObjType(TypeVar("x"),List(MethodDeclaration("==",
+        MType(List(SType(StringType,StringType)),SType(BooleanType,BooleanType)))))))
       case Left(error) => fail(s"parse error: ${error.msg}")
     }
   }
