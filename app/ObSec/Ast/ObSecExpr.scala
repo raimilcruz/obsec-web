@@ -59,7 +59,7 @@ package ObSec.Ast
   case class MethodInv(e1: ObSecExpr, args: List[ObSecExpr], method: String) extends ObSecExpr {
     def map[T](f: ObSecExpr => ObSecExpr) = new MethodInv(f(e1), args.map(f), method)
 
-    override def toString: String = s"${e1}.$method(${if(args.size==0)"" else args(0) + args.drop(1).foldLeft("")((acc,x)=> acc+","+ x)})"
+    //override def toString: String = s"${e1}.$method(${if(args.size==0)"" else args(0) + args.drop(1).foldLeft("")((acc,x)=> acc+","+ x)})"
   }
 
   /**

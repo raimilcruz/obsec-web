@@ -13,7 +13,10 @@ class TypeChecker () {
   val subTypingAlgorithm = new AmadioCardelliSubtyping()
   val wfChecker = new WellFormedChecker(new ErrorCollector)
 
-  def typeCheck(x: ObSecExpr) = internalTypeCheck(new Scope, x)
+  def typeCheck(x: ObSecExpr):SType = internalTypeCheck(new Scope, x)
+
+  def typeCheck(scope: Scope[SType], expr: ObSecExpr): SType = internalTypeCheck(scope,expr)
+
 
 
 

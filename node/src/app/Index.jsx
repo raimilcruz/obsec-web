@@ -61,14 +61,30 @@ const examples = [
     {
         value: 1,
         text: "Introducing type-based declassification policies: Password policy",
-        program: replaceCurlyBracket("@;z : @;ot X @;login : String<String String<String -> Int<Int#;#;<{ot x} => @;login password guess = if password.==(guess) then 1 else 0#;#;.login(\"qwe123\",\"qwe123\")"),
-        desc: "This is the first example of the paper."
+        program: replaceCurlyBracket("@;z : @;ot X @;login : String<L String<L -> Int<L#;#;<{ot x} => @;login password guess = if password.==(guess) then 1 else 0#;#;.login(\"qwe123\",\"qwe123\")"),
+        desc: "This is the first example of the paper. The login method receive two argument the 'secret' password " +
+        "and the user guess. The 'password' argument has a declassification policy that allow to release the result " +
+        "of the == comparison. The body of the 'login' method adheres to that policy, so the resulting integer is public."
     },
     {
         value: 2,
-        text: "Another simple example",
-        program: "2.+(3)",
-        desc: "A descrption about the example will added soon!"
+        text: "Password policy is full secret now",
+        program: replaceCurlyBracket("@;z : @;ot X @;login : String<H String<L -> Int<L#;#;<{ot x} => @;login password guess = if password.==(guess) then 1 else 0#;#;.login(\"qwe123\",\"qwe123\")"),
+        desc: "This example differs from the first one in that the first argument of the login method (i.e. the real password) is full secret." +
+        "In this case the implementation of the login does not adhere to the policy of password because it is" +
+        "using the == method that is not in the public facet, so the resulting type of the login method body is" +
+        "a secret integer. Hence the method implementation result type does not meet the method signature resulting type, deriving in a type error. " +
+        "Fell free to change the login method signature return type to Int\<H  to see the result ;-)"
+    },
+    {
+        value: 3,
+        text: "Password policy with hash and eq",
+        program: replaceCurlyBracket("@;z : @;ot X @;login : String<H String<L -> Int<L#;#;<{ot x} => @;login password guess = if password.==(guess) then 1 else 0#;#;.login(\"qwe123\",\"qwe123\")"),
+        desc: "This example differs from the first one in that the first argument of the login method (i.e. the real password) is full secret." +
+        "In this case the implementation of the login does not adhere to the policy of password because it is" +
+        "using the == method that is not in the public facet, so the resulting type of the login method body is" +
+        "a secret integer. Hence the method implementation result type does not meet the method signature resulting type, deriving in a type error. " +
+        "Fell free to change the login method signature return type to Int\<H  to see the result ;-)"
     }
 ]
 const examplesItems = examples.map((e) => {

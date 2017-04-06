@@ -41,6 +41,7 @@ package ObSec.Runtime {
       m match {
         case "length" => RuntimeInt(v.length)
         case "==" => RuntimeBoolean(v == args(0).asInstanceOf[RuntimeStr].v)
+        case "hash" => RuntimeInt(v.hashCode)
         case _ => throw new StuckError()
       }
     }

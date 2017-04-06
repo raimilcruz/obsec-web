@@ -215,4 +215,13 @@ class TypeCheckerSpec extends FlatSpec {
       case _ => fail("parsing error")
     }
   }
+
+  "password policy with hash and eq" must "work" in{
+    var expr = ObSecParser("{z : \n{ot X {login : \n String<\n {ot x {hash : -> Int<{ot z {== : Int<Int -> Int<Int}}}} String<L -> Int<L}}<{ot x} => {login password guess = if password.hash().==(guess) then 1 else 0}}.login(\"qwe123\",\"qwe123\")")
+    expr match {
+      case Right(ast)=>
+        assert(TypeChecker(ast) == SType(IntType,IntType))
+      case _ => fail("parsing error")
+    }
+  }
 }
