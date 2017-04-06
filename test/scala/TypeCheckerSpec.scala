@@ -217,10 +217,24 @@ class TypeCheckerSpec extends FlatSpec {
   }
 
   "password policy with hash and eq" must "work" in{
-    var expr = ObSecParser("{z : \n{ot X {login : \n String<\n {ot x {hash : -> Int<{ot z {== : Int<Int -> Int<Int}}}} String<L -> Int<L}}<{ot x} => {login password guess = if password.hash().==(guess) then 1 else 0}}.login(\"qwe123\",\"qwe123\")")
+    var expr = ObSecParser("{z : \n{ot X {login : \n String<\n {ot x {hash : -> Int<{ot z {== : Int<Int -> Bool<L}}}} String<L -> Int<L}}<L => {login password guess = if password.hash().==(guess) then 1 else 0}}.login(\"qwe123\",\"qwe123\")")
     expr match {
       case Right(ast)=>
         assert(TypeChecker(ast) == SType(IntType,IntType))
+      case _ => fail("parsing error")
+    }
+  }
+
+  "method chain " must "work" in{
+    var expr = ObSecParser("password.hash().==(\"\")")
+    var typeT = ObSecParser.parseSType("String<{ot x {hash : -> Int<{ot z {== : Int<Int -> Bool<Bool}}}}")
+
+    var typeChecker = new TypeChecker
+    (expr,typeT) match {
+      case (Right(ast),Right(st))=>
+        val scope = new NestedScope[SType](new Scope)
+        scope.add("password",st)
+        assert(typeChecker.typeCheck(scope,ast) == SType(BooleanType,BooleanType))
       case _ => fail("parsing error")
     }
   }

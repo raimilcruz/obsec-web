@@ -142,6 +142,25 @@ case object BooleanType extends Type with PrimType {
 
 }
 
+case object StringListType extends Type with PrimType{
+  override def methSig(x: String): MType = x match{
+    case "isEmpty" => MType(List(),SType(BooleanType,BooleanType))
+    case "head" => MType(List(),SType(StringType,StringType))
+    case "tail" => MType(List(),SType(StringListType,StringListType))
+  }
+
+  override def containsMethod(x: String): Boolean = x match {
+    case "isEmpty" | "head" | "tail" => true
+    case _ => false
+  }
+
+  override def toObjType: ObjType = ObjType(TypeVar("x"),
+    List(MethodDeclaration("isEmpty",MType(List(),SType(BooleanType,BooleanType))),
+      MethodDeclaration("head",MType(List(),SType(StringType,StringType))),
+      MethodDeclaration("tail",MType(List(),SType(TypeVar("x"),TypeVar("x"))))
+    ))
+}
+
 
 sealed trait LabelType extends Type {
   override def methSig(x: String): MType = throw new Error("It does not sense")

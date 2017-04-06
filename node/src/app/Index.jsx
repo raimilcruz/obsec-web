@@ -79,12 +79,17 @@ const examples = [
     {
         value: 3,
         text: "Password policy with hash and eq",
-        program: replaceCurlyBracket("@;z : @;ot X @;login : String<H String<L -> Int<L#;#;<{ot x} => @;login password guess = if password.==(guess) then 1 else 0#;#;.login(\"qwe123\",\"qwe123\")"),
-        desc: "This example differs from the first one in that the first argument of the login method (i.e. the real password) is full secret." +
-        "In this case the implementation of the login does not adhere to the policy of password because it is" +
-        "using the == method that is not in the public facet, so the resulting type of the login method body is" +
-        "a secret integer. Hence the method implementation result type does not meet the method signature resulting type, deriving in a type error. " +
-        "Fell free to change the login method signature return type to Int\<H  to see the result ;-)"
+        program: "{z : {ot X {login : String<   {ot x {hash : -> Int<{ot z {== : Int<Int -> Bool<L}}}} String<L -> Int<L}}<L => {login password guess = if password.hash().==(guess) then 1 else 0}}.login(\"qwe123\",\"qwe123\")",
+        desc: "The password policy now has two steps: 1) hash de password, then 2) allows comparison with a public string"
+    },
+    {
+        value : 4,
+        text:"Recursive declassification over list",
+        program: "",
+        desc: "Recursive declassification policies are desirable to express interesting declassification of "+
+        "either inductive data structures or object interfaces (whose essence are recursive types). Consider for instance a secret list of strings, for which we want to allow traversal of the "+
+        "structure and comparison of its elements with a given string. This can be captured by the " +
+        "recursive type StrEqList defined as: \n a"
     }
 ]
 const examplesItems = examples.map((e) => {
@@ -126,7 +131,7 @@ export default class Main extends React.Component {
     onChangeProgram = (e, v) => {
         //this.guessPlusSymbol(v);
         this.setState({
-            program: v.replace("\\", "λ").replace("&", "∧").replace("|", "∨"),
+            program: v,//v.replace("\\", "λ").replace("&", "∧").replace("|", "∨"),
             typingState: 0
         })
     }

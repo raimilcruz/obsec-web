@@ -31,6 +31,7 @@ class TypeChecker () {
       //facet analysis
       if(s1.privateType.containsMethod(m)){
         var mType = s1.privateType.methSig(m)
+        println(s"Method type : ${mType}")
         if(s1.publicType.containsMethod(m)){
           mType = s1.publicType.methSig(m)
         }
