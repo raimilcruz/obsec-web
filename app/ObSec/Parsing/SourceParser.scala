@@ -13,7 +13,7 @@ import scala.util.parsing.combinator.{JavaTokenParsers, PackratParsers}
 object ObSecParser extends JavaTokenParsers with PackratParsers with DebugPackratParsers{
 
   val reserved: PackratParser[String] =
-  {"if" | "then" | "else" | "true" | "false" | "Ref" | "Unit | ot | Int | String | Boolean | L | H"}
+  {"if" | "then" | "else" | "true" | "false" | "Ref" | "Unit | ot | Int | String | Boolean | L | H" | "let" |"in" }
 
   lazy val identifier: PackratParser[String] = not(reserved) ~> ident ^^ { str => str}
 
@@ -43,6 +43,9 @@ object ObSecParser extends JavaTokenParsers with PackratParsers with DebugPackra
   def STRING = "String"
   def BOOLEAN = "Bool"
 
+  def LET ="let"
+  def IN ="in"
+
   def LOW ="L"
   def HIGH ="H"
 
@@ -54,8 +57,15 @@ object ObSecParser extends JavaTokenParsers with PackratParsers with DebugPackra
 
   def  program: PackratParser[ObSecExpr] = new Wrap("program",phrase(expr))
   lazy val expr : PackratParser[ObSecExpr] = {
-    valExpr |||  varExpr ||| methodInvExpr | ifThenElse
+    valExpr |||  varExpr ||| methodInvExpr | ifThenElse | letStarExpr
   }
+
+  lazy val letStarExpr :PackratParser[ObSecExpr] =
+    ((LET ~ LEFTBRACKET )~> rep(localDecl)) ~ ((RIGHTBRACKET ~ IN) ~> expr) ^^ {case decls ~ expr => LetStarExpr(decls,expr)}
+
+  lazy val localDecl : PackratParser[LocalDeclaration] =
+    ((identifier <~ EQUALSSIGN) ~ expr) ^^ {case id ~ expr => LocalDeclaration(id,expr)}
+
 
   lazy val valExpr : PackratParser[ObSecExpr] = objectExpr | primVal
 

@@ -2,7 +2,7 @@
 
 import ObSec.Ast._
 import ObSec.Parsing.ObSecParser
-import ObSec.Runtime.{Interpreter, RuntimeInt}
+import ObSec.Runtime.{Interpreter, RuntimeBoolean, RuntimeInt}
 import org.scalatest._
 
 
@@ -104,6 +104,22 @@ class RuntimeSpec extends FlatSpec with Matchers with GivenWhenThen {
         val res2 = interpreter.eval(ast2)
         assert(res2.asInstanceOf[RuntimeInt].v == 0)
       case (Left(error),_) => fail(s"We expected an ast $error")
+    }
+  }
+  "let expr" should "work with one declaration" in {
+    var expr = ObSecParser("let {s = \"abc\"} in s.==(\"\")")
+    expr match {
+      case Right(ast)=>
+        assert(interpreter.eval(ast) == RuntimeBoolean(false))
+      case _ => fail("parsing error")
+    }
+  }
+  "let expr" should "work with three declaration" in {
+    var expr = ObSecParser("let {s = \"abc\" s2 = \"124\" res = s.==(s2)} in if res then 1 else 2")
+    expr match {
+      case Right(ast)=>
+        assert(interpreter.eval(ast) == RuntimeInt(2))
+      case _ => fail("parsing error")
     }
   }
 }

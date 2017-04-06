@@ -92,26 +92,17 @@ class TypeChecker () {
         SType(sE1.privateType,ObjType.top)
       else sE1
     }
+    case LetStarExpr(declarations,body) =>
+      val letScope = new NestedScope[SType](scope)
+      declarations.foreach(d => letScope.add(d.variable,internalTypeCheck(letScope,d.rExpr)))
+      internalTypeCheck(letScope,body)
   }
 
-  //TODO: Finish the inner recursion
-  def removeLabelShortcut(stype: SType): SType = stype match {
-    case SType(x,LowLabel) => SType(x,x)
-    case SType(x,HighLabel)=> SType(x,ObjType.top)
-    case x => x
-  }
-
-  //TODO: Finish the inner recursion
-  def removeLabelShortcutFromExpr(x: ObSecExpr) = x match {
-    case Obj(self,stype,methods)=> Obj(self,removeLabelShortcut(stype),methods)
-    case x =>x
-  }
 }
 object TypeChecker{
   def apply(x: ObSecExpr) = {
     val tp = new TypeChecker()
-    val expr = tp.removeLabelShortcutFromExpr(x)
-    tp.typeCheck(expr)
+    tp.typeCheck(x)
   }
 }
 

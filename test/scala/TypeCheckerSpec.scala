@@ -156,11 +156,21 @@ class TypeCheckerSpec extends FlatSpec {
   }
 
 
-  "recursive type in deep" must "work 1" in {
+  "recursive type in deep" must "fail 11" in {
     var expr = ObSecParser("{z : {ot x {add : x<x -> x<x}}<{ot x} => {add x = z}}")
     expr match {
       case Right(ast)=>
+        intercept[TypeError] {
           TypeChecker(ast)
+        }
+      case _ => fail("parsing error")
+    }
+  }
+  "recursive type in deep" must "work 11" in {
+    var expr = ObSecParser("{z : {ot x {add : x<x -> x<x}}<L => {add x = z}}")
+    expr match {
+      case Right(ast)=>
+        TypeChecker(ast)
       case _ => fail("parsing error")
     }
   }
@@ -181,4 +191,28 @@ class TypeCheckerSpec extends FlatSpec {
     }
   }
 
+  "let expr" should "work with non declaration" in {
+    var expr = ObSecParser("let {} in 1.+(2)")
+    expr match {
+      case Right(ast)=>
+         assert(TypeChecker(ast) == SType(IntType,IntType))
+      case _ => fail("parsing error")
+    }
+  }
+  "let expr" should "work with one declaration" in {
+    var expr = ObSecParser("let {s = \"abc\"} in s.==(\"\")")
+    expr match {
+      case Right(ast)=>
+        assert(TypeChecker(ast) == SType(BooleanType,BooleanType))
+      case _ => fail("parsing error")
+    }
+  }
+  "let expr" should "work with three declaration" in {
+    var expr = ObSecParser("let {s = \"abc\" s2 = \"124\" res = s.==(s2)} in if res then 1 else 2")
+    expr match {
+      case Right(ast)=>
+        assert(TypeChecker(ast) == SType(IntType,IntType))
+      case _ => fail("parsing error")
+    }
+  }
 }

@@ -158,4 +158,20 @@ class ParserSpec extends FlatSpec with Matchers {
       case Left(error) => fail(s"parse error: ${error.msg}")
     }
   }
+  "let star" should "work with empty declarations" in {
+    var t = ObSecParser("let{}in 1")
+    t match{
+      case Right(tt) =>
+        assert(tt == LetStarExpr(List(),IntExpr(1)))
+      case Left(error) => fail(s"parse error: ${error.msg}")
+    }
+  }
+  "let star" should "work with non empty declarations" in {
+    var t = ObSecParser("let{ x = 1 y = 2}in 1")
+    t match{
+      case Right(tt) =>
+        assert(tt == LetStarExpr(List(LocalDeclaration("x",IntExpr(1)),LocalDeclaration("y",IntExpr(2))),IntExpr(1)))
+      case Left(error) => fail(s"parse error: ${error.msg}")
+    }
+  }
 }
