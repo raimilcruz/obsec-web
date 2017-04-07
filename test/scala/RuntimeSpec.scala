@@ -2,7 +2,8 @@
 
 import ObSec.Ast._
 import ObSec.Parsing.ObSecParser
-import ObSec.Runtime.{Interpreter, RuntimeBoolean, RuntimeInt}
+import ObSec.Runtime._
+import ObSec.Static.TypeChecker
 import org.scalatest._
 
 
@@ -119,6 +120,47 @@ class RuntimeSpec extends FlatSpec with Matchers with GivenWhenThen {
     expr match {
       case Right(ast)=>
         assert(interpreter.eval(ast) == RuntimeInt(2))
+      case _ => fail("parsing error")
+    }
+  }
+  "List constructor" should "work" in{
+    var expr = ObSecParser("mklist(\"abc\")")
+    expr match {
+      case Right(ast)=>
+        assert(interpreter.eval(ast) == RuntimeStrList(List(RuntimeStr("abc"))))
+      case _ => fail("parsing error")
+    }
+  }
+  "List isEmpty" should "work" in{
+    var expr = ObSecParser("mklist(\"abc\").isEmpty()")
+    expr match {
+      case Right(ast)=>
+        assert(interpreter.eval(ast) == RuntimeBoolean(false))
+      case _ => fail("parsing error")
+    }
+  }
+
+  "List head" should "work" in{
+    var expr = ObSecParser("mklist(\"abc\").head()")
+    expr match {
+      case Right(ast)=>
+        assert(interpreter.eval(ast) == RuntimeStr("abc"))
+      case _ => fail("parsing error")
+    }
+  }
+  "List tail" should "work" in{
+    var expr = ObSecParser("mklist(\"abc\").tail()")
+    expr match {
+      case Right(ast)=>
+        assert(interpreter.eval(ast) == RuntimeStrList(List()))
+      case _ => fail("parsing error")
+    }
+  }
+  "Use case of list" should "work" in{
+    var expr = ObSecParser("{z : \n{ot X {contains : StrList<L -> Bool<L}}<L => \n{contains myList  = if myList.isEmpty() then false else if myList.head().==(\"a\") then true else z.contains(myList.tail()) }}.contains(mklist(\"b\",\"c\",\"a\"))")
+    expr match {
+      case Right(ast)=>
+        assert(interpreter.eval(ast) == RuntimeBoolean(true))
       case _ => fail("parsing error")
     }
   }

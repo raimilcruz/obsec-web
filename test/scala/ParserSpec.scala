@@ -174,4 +174,24 @@ class ParserSpec extends FlatSpec with Matchers {
       case Left(error) => fail(s"parse error: ${error.msg}")
     }
   }
+
+  /**
+    * StringList tests
+    */
+  "Parser" should "recognize StringList" in{
+    var t = ObSecParser.parseType("StrList")
+    t match{
+      case Right(tt) =>
+        assert(tt == StringListType)
+      case Left(error) => fail(s"parse error: ${error.msg}")
+    }
+  }
+  "Parser" should "recognize list constructor" in{
+    var t = ObSecParser("mklist(\"abc\")")
+    t match{
+      case Right(tt) =>
+        assert(tt == ListConstructorExpr(List(StringExpr("abc"))))
+      case Left(error) => fail(s"parse error: ${error.msg}")
+    }
+  }
 }

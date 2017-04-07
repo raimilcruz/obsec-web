@@ -85,7 +85,7 @@ const examples = [
     {
         value : 4,
         text:"Recursive declassification over list",
-        program: "",
+        program: "{z : {ot X {contains : StrList<L -> Bool<L}}<L => {contains myList  = if myList.isEmpty() then false else if myList.head().==(\"a\") then true else z.contains(myList.tail()) }}.contains(mklist(\"b\",\"c\",\"a\"))",
         desc: "Recursive declassification policies are desirable to express interesting declassification of "+
         "either inductive data structures or object interfaces (whose essence are recursive types). Consider for instance a secret list of strings, for which we want to allow traversal of the "+
         "structure and comparison of its elements with a given string. This can be captured by the " +
@@ -248,7 +248,7 @@ export default class Main extends React.Component {
                         <tr>
                             <td>T</td>
                             <td>::=</td>
-                            <td>Bool | Int | String | X | {this.lcb()}ot X M*{this.rcb()}</td>
+                            <td>Bool | Int | String | StrList | X | {this.lcb()}ot X M*{this.rcb()}</td>
                             <td>(Types)</td>
                         </tr>
                         <tr>
@@ -260,7 +260,7 @@ export default class Main extends React.Component {
                         <tr>
                             <td>t</td>
                             <td>::=</td>
-                            <td> o | x | t.m(t) | b | n | s | if t then t else t
+                            <td> o | x | t.m(t) | b | n | s | if t then t else t | mkList(t*)
                             </td>
                             <td>(Terms)</td>
                         </tr>

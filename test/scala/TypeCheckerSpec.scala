@@ -238,4 +238,46 @@ class TypeCheckerSpec extends FlatSpec {
       case _ => fail("parsing error")
     }
   }
+
+  "Method isEmpty on list" must "work" in{
+    var expr = ObSecParser("{z : {ot x {f : StrList<L -> Bool<L}}<L => {f l = l.isEmpty()}}")
+    var typeT = ObSecParser.parseSType("{ot x {f : StrList<L -> Bool<L}}<L")
+    var typeChecker = new TypeChecker
+    (expr,typeT) match {
+      case (Right(ast),Right(st))=>
+        val scope = new NestedScope[SType](new Scope)
+        assert(typeChecker.typeCheck(scope,ast) == st)
+      case _ => fail("parsing error")
+    }
+  }
+  "Method head on list" must "work" in{
+    var expr = ObSecParser("{z : {ot x {f : StrList<L -> String<L}}<L => {f l = l.head()}}")
+    var typeT = ObSecParser.parseSType("{ot x {f : StrList<L -> String<L}}<L")
+    var typeChecker = new TypeChecker
+    (expr,typeT) match {
+      case (Right(ast),Right(st))=>
+        val scope = new NestedScope[SType](new Scope)
+        assert(typeChecker.typeCheck(scope,ast) == st)
+      case _ => fail("parsing error")
+    }
+  }
+  "Method tail on list" must "work" in{
+    var expr = ObSecParser("{z : {ot x {f : StrList<L -> StrList<L}}<L => {f l = l.tail()}}")
+    var typeT = ObSecParser.parseSType("{ot x {f : StrList<L -> StrList<L}}<L")
+    var typeChecker = new TypeChecker
+    (expr,typeT) match {
+      case (Right(ast),Right(st))=>
+        val scope = new NestedScope[SType](new Scope)
+        assert(typeChecker.typeCheck(scope,ast) == st)
+      case _ => fail("parsing error")
+    }
+  }
+  "Use case of list" must "work" in {
+    var expr = ObSecParser("{z : \n{ot X {contains : StrList<L -> Bool<L}}<L => \n{contains myList  = if myList.isEmpty() then false else if myList.head().==(\"a\") then true else z.contains(myList.tail()) }}.contains(mklist(\"b\",\"c\",\"a\"))")
+    expr match {
+      case Right(ast)=>
+        assert(TypeChecker(ast) == SType(BooleanType,BooleanType))
+      case _ => fail("parsing error")
+    }
+  }
 }

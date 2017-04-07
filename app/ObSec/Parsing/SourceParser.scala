@@ -13,7 +13,7 @@ import scala.util.parsing.combinator.{JavaTokenParsers, PackratParsers}
 object ObSecParser extends JavaTokenParsers with PackratParsers with DebugPackratParsers{
 
   val reserved: PackratParser[String] =
-  {"if" | "then" | "else" | "true" | "false" | "Ref" | "Unit | ot | Int | String | Boolean | L | H" | "let" |"in" }
+  {"if" | "then" | "else" | "true" | "false" | "Ref" | "Unit | ot | Int | String | Boolean | L | H" | "let" |"in" | "mklist" }
 
   lazy val identifier: PackratParser[String] = not(reserved) ~> ident ^^ { str => str}
 
@@ -38,10 +38,12 @@ object ObSecParser extends JavaTokenParsers with PackratParsers with DebugPackra
   def IF = "if"
   def THEN = "then"
   def ELSE = "else"
+  def MKLIST = "mklist"
 
   def INT = "Int"
   def STRING = "String"
   def BOOLEAN = "Bool"
+  def STRLIST = "StrList"
 
   def LET ="let"
   def IN ="in"
@@ -57,8 +59,11 @@ object ObSecParser extends JavaTokenParsers with PackratParsers with DebugPackra
 
   def  program: PackratParser[ObSecExpr] = new Wrap("program",phrase(expr))
   lazy val expr : PackratParser[ObSecExpr] = {
-    valExpr |||  varExpr ||| methodInvExpr | ifThenElse | letStarExpr
+    valExpr |||  varExpr ||| methodInvExpr | ifThenElse | letStarExpr | mkListExpr
   }
+
+  lazy val mkListExpr :PackratParser[ObSecExpr] =
+    ((MKLIST ~ LEFTPAREN) ~> repsep(expr,",")) <~ RIGHTPAREN ^^ {case l => ListConstructorExpr(l)}
 
   lazy val letStarExpr :PackratParser[ObSecExpr] =
     ((LET ~ LEFTBRACKET )~> rep(localDecl)) ~ ((RIGHTBRACKET ~ IN) ~> expr) ^^ {case decls ~ expr => LetStarExpr(decls,expr)}
@@ -109,11 +114,12 @@ object ObSecParser extends JavaTokenParsers with PackratParsers with DebugPackra
     objType | lowLabel | highLabel | primType | varType
   }
   lazy val primType : PackratParser[Type] = {
-    intType | booleanType | stringType
+    intType | booleanType | stringListType | stringType
   }
   lazy val intType : PackratParser[Type] = INT ^^ {_=> IntType}
   lazy val stringType : PackratParser[Type] = STRING ^^ {_=> StringType}
   lazy val booleanType : PackratParser[Type] = BOOLEAN ^^ {_=> BooleanType}
+  lazy val stringListType : PackratParser[Type] = STRLIST ^^ {_=> StringListType}
 
 
   lazy val lowLabel : PackratParser[Type]= LOW ^^ {_ => LowLabel}

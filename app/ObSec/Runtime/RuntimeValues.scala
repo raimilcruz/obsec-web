@@ -55,5 +55,13 @@ package ObSec.Runtime {
 
     override def toString: String = v.toString
   }
+  case class RuntimeStrList(l: List[RuntimeStr]) extends  RuntimeValue{
+    override def invoke(m: String, args: List[RuntimeValue], eval: Evaluator): RuntimeValue = m match {
+      case "isEmpty" =>  RuntimeBoolean(l.isEmpty)
+      case "head" => RuntimeStr(l.head.v)
+      case "tail" => RuntimeStrList(l.tail)
+      case _ => throw new Error("Stuck")
+    }
+  }
 
 }

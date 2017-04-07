@@ -100,6 +100,10 @@ class TypeChecker () {
       val letScope = new NestedScope[SType](scope)
       declarations.foreach(d => letScope.add(d.variable,internalTypeCheck(letScope,d.rExpr)))
       internalTypeCheck(letScope,body)
+    case ListConstructorExpr(elems) =>
+      if(!elems.forall(e=> subTypingAlgorithm.<::(internalTypeCheck(scope,e),SType(StringType,StringType))))
+        throw TypeError("Elements of a list must be of type String<String")
+      SType(StringListType,StringListType)
   }
 
 }

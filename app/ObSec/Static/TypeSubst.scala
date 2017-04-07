@@ -7,9 +7,7 @@ import ObSec.Ast._
   */
 object TypeSubst {
   def subst(t: Type, x: String, t2: Type): Type = t match {
-    case IntType => IntType
-    case StringType => StringType
-    case BooleanType => BooleanType
+    case p:PrimType => p
     case TypeVar(y: String) => if (x == y) t2 else t
     case RecordType(methods) =>
       RecordType(methods.map(m => MethodDeclaration(m.name,

@@ -7,14 +7,31 @@ import ObSec.Runtime.{EmptyEnvironment, Environment}
   * Created by racruz on 31-03-2017.
   */
 class WellFormedChecker(val errorCollector : ErrorCollector) {
-  def isWellFormed(stype: SType) = {
-    val sb = new AmadioCardelliSubtyping
-    isClosed(stype) && (sb.<::(stype.privateType,stype.publicType) ||
-      {
-        errorCollector.report(s"Private facet must be subtype of public facet in security type: ${stype}")
-        false
-      })
+  val sb = new AmadioCardelliSubtyping
+  def isWellFormed(stype: SType):Boolean = {
+    isClosed(stype) && isWellFormed(Environment.empty[ObjType](),stype)
   }
+  def isWellFormed(t:Type):Boolean =  isWellFormed(Environment.empty[ObjType](),t)
+
+  private def isWellFormed(env: Environment[ObjType], t:Type):Boolean = t match{
+    case p:PrimType => true
+    case TypeVar(x) =>  true
+    case obj@ObjType(x,methods)=>
+      val newEnv = Environment.extend(env,x.name,obj)
+      methods.forall(m => m.mtype.domain.forall(s=> isWellFormed(env,s)) && isWellFormed(env,m.mtype.codomain))
+  }
+
+  def closeType(env: Environment[ObjType],t: Type, ):Type =
+    if(env.isEmpty) t
+    else throw new NotImplementedError("Finish!")
+
+  private def isWellFormed(env: Environment[ObjType], s:SType):Boolean =
+    isWellFormed(env,s.privateType)&&isWellFormed(env,s.publicType)&&
+      sb.<::(closeType(env,s.privateType),closeType(env,s.publicType)) ||
+    {
+      errorCollector.report(s"Private facet must be subtype of public facet in security type: ${s}")
+      false
+    }
 
   def isClosed(s: SType): Boolean = isSClosed(Environment.empty[Boolean](), s)
 

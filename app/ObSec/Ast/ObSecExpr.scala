@@ -85,6 +85,7 @@ sealed trait SurfaceValExpr extends ObSecExpr
 case class IntExpr(v: Int) extends SurfaceValExpr
 case class StringExpr(v:String) extends SurfaceValExpr
 case class BooleanExpr(v:Boolean) extends SurfaceValExpr
+case class ListConstructorExpr(elems: List[ObSecExpr]) extends ObSecExpr
 
 case class LetStarExpr(declarations: List[LocalDeclaration],body:ObSecExpr) extends ObSecExpr
 
