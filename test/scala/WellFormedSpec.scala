@@ -48,6 +48,16 @@ class WellFormedSpec extends FlatSpec{
       case _ => fail("parsing error")
     }
   }
+  "WF for ST" must "work type variables" in {
+    val t = ObSecParser.parseSType("{ot x {add : -> x<x}}<L")
+    t match{
+      case Right(tt) =>
+        val r = wellFormedChecker.isWellFormed(tt)
+        println(wellFormedChecker.errorCollector.errors)
+        assert(r)
+      case _ => fail("parsing error")
+    }
+  }
 
 
   "WF for ST" must "fail 2" in {
@@ -71,6 +81,8 @@ class WellFormedSpec extends FlatSpec{
       case Right(tt) => assert(wellFormedChecker.isWellFormed(tt))
       case _ => fail("parsing error")
     }
+    "let{\nlistTool = {z : {ot X \n                    {contains : StrList<{ot y \n                                            {isEmpty: -> Bool<L}\n                                            {head: -> String<L}\n                                            {tail: -> StrList<y}\n                                \n                                } -> Bool<L}\n                }<L \n                => \n                {contains myList  = \n                    if myList.isEmpty() \n                    then false \n                    else \n                        if myList.head().==(\"a\") \n                        then true \n                        else z.contains(myList.tail())\n                    \n                }\n            }\n} \nin\nlistTool.contains(mklist(\"b\",\"c\",\"a\"))"
+
   }
 
 }

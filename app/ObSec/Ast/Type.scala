@@ -138,7 +138,7 @@ case object BooleanType extends Type with PrimType {
 
   override def toString: String = "Bool"
 
-  override def toObjType(): ObjType = ObjType(TypeVar("x"), List())
+  override def toObjType(): ObjType = ObjType(TypeVar("x"), List(MethodDeclaration("$notarealmethod$",MType(List(),SType(TypeVar("x"),TypeVar("x"))))))
 
 }
 

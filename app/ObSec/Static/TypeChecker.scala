@@ -28,6 +28,7 @@ class TypeChecker () {
     case MethodInv(e1, args, m) => {
       val s1 = internalTypeCheck(scope, e1)
       val argTypes =  args.map(param=> internalTypeCheck(scope,param))
+      println(s"Args: ${argTypes}")
       //facet analysis
       if(s1.privateType.containsMethod(m)){
         var mType = s1.privateType.methSig(m)
@@ -119,7 +120,7 @@ object TypeChecker{
 
 
 class Scope[T] {
-   def lookup(x: String): T  = throw new Error("Not variable in Scope")
+   def lookup(x: String): T  = throw new Error(s"Variable ${x} in Scope")
 
   def contains(x: String) = false
 

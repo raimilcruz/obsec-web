@@ -16,6 +16,14 @@ class SubtypingSpec extends FlatSpec {
       subtyping.<::(BooleanType, BooleanType) &&
       subtyping.<::(StringType, StringType))
   }
+
+  "Subtyping is not dummy" must "with primitive types" in {
+    var subtyping = new AmadioCardelliSubtyping
+    assert(!subtyping.<::(StringType, IntType) &&
+      !subtyping.<::(StringType, BooleanType) &&
+      !subtyping.<::(IntType, StringType))
+  }
+
   "Subtyping for security type" must "work" in {
     var subtyping = new AmadioCardelliSubtyping
     assert(subtyping.<::(SType(IntType, IntType), SType(IntType, IntType)))
@@ -147,7 +155,16 @@ class SubtypingSpec extends FlatSpec {
   }
   "Subtyping specification for StrList" must "work" in {
     var subtyping = new AmadioCardelliSubtyping
-    val t1 = ObSecParser.parseType("{ot l {isEmpty : -> Bool<L}{head : -> Bool<L}{tail : -> l<l}}")
+    val t1 = ObSecParser.parseType("{ot l {isEmpty : -> Bool<L}{head : -> String<L}{tail : -> l<l}}")
+    val t2 = ObSecParser.parseType("StrList")
+    (t1, t2) match {
+      case (Right(t11), Right(t22)) => assert(subtyping.<::(t11, t22)&&subtyping.<::(t22, t11))
+      case (_, _) => fail("types are not recognized!!")
+    }
+  }
+  "Subtyping list policy " must "work" in {
+    var subtyping = new AmadioCardelliSubtyping
+    val t1 = ObSecParser.parseType("{ot l {isEmpty : -> Bool<L}{head : -> String<L}{tail : -> l<l}}")
     val t2 = ObSecParser.parseType("StrList")
     (t1, t2) match {
       case (Right(t11), Right(t22)) => assert(subtyping.<::(t11, t22)&&subtyping.<::(t22, t11))

@@ -217,7 +217,7 @@ class TypeCheckerSpec extends FlatSpec {
   }
 
   "password policy with hash and eq" must "work" in{
-    var expr = ObSecParser("{z : \n{ot X {login : \n String<\n {ot x {hash : -> Int<{ot z {== : Int<Int -> Bool<L}}}} String<L -> Int<L}}<L => {login password guess = if password.hash().==(guess) then 1 else 0}}.login(\"qwe123\",\"qwe123\")")
+    var expr = ObSecParser("{z : \n{ot X {login : \n String<\n {ot x {hash : -> Int<{ot z {== : Int<Int -> Bool<L}}}} Int<L -> Int<L}}<L => {login password guess = if password.hash().==(guess) then 1 else 0}}.login(\"qwe123\",123)")
     expr match {
       case Right(ast)=>
         assert(TypeChecker(ast) == SType(IntType,IntType))
@@ -226,7 +226,7 @@ class TypeCheckerSpec extends FlatSpec {
   }
 
   "method chain " must "work" in{
-    var expr = ObSecParser("password.hash().==(\"\")")
+    var expr = ObSecParser("password.hash().==(1)")
     var typeT = ObSecParser.parseSType("String<{ot x {hash : -> Int<{ot z {== : Int<Int -> Bool<Bool}}}}")
 
     var typeChecker = new TypeChecker
@@ -235,6 +235,16 @@ class TypeCheckerSpec extends FlatSpec {
         val scope = new NestedScope[SType](new Scope)
         scope.add("password",st)
         assert(typeChecker.typeCheck(scope,ast) == SType(BooleanType,BooleanType))
+      case _ => fail("parsing error")
+    }
+  }
+
+  "list constructor" must "work" in{
+    var expr = ObSecParser("mklist(\"123\")")
+    var typeChecker = new TypeChecker
+    expr match {
+      case Right(ast) =>
+        assert(typeChecker.typeCheck(ast) == SType(StringListType,StringListType))
       case _ => fail("parsing error")
     }
   }
@@ -280,4 +290,24 @@ class TypeCheckerSpec extends FlatSpec {
       case _ => fail("parsing error")
     }
   }
+  "Recursive downgrading policy for list" must "work" in {
+    var expr = ObSecParser("{z : {ot X {contains : StrList<{ot r {isEmpty : -> Bool<L}{head: -> String<{ot s {== : String<L -> Bool<L}}}{tail: -> StrList<r}} -> Bool<L}}<L => {contains myList  = if myList.isEmpty() then false else if myList.head().==(\"a\") then true else z.contains(myList.tail()) }}.contains(mklist(\"b\",\"c\",\"a\"))")
+    expr match {
+      case Right(ast)=>
+        assert(TypeChecker(ast) == SType(BooleanType,BooleanType))
+      case _ => fail("parsing error")
+    }
+  }
+
+  "Invalid arguments" must "fail" in {
+    var expr = ObSecParser("\"abc\".hash().==(\"abc\")")
+    expr match {
+      case Right(ast)=>
+        intercept[TypeError]{
+          TypeChecker(ast)
+        }
+      case _ => fail("parsing error")
+    }
+  }
+
 }

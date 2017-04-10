@@ -22,7 +22,7 @@ class AmadioCardelliSubtyping extends SubTypingAlgorithm {
 
   override def <::(t1: Type, t2: Type): Boolean =
     try {
-      innerSubType(Set(), t1, t2)
+      val res = innerSubType(Set(), t1, t2)
       true
     } catch {
       case x: SubtypingError => false
@@ -42,6 +42,7 @@ class AmadioCardelliSubtyping extends SubTypingAlgorithm {
       alreadySeen
     else {
       val newSet = alreadySeen + Tuple2(t1, t2)
+      println("In subtyping rules")
       (t1, t2) match {
         case (_, t) if TypeEquivalence.alphaEq(t, ObjType.top) => newSet
         //little optimization
@@ -62,10 +63,9 @@ class AmadioCardelliSubtyping extends SubTypingAlgorithm {
           set
         case (ot1@ObjType(_, _), _) => innerSubType(newSet, unfold(ot1), t2)
         case (_, ot2@ObjType(_, _)) => innerSubType(newSet, t1, unfold(ot2))
-        case (p1: PrimType, p2: PrimType) => newSet
+        case (p1: PrimType, p2: PrimType) => if(p1 == p2) newSet else innerSubType(newSet, p1.toObjType, p2.toObjType)
         case (_, p2: PrimType) => innerSubType(newSet, t1, p2.toObjType)
         case (p1: PrimType, _) => innerSubType(newSet, p1.toObjType, t2)
-        case (_, p2: PrimType) => innerSubType(newSet, t1, p2.toObjType)
         case _ => throw SubtypingError("Not!")
       }
     }

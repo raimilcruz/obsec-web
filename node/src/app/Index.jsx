@@ -23,7 +23,8 @@ import IconButton from 'material-ui/IconButton';
 import Dialog from 'material-ui/Dialog';
 import FlatButton from 'material-ui/FlatButton';
 import AceEditor from 'react-ace';
-
+import 'brace/mode/java';
+import 'brace/theme/github';
 
 class MyTextField extends React.Component {
     oldIdx = 0
@@ -61,7 +62,7 @@ const examples = [
     {
         value: 1,
         text: "Introducing type-based declassification policies: Password policy",
-        program: replaceCurlyBracket("@;z : @;ot X @;login : String<L String<L -> Int<L#;#;<{ot x} => @;login password guess = if password.==(guess) then 1 else 0#;#;.login(\"qwe123\",\"qwe123\")"),
+        program: "let{\nauth = {z : {ot X \n                {login : String<L String<L -> Int<L}}<L \n            => \n            {login password guess = if password.==(guess) then 1 else 0}}\n} in \nauth.login(\"qwe123\",\"qwe123\")",
         desc: "This is the first example of the paper. The login method receive two argument the 'secret' password " +
         "and the user guess. The 'password' argument has a declassification policy that allow to release the result " +
         "of the == comparison. The body of the 'login' method adheres to that policy, so the resulting integer is public."
@@ -69,7 +70,7 @@ const examples = [
     {
         value: 2,
         text: "Password policy is full secret now",
-        program: replaceCurlyBracket("@;z : @;ot X @;login : String<H String<L -> Int<L#;#;<{ot x} => @;login password guess = if password.==(guess) then 1 else 0#;#;.login(\"qwe123\",\"qwe123\")"),
+        program: "let{\nauth = {z : {ot X \n                {login : String<H String<L -> Int<L}}<L \n            => \n            {login password guess = if password.==(guess) then 1 else 0}}\n} in \nauth.login(\"qwe123\",\"qwe123\")",
         desc: "This example differs from the first one in that the first argument of the login method (i.e. the real password) is full secret." +
         "In this case the implementation of the login does not adhere to the policy of password because it is" +
         "using the == method that is not in the public facet, so the resulting type of the login method body is" +
@@ -79,17 +80,17 @@ const examples = [
     {
         value: 3,
         text: "Password policy with hash and eq",
-        program: "{z : {ot X {login : String<   {ot x {hash : -> Int<{ot z {== : Int<Int -> Bool<L}}}} String<L -> Int<L}}<L => {login password guess = if password.hash().==(guess) then 1 else 0}}.login(\"qwe123\",\"qwe123\")",
+        program: "let {\nauth = {z : {ot X \n                {login : String<{ot x \n                                    {hash : -> Int<{ot z \n                                                    {== : Int<Int -> Bool<L}}}} String<L -> Int<L}}<L \n        => \n            {login password guess = if password.hash().==(guess) then 1 else 0}}\n    \n} in\nauth.login(\"qwe123\",\"qwe123\")",
         desc: "The password policy now has two steps: 1) hash de password, then 2) allows comparison with a public string"
     },
     {
         value : 4,
         text:"Recursive declassification over list",
-        program: "{z : {ot X {contains : StrList<L -> Bool<L}}<L => {contains myList  = if myList.isEmpty() then false else if myList.head().==(\"a\") then true else z.contains(myList.tail()) }}.contains(mklist(\"b\",\"c\",\"a\"))",
+        program: "let{\nlistTool = {z : {ot X \n                    {contains : StrList<{ot y \n                                            {isEmpty: -> Bool<L}\n                                            {head: -> String<L}\n                                            {tail: -> StrList<y}\n                                \n                                } -> Bool<L}\n                }<L \n                => \n                {contains myList  = \n                    if myList.isEmpty() \n                    then false \n                    else \n                        if myList.head().==(\"a\") \n                        then true \n                        else z.contains(myList.tail())\n                    \n                }\n            }\n} \nin\nlistTool.contains(mklist(\"b\",\"c\",\"a\"))",
         desc: "Recursive declassification policies are desirable to express interesting declassification of "+
         "either inductive data structures or object interfaces (whose essence are recursive types). Consider for instance a secret list of strings, for which we want to allow traversal of the "+
         "structure and comparison of its elements with a given string. This can be captured by the " +
-        "recursive type StrEqList defined as: \n a"
+        "recursive type StrEqList defined as: \n a."
     }
 ]
 const examplesItems = examples.map((e) => {
@@ -128,7 +129,7 @@ export default class Main extends React.Component {
     guessPlusSymbol = (c) => {
         v.split("")
     }
-    onChangeProgram = (e, v) => {
+    onChangeProgram = (v) => {
         //this.guessPlusSymbol(v);
         this.setState({
             program: v,//v.replace("\\", "λ").replace("&", "∧").replace("|", "∨"),
@@ -260,7 +261,7 @@ export default class Main extends React.Component {
                         <tr>
                             <td>t</td>
                             <td>::=</td>
-                            <td> o | x | t.m(t) | b | n | s | if t then t else t | mkList(t*)
+                            <td> o | x | t.m(t) | b | n | s | if t then t else t | mkList(t*) | let {"{"} (x = t)* {"}"} in t
                             </td>
                             <td>(Terms)</td>
                         </tr>
@@ -303,8 +304,13 @@ export default class Main extends React.Component {
                     <div style={{color: "rgba(0, 0, 0, 0.541176)"}}>
                         {this.state.desc}
                     </div>
+
+                    <div>
+                        Program
+                    </div>
                     <div style={{position: 'relative'}}>
-                        <MyTextField floatingLabelText="Program"
+                        {
+                            /*<MyTextField floatingLabelText="Program"
                                      name="formula"
                                      value={this.state.program}
                                      multiLine={true}
@@ -314,9 +320,10 @@ export default class Main extends React.Component {
                                      errorText={this.state.error}
                                      onKeyDown={this.onKeyDown}
                                      ref={(c) => this._program = c}
-                        />
-                       {
-                           /* <AceEditor
+                        />*/
+                        }
+
+                           <AceEditor
                             name="formula"
                             value={this.state.program}
                             mode="java"
@@ -324,10 +331,11 @@ export default class Main extends React.Component {
                             width = "70%"
                             onChange={this.onChangeProgram}
                             minLines={5}
-                            maxLines={20}
+                            maxLines={30}
+                            onKeyDown={this.onKeyDown}
                             editorProps={{$blockScrolling: true}}
                         />
-                        */}
+
                         <IconButton tooltip="See syntax" onClick={this.syntaxHandleOpen}>
                             <HelpIcon />
                         </IconButton>

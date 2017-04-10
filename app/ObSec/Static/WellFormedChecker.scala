@@ -18,12 +18,15 @@ class WellFormedChecker(val errorCollector : ErrorCollector) {
     case TypeVar(x) =>  true
     case obj@ObjType(x,methods)=>
       val newEnv = Environment.extend(env,x.name,obj)
-      methods.forall(m => m.mtype.domain.forall(s=> isWellFormed(env,s)) && isWellFormed(env,m.mtype.codomain))
+      methods.forall(m => m.mtype.domain.forall(s=> isWellFormed(newEnv,s)) && isWellFormed(newEnv,m.mtype.codomain))
   }
 
-  def closeType(env: Environment[ObjType],t: Type, ):Type =
+  def closeType(env: Environment[ObjType],t: Type):Type =
     if(env.isEmpty) t
-    else throw new NotImplementedError("Finish!")
+    else {
+      val head= env.head
+      closeType(env.tail,TypeSubst.subst(t,head._1,head._2))
+    }
 
   private def isWellFormed(env: Environment[ObjType], s:SType):Boolean =
     isWellFormed(env,s.privateType)&&isWellFormed(env,s.publicType)&&

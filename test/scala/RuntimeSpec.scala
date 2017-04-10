@@ -164,4 +164,12 @@ class RuntimeSpec extends FlatSpec with Matchers with GivenWhenThen {
       case _ => fail("parsing error")
     }
   }
+  "Example: Program policy with hash and eq  " must "work" in {
+    var expr = ObSecParser("let {\nauth = {z : {ot X \n                {login : String<{ot x \n                                    {hash : -> Int<{ot z \n                                                    {== : Int<Int -> Bool<L}}}} String<L -> Int<L}}<L \n        => \n            {login password guess = if password.hash().==(guess) then 1 else 0}}\n    \n} in\nauth.login(\"qwe123\",\"qwe123\")")
+    expr match {
+      case Right(ast)=>
+        assert(interpreter.eval(ast) == RuntimeBoolean(true))
+      case _ => fail("parsing error")
+    }
+  }
 }
