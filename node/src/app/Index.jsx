@@ -6,9 +6,9 @@ import TextField from 'material-ui/TextField';
 import RaisedButton from 'material-ui/RaisedButton';
 import request from 'superagent';
 import Subheader from 'material-ui/Subheader';
+import Popover from 'material-ui/Popover';
 import LoadableContent from './components/LoadableContent';
 
-import DerivationTree from './DerivationTree';
 import ArrowDownward from 'material-ui/svg-icons/navigation/arrow-downward';
 import Toggle from 'material-ui/Toggle';
 
@@ -25,6 +25,8 @@ import FlatButton from 'material-ui/FlatButton';
 import AceEditor from 'react-ace';
 import 'brace/mode/java';
 import 'brace/theme/github';
+
+var Highlight = require('react-highlight');
 
 class MyTextField extends React.Component {
     oldIdx = 0
@@ -63,7 +65,7 @@ const examples = [
         value: 1,
         text: "Introducing type-based declassification policies: Password policy",
         program: "let{\nauth = {z : {ot X \n                {login : String<L String<L -> Int<L}}<L \n            => \n            {login password guess = if password.==(guess) then 1 else 0}}\n} in \nauth.login(\"qwe123\",\"qwe123\")",
-        desc: "This is the first example of the paper. The login method receive two argument the 'secret' password " +
+        desc: "This is the first example of the paper. The login method receives two arguments the 'secret' password " +
         "and the user guess. The 'password' argument has a declassification policy that allow to release the result " +
         "of the == comparison. The body of the 'login' method adheres to that policy, so the resulting integer is public."
     },
@@ -75,22 +77,25 @@ const examples = [
         "In this case the implementation of the login does not adhere to the policy of password because it is" +
         "using the == method that is not in the public facet, so the resulting type of the login method body is" +
         "a secret integer. Hence the method implementation result type does not meet the method signature resulting type, deriving in a type error. " +
-        "Fell free to change the login method signature return type to Int\<H  to see the result ;-)"
+        "Fell free to change the login method signature return type to Int\<H and then the program will be well-typed"
     },
     {
         value: 3,
         text: "Password policy with hash and eq",
         program: "let {\nauth = {z : {ot X \n                {login : String<{ot x \n                                    {hash : -> Int<{ot z \n                                                    {== : Int<Int -> Bool<L}}}} String<L -> Int<L}}<L \n        => \n            {login password guess = if password.hash().==(guess) then 1 else 0}}\n    \n} in\nauth.login(\"qwe123\",\"qwe123\")",
-        desc: "The password policy now has two steps: 1) hash de password, then 2) allows comparison with a public string"
+        desc: "The password policy now indicates that information about the password can be done be public by calling 1) the hash over the password, " +
+        " and then 2) to compare the result with a public string"
     },
     {
         value : 4,
         text:"Recursive declassification over list",
-        program: "let{\nlistTool = {z : {ot X \n                    {contains : StrList<{ot y \n                                            {isEmpty: -> Bool<L}\n                                            {head: -> String<L}\n                                            {tail: -> StrList<y}\n                                \n                                } -> Bool<L}\n                }<L \n                => \n                {contains myList  = \n                    if myList.isEmpty() \n                    then false \n                    else \n                        if myList.head().==(\"a\") \n                        then true \n                        else z.contains(myList.tail())\n                    \n                }\n            }\n} \nin\nlistTool.contains(mklist(\"b\",\"c\",\"a\"))",
+        program: "let{\nlistTool = {z : {ot X \n                    {contains : StrList<{ot y \n                                            {isEmpty: -> Bool<L}\n                                            {head: -> String<{ot y {== : String<L -> Bool<L}}}\n                                            {tail: -> StrList<y}\n                                \n                                } -> Bool<L}\n                }<L \n                => \n                {contains myList  = \n                    if myList.isEmpty() \n                    then false \n                    else \n                        if myList.head().==(\"a\") \n                        then true \n                        else z.contains(myList.tail())\n                    \n                }\n            }\n} \nin\nlistTool.contains(mklist(\"b\",\"c\",\"a\"))",
         desc: "Recursive declassification policies are desirable to express interesting declassification of "+
-        "either inductive data structures or object interfaces (whose essence are recursive types). Consider for instance a secret list of strings, for which we want to allow traversal of the "+
+        "either inductive data structures or object interfaces (whose essence are recursive types). Consider for instance a secret list" +
+        " of strings, for which we want to allow traversal of the "+
         "structure and comparison of its elements with a given string. This can be captured by the " +
-        "recursive type StrEqList defined as: \n a."
+        "recursive type of the public facet of the first argument of contains method. " +
+        "Note that the head method returns a String that only has the == operation public"
     }
 ]
 const examplesItems = examples.map((e) => {
@@ -109,7 +114,9 @@ export default class Main extends React.Component {
         typingState: 0,
         defaultProgram: 1,
         expressionType: "",
-        syntaxOpen: false
+        syntaxOpen: false,
+        typeDefinitionsOpen:null,
+        anchorEl:null
     }
 
     componentDidMount() {
@@ -143,7 +150,7 @@ export default class Main extends React.Component {
 
     changeDefaultProgram = (event, index, defaultProgram) => {
         let p = this.findProgramByValue(defaultProgram);
-        this.setState({defaultProgram, program: p.program, desc: p.desc})
+        this.setState({defaultProgram, program: p.program, desc: p.desc,typingState:0})
     };
 
     typecheck = () => {
@@ -212,6 +219,20 @@ export default class Main extends React.Component {
     syntaxHandleClose = () => {
         this.setState({syntaxOpen: false});
     };
+    handleTouchTap = (event,obSecType) => {
+        // This prevents ghost click.
+        event.preventDefault();
+
+        this.setState({
+            typeDefinitionsOpen: obSecType,
+            anchorEl: event.currentTarget,
+        });
+    };
+    handleRequestClose = () => {
+        this.setState({
+            typeDefinitionsOpen: null,
+        });
+    };
 
     lcb() {
         return '{'
@@ -225,8 +246,6 @@ export default class Main extends React.Component {
     render() {
         return (
             <Paper style={{padding: '8px'}}>
-
-
                 <Dialog
                     title="Syntax"
                     actions={[<FlatButton
@@ -249,7 +268,23 @@ export default class Main extends React.Component {
                         <tr>
                             <td>T</td>
                             <td>::=</td>
-                            <td>Bool | Int | String | StrList | X | {this.lcb()}ot X M*{this.rcb()}</td>
+                            <td>
+                                <RaisedButton
+                                    onTouchTap={(event)=> this.handleTouchTap(event,"Bool")}
+                                    label="Bool"
+                                /> |
+                                <RaisedButton
+                                    onTouchTap={(event)=> this.handleTouchTap(event,"Int")}
+                                    label="Int"
+                                /> |
+                                <RaisedButton
+                                    onTouchTap={(event)=> this.handleTouchTap(event,"String")}
+                                    label="String"
+                                /> |
+                                <RaisedButton
+                                    onTouchTap={(event)=> this.handleTouchTap(event,"StrList")}
+                                    label="StrList"
+                                /> | X | {this.lcb()}ot X M*{this.rcb()}</td>
                             <td>(Types)</td>
                         </tr>
                         <tr>
@@ -294,6 +329,39 @@ export default class Main extends React.Component {
                     </table>
                     <br/>
                 </Dialog>
+
+                <Popover
+                    open={this.state.typeDefinitionsOpen}
+                    anchorEl={this.state.anchorEl}
+                    anchorOrigin={{horizontal: 'left', vertical: 'bottom'}}
+                    targetOrigin={{horizontal: 'left', vertical: 'top'}}
+                    onRequestClose={this.handleRequestClose}
+                >
+                   <Highlight className="java">
+                       {
+                           this.state.typeDefinitionsOpen=="Int"?
+                           "{ot x \n" +
+                           "            {+ : Int<Int -> Int<Int}\n" +
+                           "            {- : Int<Int -> Int<Int}\n"+
+                           "            {== : Int<Int -> Bool<Bool}}"
+                           : (this.state.typeDefinitionsOpen=="Bool")?
+                           "{ot x {if : T<T T<T -> T<T}}"
+                           : (this.state.typeDefinitionsOpen=="String")?
+                           "{ot x \n" +
+                           "            {== : String<String -> Bool<Bool}\n" +
+                           "            {hash : -> Int<Int}\n"+
+                           "            {length : -> Int<Int}}"
+                           : (this.state.typeDefinitionsOpen=="StrList")?
+                           "{ot l \n" +
+                           "            {isEmpty : -> Bool<Bool}\n" +
+                           "            {head : -> String<String}\n"+
+                           "            {tail : -> l<l}}"
+                           :
+                            null
+                       }
+                   </Highlight>
+                </Popover>
+
 
 
                 <div className="form" style={{position: "relative"}}>
@@ -352,7 +420,7 @@ export default class Main extends React.Component {
                                         <Subheader>Expression Type</Subheader>
                                         <div> {this.state.expressionType}</div>
                                         <div style={{marginTop: '16px'}}>
-                                            <RaisedButton label="Reduce!" primary={true} onClick={this.reduce}/>
+                                            <RaisedButton label="Execute!" primary={true} onClick={this.reduce}/>
                                         </div>
                                         {
                                             this.state.executionState !== 0 ?
