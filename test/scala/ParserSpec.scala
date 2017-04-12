@@ -194,4 +194,12 @@ class ParserSpec extends FlatSpec with Matchers {
       case Left(error) => fail(s"parse error: ${error.msg}")
     }
   }
+  "Parse" should "recognize type alias" in {
+    var t = ObSecParser("let{type t = {ot x}} in 1")
+    t match{
+      case Right(tt) =>
+        assert(tt == LetStarExpr(List(TypeAlias("t",ObjType(TypeVar("x"),List()))),IntExpr(1)))
+      case Left(error) => fail(s"parse error: ${error.msg}")
+    }
+  }
 }

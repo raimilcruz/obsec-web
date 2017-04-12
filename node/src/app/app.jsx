@@ -5,7 +5,8 @@ import injectTapEventPlugin from 'react-tap-event-plugin';
 import AppRoutes from './AppRoutes';
 
 
-require('./../www/main.css'); 
+require('./../www/main.css');
+require('highlight.js/styles/github.css');
 //Needed for onTouchTap 
 //Can go away when react 1.0 release
 //Check this repo:

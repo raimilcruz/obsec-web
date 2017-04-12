@@ -1,6 +1,6 @@
 package ObSec.Parsing
 
-import ObSec.Ast.{ObSecExpr, _}
+import ObSec.Ast._
 import ObSec.Parsing.ObSecParser.rep1
 
 import scala.util.parsing.combinator.{JavaTokenParsers, PackratParsers}
@@ -29,6 +29,8 @@ object ObSecParser extends JavaTokenParsers with PackratParsers with DebugPackra
   def COLON = ":"
   def LEFTBRACKET = "{"
   def RIGHTBRACKET = "}"
+  def LEFTSBRACKET = "["
+  def RIGHTSBRACKET = "]"
   def LEFTPAREN = "("
   def RIGHTPAREN = ")"
   def LESSTHAN = "<"
@@ -63,18 +65,21 @@ object ObSecParser extends JavaTokenParsers with PackratParsers with DebugPackra
   }
 
   lazy val mkListExpr :PackratParser[ObSecExpr] =
-    ((MKLIST ~ LEFTPAREN) ~> repsep(expr,",")) <~ RIGHTPAREN ^^ {case l => ListConstructorExpr(l)}
+    ((MKLIST ~ LEFTPAREN) ~> repsep(expr,",")) <~ RIGHTPAREN ^^ (l => ListConstructorExpr(l))
 
   lazy val letStarExpr :PackratParser[ObSecExpr] =
-    ((LET ~ LEFTBRACKET )~> rep(localDecl)) ~ ((RIGHTBRACKET ~ IN) ~> expr) ^^ {case decls ~ expr => LetStarExpr(decls,expr)}
+    ((LET ~ LEFTBRACKET )~> (rep(typeAliasDecl) ~ rep(localDecl))) ~ ((RIGHTBRACKET ~ IN) ~> expr) ^^ {case tDecls ~ decls ~ expr => LetStarExpr(tDecls ++ decls,expr)}
+
+  lazy val typeAliasDecl : PackratParser[TypeAlias] =
+    (("type " ~> identifier <~ EQUALSSIGN) ~ objType) ^^ {case id ~ t => TypeAlias(id,t)}
 
   lazy val localDecl : PackratParser[LocalDeclaration] =
     ((identifier <~ EQUALSSIGN) ~ expr) ^^ {case id ~ expr => LocalDeclaration(id,expr)}
 
 
-  lazy val valExpr : PackratParser[ObSecExpr] = objectExpr | primVal
+  lazy val valExpr : PackratParser[ObSecExpr] = objectExpr | objectExpr2 | primVal
 
-  def varExpr : PackratParser[ObSecExpr] =  identifier ^^ { case vName => Var(vName)}
+  def varExpr : PackratParser[ObSecExpr] =  identifier ^^ (vName => Var(vName))
 
 
   lazy val methodInvExpr :PackratParser[ObSecExpr]={
@@ -90,11 +95,21 @@ object ObSecParser extends JavaTokenParsers with PackratParsers with DebugPackra
     ((LEFTBRACKET ~> identifier) <~ COLON) ~ stype ~ ((RARROW ~> methodDefs) <~ RIGHTBRACKET) ^^
       {case self ~ stype ~ methodDefs => Obj(self,stype,methodDefs)}
   }
+  lazy val  objectExpr2: PackratParser[ObSecExpr] = {
+    "new" ~> (((LEFTBRACKET ~> identifier) <~ COLON) ~ stype ~ ((RARROW ~> methodDefs) <~ RIGHTBRACKET)) ^^
+      {case self ~ stype ~ methodDefs => Obj(self,stype,methodDefs)}
+  }
   lazy val methodDefs : PackratParser[List[MethodDef]]={
     rep(methodDef)
   }
-  lazy val methodDef : PackratParser[MethodDef] = {
+
+  lazy val methodDef : PackratParser[MethodDef] = methodDef11 | methodDef12
+  lazy val methodDef11 : PackratParser[MethodDef] = {
     LEFTBRACKET ~> (extendedIdentifier ~ rep(identifier)) ~ ((EQUALSSIGN ~> expr ) <~ RIGHTBRACKET) ^^
+      { case mName ~ args ~ expr => MethodDef(mName,args,expr)}
+  }
+  lazy val methodDef12 : PackratParser[MethodDef] = {
+    "def" ~> (extendedIdentifier ~ rep(identifier)) ~ ((EQUALSSIGN ~> expr )) ^^
       { case mName ~ args ~ expr => MethodDef(mName,args,expr)}
   }
   lazy val stype : PackratParser[SType] ={
@@ -105,7 +120,7 @@ object ObSecParser extends JavaTokenParsers with PackratParsers with DebugPackra
     } }
   }
   lazy val singleType : PackratParser[Type] ={
-    objType |  primType | varType
+    objType  |  primType | varType
   }
 
   lazy val varType : PackratParser[Type] = identifier ^^ { id => TypeVar(id)}
@@ -131,9 +146,18 @@ object ObSecParser extends JavaTokenParsers with PackratParsers with DebugPackra
   lazy val integerExpr : PackratParser[ObSecExpr] = wholeNumber ^^ {s => IntExpr(s.toInt)}
   lazy val boolExpr : PackratParser[ObSecExpr] = ("true" | "false" ) ^^ {s => BooleanExpr(s == "true")}
 
-  lazy val objType :  PackratParser[ObjType]={
+  lazy val objType :  PackratParser[ObjType]= objType11 | objType13 | objType12
+
+  lazy val objType11 :  PackratParser[ObjType]={
+    (LEFTSBRACKET  ~> identifier) ~ (methodList <~ RIGHTSBRACKET) ^^ {case tVar ~ methodList => ObjType(TypeVar(tVar),methodList)}
+  }
+  lazy val objType12 :  PackratParser[ObjType]={
     ((LEFTBRACKET ~ OT) ~> identifier) ~ (methodList <~ RIGHTBRACKET) ^^ {case tVar ~ methodList => ObjType(TypeVar(tVar),methodList)}
   }
+  lazy val objType13 :  PackratParser[ObjType]={
+    LEFTSBRACKET  ~>  (methodList <~ RIGHTSBRACKET) ^^ {case methodList => ObjType(TypeVar("gen"),methodList)}
+  }
+
   lazy val methodList : PackratParser[List[MethodDeclaration]]={
     rep(methodSignature)
   }

@@ -64,15 +64,15 @@ const examples = [
     {
         value: 1,
         text: "Introducing type-based declassification policies: Password policy",
-        program: "let{\nauth = {z : {ot X \n                {login : String<L String<L -> Int<L}}<L \n            => \n            {login password guess = if password.==(guess) then 1 else 0}}\n} in \nauth.login(\"qwe123\",\"qwe123\")",
+        program: "let{\nauth = new {z : [{login : String<[{== : String<L -> Bool<L}] String<L -> Int<L}]<L \n            => \n            def login password guess = if password.==(guess) then 1 else 0}\n} in \nauth.login(\"qwe123\",\"qwe123\")",
         desc: "This is the first example of the paper. The login method receives two arguments the 'secret' password " +
         "and the user guess. The 'password' argument has a declassification policy that allow to release the result " +
-        "of the == comparison. The body of the 'login' method adheres to that policy, so the resulting integer is public."
+        "of the == comparison. The body of the 'login' method adheres to that policy, so the resulting integer is public"
     },
     {
         value: 2,
         text: "Password policy is full secret now",
-        program: "let{\nauth = {z : {ot X \n                {login : String<H String<L -> Int<L}}<L \n            => \n            {login password guess = if password.==(guess) then 1 else 0}}\n} in \nauth.login(\"qwe123\",\"qwe123\")",
+        program: "let{\nauth = new {z : [\n                {login : String<H String<L -> Int<L}]<L \n            => \n            def login password guess = if password.==(guess) then 1 else 0}\n} in \nauth.login(\"qwe123\",\"qwe123\")",
         desc: "This example differs from the first one in that the first argument of the login method (i.e. the real password) is full secret." +
         "In this case the implementation of the login does not adhere to the policy of password because it is" +
         "using the == method that is not in the public facet, so the resulting type of the login method body is" +
@@ -82,20 +82,20 @@ const examples = [
     {
         value: 3,
         text: "Password policy with hash and eq",
-        program: "let {\nauth = {z : {ot X \n                {login : String<{ot x \n                                    {hash : -> Int<{ot z \n                                                    {== : Int<Int -> Bool<L}}}} String<L -> Int<L}}<L \n        => \n            {login password guess = if password.hash().==(guess) then 1 else 0}}\n    \n} in\nauth.login(\"qwe123\",\"qwe123\")",
+        program: "let {\nauth = new {z : [\n                {login : String<[ \n                                    {hash : -> Int<[\n                                                    {== : Int<Int -> Bool<L}]}] Int<L -> Int<L}]<L \n        => \n            def password guess = if password.hash().==(guess) then 1 else 0}\n    \n} in\nauth.login(\"qwe123\",\"qwe123\".hash())",
         desc: "The password policy now indicates that information about the password can be done be public by calling 1) the hash over the password, " +
         " and then 2) to compare the result with a public string"
     },
     {
         value : 4,
         text:"Recursive declassification over list",
-        program: "let{\nlistTool = {z : {ot X \n                    {contains : StrList<{ot y \n                                            {isEmpty: -> Bool<L}\n                                            {head: -> String<{ot y {== : String<L -> Bool<L}}}\n                                            {tail: -> StrList<y}\n                                \n                                } -> Bool<L}\n                }<L \n                => \n                {contains myList  = \n                    if myList.isEmpty() \n                    then false \n                    else \n                        if myList.head().==(\"a\") \n                        then true \n                        else z.contains(myList.tail())\n                    \n                }\n            }\n} \nin\nlistTool.contains(mklist(\"b\",\"c\",\"a\"))",
+        program: "let{\nlistTool = new {z : [\n                    {contains : StrList<[y \n                                            {isEmpty: -> Bool<L}\n                                            {head: -> String<[{== : String<L -> Bool<L}] }\n                                            {tail: -> StrList<y}\n                                \n                                ] -> Bool<L}\n                ] <L \n                => \n                def contains myList  = \n                    if myList.isEmpty() \n                    then false \n                    else \n                        if myList.head().==(\"a\") \n                        then true \n                        else z.contains(myList.tail())\n                    \n             }\n} \nin\nlistTool.contains(mklist(\"b\",\"c\",\"a\"))",
         desc: "Recursive declassification policies are desirable to express interesting declassification of "+
         "either inductive data structures or object interfaces (whose essence are recursive types). Consider for instance a secret list" +
         " of strings, for which we want to allow traversal of the "+
         "structure and comparison of its elements with a given string. This can be captured by the " +
         "recursive type of the public facet of the first argument of contains method. " +
-        "Note that the head method returns a String that only has the == operation public"
+        "Note that the head method returns a String that only has the == operation public."
     }
 ]
 const examplesItems = examples.map((e) => {
@@ -155,7 +155,7 @@ export default class Main extends React.Component {
 
     typecheck = () => {
         this.setState({error: "", executionState: 0, typingState: 0}, () => {
-            request.post('/typecheck')
+            request.post('typecheck')
                 .send({program: this.state.program})
                 .set('Accept', 'application/json')
                 .end((err, res) => {
@@ -180,7 +180,7 @@ export default class Main extends React.Component {
 
     reduce = () => {
         this.setState({loadingReduce: true, executionState: 0, executionError: null}, () => {
-            request.post('/reduce')
+            request.post('run')
                 .send({program: this.state.program})
                 .set('Accept', 'application/json')
                 .end((err, res) => {
@@ -244,6 +244,7 @@ export default class Main extends React.Component {
 
 
     render() {
+
         return (
             <Paper style={{padding: '8px'}}>
                 <Dialog
@@ -284,26 +285,34 @@ export default class Main extends React.Component {
                                 <RaisedButton
                                     onTouchTap={(event)=> this.handleTouchTap(event,"StrList")}
                                     label="StrList"
-                                /> | X | {this.lcb()}ot X M*{this.rcb()}</td>
+                                /> | X | OT</td>
                             <td>(Types)</td>
+                        </tr>
+                        <tr>
+                            <td>OT</td>
+                            <td>::=</td>
+                            <td>[X M*] | [M*]</td>
+                            <td>(Object Type)</td>
                         </tr>
                         <tr>
                             <td>M</td>
                             <td>::=</td>
-                            <td>{this.lcb()} name : S* -> S {this.rcb()}</td>
+                            <td>{this.lcb()} name : S* -> S {this.rcb()} </td>
                             <td>(Method signature)</td>
                         </tr>
                         <tr>
                             <td>t</td>
                             <td>::=</td>
-                            <td> o | x | t.m(t) | b | n | s | if t then t else t | mkList(t*) | let {"{"} (x = t)* {"}"} in t
+                            <td> o | x | t.m(t) | b | n | s |
+                                <strong>if</strong> t <strong>then</strong> t <strong>else</strong> t |
+                                <strong>mkList</strong>(t*) | let {"{"} (x = t)* {"}"} in t
                             </td>
                             <td>(Terms)</td>
                         </tr>
                         <tr>
                             <td>o</td>
                             <td>::=</td>
-                            <td> {this.lcb()} x : S => {this.lcb()} name x* = t {this.rcb()}* {this.rcb()}
+                            <td> <strong>new</strong> {this.lcb()} x : S => (<strong>def</strong> name x* = t)* {this.rcb()}
                             </td>
                             <td>(Terms)</td>
                         </tr>
@@ -325,13 +334,19 @@ export default class Main extends React.Component {
                             <td>string literals</td>
                             <td>(String literals)</td>
                         </tr>
+                        <tr>
+                            <td>X</td>
+                            <td>::=</td>
+                            <td>identifier</td>
+                            <td>(Type Variable)</td>
+                        </tr>
                         </tbody>
                     </table>
                     <br/>
                 </Dialog>
 
                 <Popover
-                    open={this.state.typeDefinitionsOpen}
+                    open={this.state.typeDefinitionsOpen!=null}
                     anchorEl={this.state.anchorEl}
                     anchorOrigin={{horizontal: 'left', vertical: 'bottom'}}
                     targetOrigin={{horizontal: 'left', vertical: 'top'}}
@@ -340,22 +355,22 @@ export default class Main extends React.Component {
                    <Highlight className="java">
                        {
                            this.state.typeDefinitionsOpen=="Int"?
-                           "{ot x \n" +
-                           "            {+ : Int<Int -> Int<Int}\n" +
-                           "            {- : Int<Int -> Int<Int}\n"+
-                           "            {== : Int<Int -> Bool<Bool}}"
+                           "[" +
+                           "{+ : Int<Int -> Int<Int}\n" +
+                           "{- : Int<Int -> Int<Int}\n"+
+                           "{== : Int<Int -> Bool<Bool}]"
                            : (this.state.typeDefinitionsOpen=="Bool")?
-                           "{ot x {if : T<T T<T -> T<T}}"
+                           "[{if : T<T T<T -> T<T}]"
                            : (this.state.typeDefinitionsOpen=="String")?
-                           "{ot x \n" +
-                           "            {== : String<String -> Bool<Bool}\n" +
-                           "            {hash : -> Int<Int}\n"+
-                           "            {length : -> Int<Int}}"
+                           "[" +
+                           "{== : String<String -> Bool<Bool}\n" +
+                           "{hash : -> Int<Int}\n"+
+                           "{length : -> Int<Int}]"
                            : (this.state.typeDefinitionsOpen=="StrList")?
-                           "{ot l \n" +
-                           "            {isEmpty : -> Bool<Bool}\n" +
-                           "            {head : -> String<String}\n"+
-                           "            {tail : -> l<l}}"
+                           "[l \n" +
+                           "{isEmpty : -> Bool<Bool}\n" +
+                           "{head : -> String<String}\n"+
+                           "{tail : -> l<l}]"
                            :
                             null
                        }

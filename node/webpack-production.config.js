@@ -4,11 +4,17 @@ const buildPath = path.resolve(__dirname, 'build');
 const nodeModulesPath = path.resolve(__dirname, 'node_modules');
 const TransferWebpackPlugin = require('transfer-webpack-plugin');
 
+var reactDomLibPath = path.join(__dirname, "./node_modules/react-dom/lib");
+var alias = {};
+["EventPluginHub", "EventConstants", "EventPluginUtils", "EventPropagators",
+    "SyntheticUIEvent", "CSSPropertyOperations", "ViewportMetrics"].forEach(function (filename) {
+    alias["react/lib/" + filename] = path.join(__dirname, "./node_modules/react-dom/lib", filename);
+});
 const config = {
   entry: [path.join(__dirname, '/src/app/app.jsx')],
   resolve: {
     //When require, do not have to add these extensions to file's name
-    extensions: ["", ".js", ".jsx"],
+    extensions: ["", ".js", ".jsx"], alias: alias
     //node_modules: ["web_modules", "node_modules"]  (Default Settings)
   },
   //Render source-map file for final build
@@ -48,7 +54,8 @@ const config = {
       {
         test: /\.css$/,
         loaders: ['style', 'css'],
-        include: [path.join(__dirname, 'src/www'), path.join(__dirname, 'node_modules/react-select/dist/react-select.css')],
+        include: [path.join(__dirname, 'src/www'), path.join(__dirname, 'node_modules/react-select/dist/react-select.css')
+            , path.join(__dirname, 'node_modules/highlight.js/styles/github.css')],
         exclude: /flexboxgrid/
       },
       {

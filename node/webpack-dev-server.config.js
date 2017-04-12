@@ -60,7 +60,8 @@ const config = {
             {
                 test: /\.css$/,
                 loaders: ['style', 'css'],
-                include: [path.join(__dirname, 'src/www'), path.join(__dirname, 'node_modules/react-select/dist/react-select.css')],
+                include: [path.join(__dirname, 'src/www'), path.join(__dirname, 'node_modules/react-select/dist/react-select.css')
+                    , path.join(__dirname, 'node_modules/highlight.js/styles/github.css')],
                 exclude: /flexboxgrid/
             },
             {

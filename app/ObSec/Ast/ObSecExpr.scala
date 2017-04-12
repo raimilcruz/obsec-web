@@ -87,9 +87,11 @@ case class StringExpr(v:String) extends SurfaceValExpr
 case class BooleanExpr(v:Boolean) extends SurfaceValExpr
 case class ListConstructorExpr(elems: List[ObSecExpr]) extends ObSecExpr
 
-case class LetStarExpr(declarations: List[LocalDeclaration],body:ObSecExpr) extends ObSecExpr
+case class LetStarExpr(declarations: List[Declaration],body:ObSecExpr) extends ObSecExpr
 
-case class LocalDeclaration(variable:String,rExpr:ObSecExpr)
+sealed trait Declaration
+case class LocalDeclaration(variable:String,rExpr:ObSecExpr) extends Declaration
+case class TypeAlias(aliasName: String,objType: ObjType) extends Declaration
 
 
 

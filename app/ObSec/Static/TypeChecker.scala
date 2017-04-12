@@ -79,7 +79,7 @@ class TypeChecker () {
 
         var s = internalTypeCheck(methodScope, m.mBody)
         if(!subTypingAlgorithm.<::(s, mType.codomain))
-          throw TypeError(s"Method ${m.name}: the return type in the implementation is not subtype of the return type in the signature")
+          throw TypeError(s"Definition of method '${m.name}': the return type in the implementation (${s}) is not subtype of the return type in the signature (${mType.codomain})")
       }
       stype
     }
@@ -99,7 +99,12 @@ class TypeChecker () {
     }
     case LetStarExpr(declarations,body) =>
       val letScope = new NestedScope[SType](scope)
-      declarations.foreach(d => letScope.add(d.variable,internalTypeCheck(letScope,d.rExpr)))
+
+      //verify well-formedness of the type aliases
+      var typeAliases = declarations.filter(d=>d.isInstanceOf[TypeAlias]).map(ld=>ld.asInstanceOf[TypeAlias])
+
+      val varDeclarations = declarations.filter(d=>d.isInstanceOf[LocalDeclaration]).map(ld=>ld.asInstanceOf[LocalDeclaration])
+      varDeclarations.foreach(d => letScope.add(d.variable,internalTypeCheck(letScope,d.rExpr)))
       internalTypeCheck(letScope,body)
     case ListConstructorExpr(elems) =>
       if(!elems.forall(e=> subTypingAlgorithm.<::(internalTypeCheck(scope,e),SType(StringType,StringType))))
@@ -120,12 +125,12 @@ object TypeChecker{
 
 
 class Scope[T] {
-   def lookup(x: String): T  = throw new Error(s"Variable ${x} in Scope")
+
+  def lookup(x: String): T  = throw new Error(s"Variable ${x} not in Scope")
 
   def contains(x: String) = false
 
   def add(x:String, v: T): Unit = throw new Error("Not a functional scope")
-
 }
 
 case class TypeError(str:String) extends Error

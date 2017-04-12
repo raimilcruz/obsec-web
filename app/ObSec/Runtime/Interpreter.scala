@@ -43,7 +43,8 @@ package ObSec.Runtime {
           }
           case p: SurfaceValExpr => primValEval(p)
           case LetStarExpr(declarations,body)=>
-            val newEnv = declarations.foldLeft(env)((acc, decl) => Environment.extend(acc,decl.variable,internalEval(acc,decl.rExpr,steps-1)))
+            val varDeclaractions = declarations.filter(x=> x.isInstanceOf[LocalDeclaration]).map(d=>d.asInstanceOf[LocalDeclaration])
+            val newEnv = varDeclaractions.foldLeft(env)((acc, decl) => Environment.extend(acc,decl.variable,internalEval(acc,decl.rExpr,steps-1)))
             internalEval(newEnv,body,steps-1)
           case ListConstructorExpr(elems) => RuntimeStrList(elems.map(x=>internalEval(env,x,steps-1).asInstanceOf[RuntimeStr]))
           case _ => throw new StuckError(s"Stuck in internalEval with: ${expr}")

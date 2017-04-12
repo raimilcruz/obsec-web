@@ -1,6 +1,6 @@
 package ObSec.Ast
 
-import ObSec.Static.TypeSubst
+import ObSec.Static.{TypeEquivalence, TypeSubst}
 
 /**
   * Represents a security type
@@ -12,7 +12,14 @@ case class SType(privateType: Type, publicType: Type) {
   def map(f: Type => Type): SType =
     SType(f(privateType), f(publicType))
 
-  override def toString: String = s"$privateType<$publicType"
+  override def toString: String ={
+    val pString =
+      if(TypeEquivalence.alphaEq(publicType,ObjType.top))"H"
+      else if(TypeEquivalence.alphaEq(publicType,privateType)) "L"
+      else s"${privateType}"
+    s"${privateType}<${pString}"
+  }
+
 }
 
 /**
