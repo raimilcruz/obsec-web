@@ -141,7 +141,7 @@ case object StringType extends Type with PrimType {
 case object BooleanType extends Type with PrimType {
   override def methSig(x: String): MType = throw new NotImplementedError()
 
-  override def containsMethod(x: String): Boolean = throw new NotImplementedError()
+  override def containsMethod(x: String): Boolean = false
 
   override def toString: String = "Bool"
 

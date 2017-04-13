@@ -3,24 +3,34 @@ package ObSec.Parsing
 import ObSec.Ast._
 import ObSec.Parsing.ObSecParser.rep1
 
-import scala.util.parsing.combinator.{JavaTokenParsers, PackratParsers}
+import scala.util.parsing.combinator.syntactical.StandardTokenParsers
+import scala.util.parsing.combinator.token.StdTokens
+import scala.util.parsing.combinator.{ImplicitConversions, JavaTokenParsers, PackratParsers}
 
 
 
 /**
   * Defining a parser for ObSec language
   */
-object ObSecParser extends JavaTokenParsers with PackratParsers with DebugPackratParsers{
+object ObSecParser extends StandardTokenParsers with PackratParsers with ImplicitConversions with DebugPackratParsers{
+  lexical.reserved += ("if" , "then" , "else" , "true", "false", "let" ,"in", "type", "new", "def","val", "ot" , "Int" , "String" , "Bool", "StrList" , "L" , "H"  ,"mklist" )
+  lexical.delimiters ++= (": . < -> => + - * / ( ) [ ] { } , = ;" split ' ')
+/*
 
   val reserved: PackratParser[String] =
-  {"if" | "then" | "else" | "true" | "false" | "Ref" | "Unit | ot | Int | String | Boolean | L | H" | "let" |"in" | "mklist" }
+  {"if" | "then" | "else" | "true" | "false" | "Ref" | "Unit" | "ot" | "Int" | "String" | "Boolean" | "L" | "H" | "let" |"in" | "mklist" }
+  val reserved2: List[String] =
+  List("if" , "then" , "else" , "true" , "false" , "Ref" , "Unit" , "ot" , "Int" , "String" , "Boolean" , "L" , "H" , "let" ,"in" ,"mklist" )
+*/
 
-  lazy val identifier: PackratParser[String] = not(reserved) ~> ident ^^ { str => str}
+  //lazy val identifier: PackratParser[String] = elem("ident",x=> reserved2.contains(x.toString)) ^^ (x=>x.toString)
+  lazy val identifier: PackratParser[String] = ident
 
-  lazy val symIdentifier =  """(\+|-|=|<|/)*""".r
+  lazy val symIdentifier:PackratParser[String] =  rep("+"| "-"| "="|"<"|"/") ^^ {case l => l.foldLeft("")((acc,a)=>acc+a)}
 
-  lazy val extendedIdentifier : PackratParser[String] =
-    (identifier | symIdentifier) ^^ {str => str}
+  /*lazy val extendedIdentifier : PackratParser[String] =
+    (identifier | symIdentifier) ^^ {str => str}*/
+  lazy val extendedIdentifier : PackratParser[String] = ident | symIdentifier
 
   //PARSERS FOR tokens
   def OT = "ot"
@@ -40,6 +50,7 @@ object ObSecParser extends JavaTokenParsers with PackratParsers with DebugPackra
   def IF = "if"
   def THEN = "then"
   def ELSE = "else"
+  def TYPEKEYWORD = "type"
   def MKLIST = "mklist"
 
   def INT = "Int"
@@ -60,30 +71,36 @@ object ObSecParser extends JavaTokenParsers with PackratParsers with DebugPackra
   lazy val operator : PackratParser[String] = operPlus | operMinus | operCompare
 
   def  program: PackratParser[ObSecExpr] = new Wrap("program",phrase(expr))
-  lazy val expr : PackratParser[ObSecExpr] = {
+  lazy val expr : Parser[ObSecExpr] = {
     valExpr |||  varExpr ||| methodInvExpr | ifThenElse | letStarExpr | mkListExpr
   }
 
-  lazy val mkListExpr :PackratParser[ObSecExpr] =
+  lazy val mkListExpr : Parser[ObSecExpr] =
     ((MKLIST ~ LEFTPAREN) ~> repsep(expr,",")) <~ RIGHTPAREN ^^ (l => ListConstructorExpr(l))
 
   lazy val letStarExpr :PackratParser[ObSecExpr] =
     ((LET ~ LEFTBRACKET )~> (rep(typeAliasDecl) ~ rep(localDecl))) ~ ((RIGHTBRACKET ~ IN) ~> expr) ^^ {case tDecls ~ decls ~ expr => LetStarExpr(tDecls ++ decls,expr)}
 
   lazy val typeAliasDecl : PackratParser[TypeAlias] =
-    (("type " ~> identifier <~ EQUALSSIGN) ~ objType) ^^ {case id ~ t => TypeAlias(id,t)}
+    (("type" ~> ident <~ EQUALSSIGN) ~ objType) ^^ {case id ~ t => TypeAlias(id,t)}
 
   lazy val localDecl : PackratParser[LocalDeclaration] =
+    localDecl11 | localDecl12
+
+  lazy val localDecl11 : PackratParser[LocalDeclaration] =
     ((identifier <~ EQUALSSIGN) ~ expr) ^^ {case id ~ expr => LocalDeclaration(id,expr)}
 
+  lazy val localDecl12 : PackratParser[LocalDeclaration] =
+    (("val" ~> identifier <~ EQUALSSIGN) ~ expr) ^^ {case id ~ expr => LocalDeclaration(id,expr)}
 
-  lazy val valExpr : PackratParser[ObSecExpr] = objectExpr | objectExpr2 | primVal
+
+  lazy val valExpr :  Parser[ObSecExpr] = objectExpr | objectExpr2 | primVal
 
   def varExpr : PackratParser[ObSecExpr] =  identifier ^^ (vName => Var(vName))
 
 
   lazy val methodInvExpr :PackratParser[ObSecExpr]={
-    (expr <~ DOT) ~ (identifier | operator) ~ ((LEFTPAREN ~> repsep(expr, COMMMA)) <~ RIGHTPAREN)^^
+    (expr <~ DOT) ~ (extendedIdentifier) ~ ((LEFTPAREN ~> repsep(expr, COMMMA)) <~ RIGHTPAREN)^^
       {case e1 ~ id ~ args => MethodInv(e1,args,id)}
   }
 
@@ -140,10 +157,12 @@ object ObSecParser extends JavaTokenParsers with PackratParsers with DebugPackra
   lazy val lowLabel : PackratParser[Type]= LOW ^^ {_ => LowLabel}
   lazy val highLabel : PackratParser[Type]= HIGH ^^ {_ => HighLabel}
 
-  lazy val primVal : PackratParser[ObSecExpr] = stringLiteralExpr | integerExpr | boolExpr
+  lazy val primVal :  Parser[ObSecExpr] = stringLiteralExpr | integerExpr | boolExpr
 
-  lazy val stringLiteralExpr : PackratParser[ObSecExpr] = stringLiteral ^^ {s => StringExpr(s.substring(1,s.length-1))}
-  lazy val integerExpr : PackratParser[ObSecExpr] = wholeNumber ^^ {s => IntExpr(s.toInt)}
+  //lazy val stringLiteralExpr : PackratParser[ObSecExpr] = stringLit ^^ {s => StringExpr(s.substring(1,s.length-1))}
+  lazy val stringLiteralExpr : Parser[ObSecExpr] = stringLit ^^ {s => StringExpr(s)}
+  lazy val integerExpr : Parser[ObSecExpr] = (numericLit | negativeNumericLiteral) ^^ {s => IntExpr(s.toInt)}
+  lazy val negativeNumericLiteral : Parser[String]= "-" ~> numericLit ^^ {s=> "-"+s}
   lazy val boolExpr : PackratParser[ObSecExpr] = ("true" | "false" ) ^^ {s => BooleanExpr(s == "true")}
 
   lazy val objType :  PackratParser[ObjType]= objType11 | objType13 | objType12
@@ -172,7 +191,8 @@ object ObSecParser extends JavaTokenParsers with PackratParsers with DebugPackra
     * @return An AST
     */
   def apply(string: String): Either[ObSecParserError, ObSecExpr] = {
-    parseAll(program,string) match {
+    //parseAll(program,string) match {
+    program (new lexical.Scanner(string)) match {
       case NoSuccess(msg, next) => Left(ObSecParserError(msg))
       case Success(result, next) => Right(result)
     }
@@ -184,7 +204,8 @@ object ObSecParser extends JavaTokenParsers with PackratParsers with DebugPackra
     * @return The expression representing the type
     */
   def parseType(string:String):Either[ObSecParserError, Type] = {
-    parseAll(singleType,string) match {
+    //parseAll(singleType,string) match {
+    phrase(singleType) (new lexical.Scanner(string)) match {
       case NoSuccess(msg, next) => Left(ObSecParserError(msg))
       case Success(result, next) => Right(result)
     }
@@ -195,7 +216,8 @@ object ObSecParser extends JavaTokenParsers with PackratParsers with DebugPackra
     * @return The expression representing the type
     */
   def parseSType(string:String):Either[ObSecParserError, SType] = {
-    parseAll(stype,string) match {
+    //parseAll(stype,string) match {
+    phrase(stype) (new lexical.Scanner(string)) match {
       case NoSuccess(msg, next) => Left(ObSecParserError(msg))
       case Success(result, next) => Right(result)
     }

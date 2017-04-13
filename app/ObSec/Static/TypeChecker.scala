@@ -13,21 +13,21 @@ class TypeChecker () {
   val subTypingAlgorithm = new AmadioCardelliSubtyping()
   val wfChecker = new WellFormedChecker(new ErrorCollector)
 
-  def typeCheck(x: ObSecExpr):SType = internalTypeCheck(new Scope, x)
+  def typeCheck(x: ObSecExpr):SType = internalTypeCheck(new Scope,new Scope, x)
 
-  def typeCheck(scope: Scope[SType], expr: ObSecExpr): SType = internalTypeCheck(scope,expr)
-
-
+  def typeCheck(scope: Scope[SType], expr: ObSecExpr): SType = internalTypeCheck(scope,new Scope,expr)
 
 
-  def internalTypeCheck(scope: Scope[SType], expr: ObSecExpr): SType = expr match {
+
+
+  def internalTypeCheck(scope: Scope[SType], aliasScope: Scope[Type], expr: ObSecExpr): SType = expr match {
     case Var(x) => scope.lookup(x)
     case IntExpr(_) => SType(IntType,IntType)
     case BooleanExpr(_) => SType(BooleanType,BooleanType)
     case StringExpr(_) => SType(StringType,StringType)
     case MethodInv(e1, args, m) => {
-      val s1 = internalTypeCheck(scope, e1)
-      val argTypes =  args.map(param=> internalTypeCheck(scope,param))
+      val s1 = internalTypeCheck(scope,aliasScope, e1)
+      val argTypes =  args.map(param=> internalTypeCheck(scope,aliasScope,param))
       println(s"Args: ${argTypes}")
       //facet analysis
       if(s1.privateType.containsMethod(m)){
@@ -54,10 +54,11 @@ class TypeChecker () {
       else
         throw TypeError(s"Method ${m} not in ${s1.privateType}")
     }
-    case Obj(self,stype,methods)=>{
+    case Obj(self,selfType,methods)=>
+      val stype = closeAliases(aliasScope,selfType)
       //verify well-formed for stype
       if(!wfChecker.isWellFormed(stype))
-        throw TypeError(s"Security type is not well-formed : ${wfChecker.errorCollector.errors}")
+        throw TypeError(s"Security type: '${stype}' is not well-formed : ${wfChecker.errorCollector.errors}")
       //the private type must be an object type
       if(!stype.privateType.isInstanceOf[ObjType])
         throw TypeError("The private facet must be an object type")
@@ -77,18 +78,17 @@ class TypeChecker () {
         methodScope.add(self, stype)
         m.args.zip(mType.domain).foreach(a => methodScope.add(a._1, a._2))
 
-        var s = internalTypeCheck(methodScope, m.mBody)
+        var s = internalTypeCheck(methodScope,aliasScope, m.mBody)
         if(!subTypingAlgorithm.<::(s, mType.codomain))
           throw TypeError(s"Definition of method '${m.name}': the return type in the implementation (${s}) is not subtype of the return type in the signature (${mType.codomain})")
       }
       stype
-    }
-    case IfExpr(cond,e1,e2) =>{
-      val sCond = internalTypeCheck(scope, cond)
+    case IfExpr(cond,e1,e2) =>
+      val sCond = internalTypeCheck(scope,aliasScope, cond)
       if(sCond.privateType != BooleanType)
         throw TypeError("Condition of if expression must be boolean")
-      val sE1 = internalTypeCheck(scope,e1)
-      val sE2 = internalTypeCheck(scope,e2)
+      val sE1 = internalTypeCheck(scope,aliasScope,e1)
+      val sE2 = internalTypeCheck(scope,aliasScope,e2)
       if(sE1 != sE2)
         throw TypeError("Both expression in a if must have the same type")
       //depending on the type of the condiction we should lift the public type of the resulting type
@@ -96,20 +96,39 @@ class TypeChecker () {
       if(sCond.publicType!=BooleanType)
         SType(sE1.privateType,ObjType.top)
       else sE1
-    }
     case LetStarExpr(declarations,body) =>
+      val newTypeAliasScope = new NestedScope[Type](aliasScope)
       val letScope = new NestedScope[SType](scope)
 
       //verify well-formedness of the type aliases
-      var typeAliases = declarations.filter(d=>d.isInstanceOf[TypeAlias]).map(ld=>ld.asInstanceOf[TypeAlias])
+      val typeAliases = declarations.filter(d => d.isInstanceOf[TypeAlias]).map(ld => ld.asInstanceOf[TypeAlias])
+      for(ta <- typeAliases){
+        val closedType = closeAliases(newTypeAliasScope.toList(),ta.objType)
+        println(newTypeAliasScope.toList())
+        if(!wfChecker.isWellFormed(closedType))
+          throw TypeError(s"Type in the type alias '${ta.aliasName}' declaration is not well-formed: ${closedType}")
+        newTypeAliasScope.add(ta.aliasName,closedType)
+      }
 
       val varDeclarations = declarations.filter(d=>d.isInstanceOf[LocalDeclaration]).map(ld=>ld.asInstanceOf[LocalDeclaration])
-      varDeclarations.foreach(d => letScope.add(d.variable,internalTypeCheck(letScope,d.rExpr)))
-      internalTypeCheck(letScope,body)
+      varDeclarations.foreach(d => letScope.add(d.variable,internalTypeCheck(letScope,newTypeAliasScope,d.rExpr)))
+      internalTypeCheck(letScope,newTypeAliasScope,body)
     case ListConstructorExpr(elems) =>
-      if(!elems.forall(e=> subTypingAlgorithm.<::(internalTypeCheck(scope,e),SType(StringType,StringType))))
+      if(!elems.forall(e=> subTypingAlgorithm.<::(internalTypeCheck(scope,aliasScope,e),SType(StringType,StringType))))
         throw TypeError("Elements of a list must be of type String<String")
       SType(StringListType,StringListType)
+  }
+
+
+
+  def closeAliases(aliasScope:Scope[Type], sType: SType):SType={
+    //TODO: Check problem with alias with same name at different scopes
+    val aliases = aliasScope.toList()
+    SType(closeAliases(aliases,sType.privateType),closeAliases(aliases,sType.publicType))
+  }
+  def closeAliases(aliases: List[(String, Type)], theType: Type): Type = aliases match {
+    case List() => theType
+    case binding :: tail => closeAliases(tail,TypeSubst.subst(theType,binding._1,binding._2))
   }
 
 }
@@ -131,6 +150,8 @@ class Scope[T] {
   def contains(x: String) = false
 
   def add(x:String, v: T): Unit = throw new Error("Not a functional scope")
+
+  def toList():List[(String,T)]=List()
 }
 
 case class TypeError(str:String) extends Error
@@ -150,4 +171,6 @@ class NestedScope[T](parent: Scope[T]) extends Scope[T] {
       throw new Error("Variable is already in this scope")
     bindings(x)= v
   }
+
+  override def toList(): List[(String, T)] = parent.toList() ++ bindings.toList
 }

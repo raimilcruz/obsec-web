@@ -202,4 +202,12 @@ class ParserSpec extends FlatSpec with Matchers {
       case Left(error) => fail(s"parse error: ${error.msg}")
     }
   }
+  "Parse" should "recognize val keyword" in {
+    var t = ObSecParser("let{val a = 1} in 1")
+    t match{
+      case Right(tt) =>
+        assert(tt == LetStarExpr(List(LocalDeclaration("a",IntExpr(1))),IntExpr(1)))
+      case Left(error) => fail(s"parse error: ${error.msg}")
+    }
+  }
 }

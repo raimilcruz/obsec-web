@@ -128,7 +128,7 @@ class TypeCheckerSpec extends FlatSpec {
 
     expr match {
       case Right(ast) =>
-        assert(TypeEquivalence.alphaEq(typeChecker.internalTypeCheck(scope,ast),SType(IntType,ObjType.top)))
+        assert(TypeEquivalence.alphaEq(typeChecker.typeCheck(scope,ast),SType(IntType,ObjType.top)))
       case _ => fail("parsing error")
     }
   }
@@ -306,6 +306,41 @@ class TypeCheckerSpec extends FlatSpec {
         intercept[TypeError]{
           TypeChecker(ast)
         }
+      case _ => fail("parsing error")
+    }
+  }
+
+  "Type alias" must "work 1" in{
+    var expr = ObSecParser("let{\ntype t = [{== : String<L -> Bool<L}]\nauth = new {z : [{login : String<t String<L -> Int<L}]<L \n            => \n            def login password guess = if password.==(guess) then 1 else 0}\n} in \nauth.login(\"qwe123\",\"qwe123\")")
+    expr match {
+      case Right(ast)=>
+          assert(TypeChecker(ast)== SType(IntType,IntType))
+      case _ => fail("parsing error")
+    }
+  }
+  "Type alias with name that has prefix of bultin type must " must "work" in{
+    var expr = ObSecParser("let{\ntype StringEq = [{== : String<L -> Bool<L}]\nauth = new {z : [{login : String<StringEq String<L -> Int<L}]<L \n            => \n            def login password guess = if password.==(guess) then 1 else 0}\n} in \nauth.login(\"qwe123\",\"qwe123\")")
+    expr match {
+      case Right(ast)=>
+        assert(TypeChecker(ast)== SType(IntType,IntType))
+      case _ => fail("parsing error")
+    }
+  }
+  "Type alias" must "fail 1" in {
+    var expr = ObSecParser("let{\ntype t = [{== : Int<L -> Bool<L}]\nauth = new {z : [{login : String<t String<L -> Int<L}]<L \n            => \n            def login password guess = if password.==(guess) then 1 else 0}\n} in \nauth.login(\"qwe123\",\"qwe123\")")
+    expr match {
+      case Right(ast) =>
+        intercept[TypeError] {
+          TypeChecker(ast)
+        }
+      case _ => fail("parsing error")
+    }
+  }
+  "Dependant type alias" must "work" in{
+    var expr = ObSecParser( "let{\n    type StringEq = [{== : String<L -> Bool<L}]\n    type StrEqList = [y \n                        {isEmpty: -> Bool<L}\n                        {head: -> String<StringEq }\n                        {tail: -> StrList<y}\n                                \n                                ]\n    val listHelper = new {z : [\n                    {contains : StrList<StrEqList -> Bool<L}\n                ] <L \n                => \n                def contains myList  = \n                    if myList.isEmpty() \n                    then false \n                    else \n                        if myList.head().==(\"a\") \n                        then true \n                        else z.contains(myList.tail())\n                    \n             }\n} \nin\nlistHelper.contains(mklist(\"b\",\"c\",\"a\"))")
+    expr match {
+      case Right(ast) =>
+        assert(TypeChecker(ast)== SType(BooleanType,BooleanType))
       case _ => fail("parsing error")
     }
   }

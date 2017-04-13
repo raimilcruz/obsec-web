@@ -36,13 +36,13 @@ class AmadioCardelliSubtyping extends SubTypingAlgorithm {
   type SubtypinAssumptions = Set[Tuple2[Type, Type]]
 
   private def innerSubType(alreadySeen: SubtypinAssumptions, t1: Type, t2: Type): SubtypinAssumptions = {
-    println(s"Already seen: ${alreadySeen}")
-    println(s"st goal: ${t1} and ${t2}")
+    // println(s"Already seen: ${alreadySeen}")
+    //println(s"st goal: ${t1} and ${t2}")
     if (alreadySeen.exists((x) => TypeEquivalence.alphaEq(x._1, t1) && TypeEquivalence.alphaEq(x._2, t2)))
       alreadySeen
     else {
       val newSet = alreadySeen + Tuple2(t1, t2)
-      println("In subtyping rules")
+      //println("In subtyping rules")
       (t1, t2) match {
         case (_, t) if TypeEquivalence.alphaEq(t, ObjType.top) => newSet
         //little optimization

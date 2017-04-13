@@ -165,10 +165,18 @@ class RuntimeSpec extends FlatSpec with Matchers with GivenWhenThen {
     }
   }
   "Example: Program policy with hash and eq  " must "work" in {
-    var expr = ObSecParser("let {\nauth = {z : {ot X \n                {login : String<{ot x \n                                    {hash : -> Int<{ot z \n                                                    {== : Int<Int -> Bool<L}}}} String<L -> Int<L}}<L \n        => \n            {login password guess = if password.hash().==(guess) then 1 else 0}}\n    \n} in\nauth.login(\"qwe123\",\"qwe123\")")
+    var expr = ObSecParser("let {\nauth = {z : {ot X \n                {login : String<{ot x \n                                    {hash : -> Int<{ot z \n                                                    {== : Int<Int -> Bool<L}}}} String<L -> Int<L}}<L \n        => \n            {login password guess = if password.hash().==(guess) then 1 else 0}}\n    \n} in\nauth.login(\"qwe123\",1)")
     expr match {
       case Right(ast)=>
-        assert(interpreter.eval(ast) == RuntimeBoolean(true))
+        assert(interpreter.eval(ast) == RuntimeInt(0))
+      case _ => fail("parsing error")
+    }
+  }
+  "Example 1: Program policy with hash" must "work" in {
+    var expr = ObSecParser("let{\n    type StringEq = [{== : String<L -> Bool<L}]\n    auth = new {z : [{login : String<[{== : String<L -> Bool<L}] String<L -> Int<L}]<L \n            => \n            def login password guess = if password.==(guess) then 1 else 0}\n} in \nauth.login(\"qwe123\",\"qwe123\")")
+    expr match {
+      case Right(ast)=>
+        assert(interpreter.eval(ast) == RuntimeInt(1))
       case _ => fail("parsing error")
     }
   }

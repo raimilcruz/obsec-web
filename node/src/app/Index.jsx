@@ -63,16 +63,16 @@ function replaceCurlyBracket(str){
 const examples = [
     {
         value: 1,
-        text: "Introducing type-based declassification policies: Password policy",
-        program: "let{\nauth = new {z : [{login : String<[{== : String<L -> Bool<L}] String<L -> Int<L}]<L \n            => \n            def login password guess = if password.==(guess) then 1 else 0}\n} in \nauth.login(\"qwe123\",\"qwe123\")",
+        text: "1.1: Introducing type-based declassification policies: Password policy",
+        program: "let{\n    type StringEq = [{== : String<L -> Bool<L}]\n    val auth = new {z : [{login : String<StringEq String<L -> Int<L}]<L \n            => \n            def login password guess = if password.==(guess) then 1 else 0}\n} in \nauth.login(\"qwe123\",\"qwe123\")",
         desc: "This is the first example of the paper. The login method receives two arguments the 'secret' password " +
         "and the user guess. The 'password' argument has a declassification policy that allow to release the result " +
         "of the == comparison. The body of the 'login' method adheres to that policy, so the resulting integer is public"
     },
     {
         value: 2,
-        text: "Password policy is full secret now",
-        program: "let{\nauth = new {z : [\n                {login : String<H String<L -> Int<L}]<L \n            => \n            def login password guess = if password.==(guess) then 1 else 0}\n} in \nauth.login(\"qwe123\",\"qwe123\")",
+        text: "1.2: Password policy is full secret now",
+        program: "let{\n    val auth = new {z : [\n                {login : String<H String<L -> Int<L}]<L \n            => \n            def login password guess = if password.==(guess) then 1 else 0}\n} in \nauth.login(\"qwe123\",\"qwe123\")",
         desc: "This example differs from the first one in that the first argument of the login method (i.e. the real password) is full secret." +
         "In this case the implementation of the login does not adhere to the policy of password because it is" +
         "using the == method that is not in the public facet, so the resulting type of the login method body is" +
@@ -81,15 +81,15 @@ const examples = [
     },
     {
         value: 3,
-        text: "Password policy with hash and eq",
-        program: "let {\nauth = new {z : [\n                {login : String<[ \n                                    {hash : -> Int<[\n                                                    {== : Int<Int -> Bool<L}]}] Int<L -> Int<L}]<L \n        => \n            def password guess = if password.hash().==(guess) then 1 else 0}\n    \n} in\nauth.login(\"qwe123\",\"qwe123\".hash())",
+        text: "2: Password policy with hash and eq",
+        program: "let {\n    val auth = new {z : [\n                {login : String<[ \n                                    {hash : -> Int<[\n                                                    {== : Int<Int -> Bool<L}]}] Int<L -> Int<L}]<L \n        => \n            def password guess = if password.hash().==(guess) then 1 else 0}\n    \n} in\nauth.login(\"qwe123\",\"qwe123\".hash())",
         desc: "The password policy now indicates that information about the password can be done be public by calling 1) the hash over the password, " +
         " and then 2) to compare the result with a public string"
     },
     {
         value : 4,
-        text:"Recursive declassification over list",
-        program: "let{\nlistTool = new {z : [\n                    {contains : StrList<[y \n                                            {isEmpty: -> Bool<L}\n                                            {head: -> String<[{== : String<L -> Bool<L}] }\n                                            {tail: -> StrList<y}\n                                \n                                ] -> Bool<L}\n                ] <L \n                => \n                def contains myList  = \n                    if myList.isEmpty() \n                    then false \n                    else \n                        if myList.head().==(\"a\") \n                        then true \n                        else z.contains(myList.tail())\n                    \n             }\n} \nin\nlistTool.contains(mklist(\"b\",\"c\",\"a\"))",
+        text:"3: Recursive declassification over list",
+        program: "let{\n    type StrEqList = [y \n                        {isEmpty: -> Bool<L}\n                        {head: -> String<[{== : String<L -> Bool<L}] }\n                        {tail: -> StrList<y}\n                                \n                                ]\n    val listHelper = new {z : [\n                    {contains : StrList<StrEqList -> Bool<L}\n                ] <L \n                => \n                def contains myList  = \n                    if myList.isEmpty() \n                    then false \n                    else \n                        if myList.head().==(\"a\") \n                        then true \n                        else z.contains(myList.tail())\n                    \n             }\n} \nin\nlistHelper.contains(mklist(\"b\",\"c\",\"a\"))",
         desc: "Recursive declassification policies are desirable to express interesting declassification of "+
         "either inductive data structures or object interfaces (whose essence are recursive types). Consider for instance a secret list" +
         " of strings, for which we want to allow traversal of the "+
@@ -180,12 +180,12 @@ export default class Main extends React.Component {
 
     reduce = () => {
         this.setState({loadingReduce: true, executionState: 0, executionError: null}, () => {
-            request.post('run')
+            request.post('reduce')
                 .send({program: this.state.program})
                 .set('Accept', 'application/json')
                 .end((err, res) => {
                     if (err || !res.ok) {
-                        alert('Oh no! error');
+                        alert('Oh no! Configuration Error');
                     } else {
                         if (res.body.status == "OK") {
                             this.setState({
@@ -305,7 +305,7 @@ export default class Main extends React.Component {
                             <td>::=</td>
                             <td> o | x | t.m(t) | b | n | s |
                                 <strong>if</strong> t <strong>then</strong> t <strong>else</strong> t |
-                                <strong>mkList</strong>(t*) | let {"{"} (x = t)* {"}"} in t
+                                <strong>mkList</strong>(t*) | <strong>let</strong> {"{"} TD* VD* {"}"} <strong>in</strong> t
                             </td>
                             <td>(Terms)</td>
                         </tr>
@@ -314,7 +314,21 @@ export default class Main extends React.Component {
                             <td>::=</td>
                             <td> <strong>new</strong> {this.lcb()} x : S => (<strong>def</strong> name x* = t)* {this.rcb()}
                             </td>
-                            <td>(Terms)</td>
+                            <td>(Object)</td>
+                        </tr>
+                        <tr>
+                            <td>TD</td>
+                            <td>::=</td>
+                            <td> <strong>type</strong> X = OT
+                            </td>
+                            <td>(Type Declaration)</td>
+                        </tr>
+                        <tr>
+                            <td>VD</td>
+                            <td>::=</td>
+                            <td> <strong>val</strong> x = t
+                            </td>
+                            <td>(Value declaration)</td>
                         </tr>
                         <tr>
                             <td>b</td>
