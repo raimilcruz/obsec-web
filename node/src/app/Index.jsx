@@ -82,14 +82,14 @@ const examples = [
     {
         value: 3,
         text: "2: Password policy with hash and eq",
-        program: "let {\n    val auth = new {z : [\n                {login : String<[ \n                                    {hash : -> Int<[\n                                                    {== : Int<Int -> Bool<L}]}] Int<L -> Int<L}]<L \n        => \n            def password guess = if password.hash().==(guess) then 1 else 0}\n    \n} in\nauth.login(\"qwe123\",\"qwe123\".hash())",
+        program: "let {\n    type StringHashEq = [{hash : -> Int<[{== : Int<Int -> Bool<L}]}]\n    val auth = new {z : [{login : String<StringHashEq Int<L -> Int<L}]<L \n        => \n            def login password guess = if password.hash().==(guess) then 1 else 0}\n    \n} in\nauth.login(\"qwe123\",\"qwe123\".hash())",
         desc: "The password policy now indicates that information about the password can be done be public by calling 1) the hash over the password, " +
         " and then 2) to compare the result with a public string"
     },
     {
         value : 4,
         text:"3: Recursive declassification over list",
-        program: "let{\n    type StrEqList = [y \n                        {isEmpty: -> Bool<L}\n                        {head: -> String<[{== : String<L -> Bool<L}] }\n                        {tail: -> StrList<y}\n                                \n                                ]\n    val listHelper = new {z : [\n                    {contains : StrList<StrEqList -> Bool<L}\n                ] <L \n                => \n                def contains myList  = \n                    if myList.isEmpty() \n                    then false \n                    else \n                        if myList.head().==(\"a\") \n                        then true \n                        else z.contains(myList.tail())\n                    \n             }\n} \nin\nlistHelper.contains(mklist(\"b\",\"c\",\"a\"))",
+        program: "let{\n    type StringEq = [{== : String<L -> Bool<L}]\n    type StrEqList = [y \n                        {isEmpty: -> Bool<L}\n                        {head: -> String<StringEq }\n                        {tail: -> StrList<y}\n                                \n                                ]\n    val listHelper = new {z : [\n                    {contains : StrList<StrEqList -> Bool<L}\n                ] <L \n                => \n                def contains myList  = \n                    if myList.isEmpty() \n                    then false \n                    else \n                        if myList.head().==(\"a\") \n                        then true \n                        else z.contains(myList.tail())\n                    \n             }\n} \nin\nlistHelper.contains(mklist(\"b\",\"c\",\"a\"))",
         desc: "Recursive declassification policies are desirable to express interesting declassification of "+
         "either inductive data structures or object interfaces (whose essence are recursive types). Consider for instance a secret list" +
         " of strings, for which we want to allow traversal of the "+
