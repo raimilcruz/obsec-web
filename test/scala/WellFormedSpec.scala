@@ -83,5 +83,14 @@ class WellFormedSpec extends FlatSpec{
     }
 
   }
+  "WF for type with repeated method" must "fail" in {
+    val t = ObSecParser.parseType("[{m : -> Int<Int}{m : -> Int<Int}]")
+    t match{
+      case Right(tt) =>
+          assert(!wellFormedChecker.isWellFormed(tt))
+      case _ => fail("parsing error")
+    }
+
+  }
 
 }

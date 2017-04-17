@@ -51,7 +51,7 @@ case class ObjType(typeVar: TypeVar, methods: List[MethodDeclaration]) extends T
   override def containsMethod(m: String): Boolean = methods.exists(x => x.name == m)
 
   override def toString: String =
-    s"{ot ${typeVar.name} ${methods.map(x => x.toString).fold("")((x: String, y: String) => x + y).toString()}}"
+    s"[${typeVar.name} ${methods.map(x => x.toString).fold("")((x: String, y: String) => x + y).toString()}]"
 }
 
 object ObjType {
@@ -166,6 +166,8 @@ case object StringListType extends Type with PrimType{
       MethodDeclaration("head",MType(List(),SType(StringType,StringType))),
       MethodDeclaration("tail",MType(List(),SType(TypeVar("x"),TypeVar("x"))))
     ))
+
+  override def toString: String = "StrList"
 }
 
 

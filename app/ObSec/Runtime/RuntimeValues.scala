@@ -62,6 +62,8 @@ package ObSec.Runtime {
       case "tail" => RuntimeStrList(l.tail)
       case _ => throw new Error("Stuck")
     }
+    override def toString: String = l.toString()
+
   }
 
 }
