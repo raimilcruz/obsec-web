@@ -26,16 +26,16 @@ class TypeChecker() {
     case MethodInv(e1, args, m) => {
       val s1 = internalTypeCheck(scope, aliasScope, e1)
       val argTypes = args.map(param => internalTypeCheck(scope, aliasScope, param))
-      println(s"Args: ${argTypes}")
+      //println(s"Args: ${argTypes}")
       //facet analysis
       if (s1.privateType.containsMethod(m)) {
         var mType = s1.privateType.methSig(m)
-        println(s"Method type : ${mType}")
+        //println(s"Method type : ${mType}")
         if (s1.publicType.containsMethod(m)) {
           mType = s1.publicType.methSig(m)
         }
 
-        println(s"Checking subtyping between: ${args} and ${mType.domain}")
+        //println(s"Checking subtyping between: ${args} and ${mType.domain}")
         //check the argument count
         if (mType.domain.size != args.size) throw TypeError(s"Method '${m}' : Actual arguments amount must match the formal arguments amount")
         //check subtyping between $mType.domain and s2
@@ -108,7 +108,7 @@ class TypeChecker() {
       val typeDefs = declarations.filter(d => d.isInstanceOf[TypeDefinition]).map(td => td.asInstanceOf[TypeDefinition])
       for (td <- typeDefs) {
         val closedType = closeAliases(newTypeAliasScope.toList(), ObjType(TypeVar(td.name), td.methods))
-        println(newTypeAliasScope.toList())
+        //println(newTypeAliasScope.toList())
         if (!wfChecker.isWellFormed(closedType))
           throw TypeError(s"Type declaration '${td.name}' declaration is not well-formed: ${closedType}")
         newTypeAliasScope.add(td.name, closedType)
@@ -119,7 +119,7 @@ class TypeChecker() {
       val typeAliases = declarations.filter(d => d.isInstanceOf[TypeAlias]).map(ld => ld.asInstanceOf[TypeAlias])
       for (ta <- typeAliases) {
         val closedType = closeAliases(newTypeAliasScope.toList(), ta.objType)
-        println(newTypeAliasScope.toList())
+        //println(newTypeAliasScope.toList())
         if (!wfChecker.isWellFormed(closedType))
           throw TypeError(s"Type in the type alias '${ta.aliasName}' declaration is not well-formed: ${closedType}")
         newTypeAliasScope.add(ta.aliasName, closedType)

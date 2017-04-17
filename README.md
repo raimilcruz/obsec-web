@@ -1,27 +1,30 @@
 
-# Gradual Unions:
+# ObSec Interpreter:
+
+**ObSec** is an small object oriented language with security typing to express declassification policies using object types.
+
 
 ## How to run this application:
 
 To run the application all you need is Java8 (you need Java8 in the PATH).
 Unzip the file.
 ```sh
-unzip intrinsify-0.0.1.zip
+unzip obsec-web-0.0.2.zip
 ```
 go to the folder:
 ```sh
-cd intrinsify-0.0.1
+cd obsec-web-0.0.2
 ```
 add run permissions to the binary file:
 ```sh
-chmod +x bin/intrinsify
+chmod +x bin/obsec
 ```
 and then run
 ```sh
-./bin/intrinsify
+./bin/obsec-web
 ```
 This should start a server in the port 9000.
-To open the application go to http://localhost:9000
+To open the application go to http://localhost:9000/obsec/
 
 
-- To add a lambda symbol just insert a "\" symbol in the program (it'll be transformed automatically).
+
