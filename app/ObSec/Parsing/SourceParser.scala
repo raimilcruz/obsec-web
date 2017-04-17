@@ -13,7 +13,7 @@ import scala.util.parsing.combinator.{ImplicitConversions, JavaTokenParsers, Pac
   * Defining a parser for ObSec language
   */
 object ObSecParser extends StandardTokenParsers with PackratParsers with ImplicitConversions with DebugPackratParsers{
-  lexical.reserved += ("if" , "then" , "else" , "true", "false", "let" ,"in", "type", "new", "def","val", "ot" , "Int" , "String" , "Bool", "StrList" , "L" , "H"  ,"mklist" )
+  lexical.reserved += ("if" , "then" , "else" , "true", "false", "let" ,"in", "type", "new", "def","val","deftype", "ot" , "Int" , "String" , "Bool", "StrList" , "L" , "H"  ,"mklist" )
   lexical.delimiters ++= (": . < -> => + - * / ( ) [ ] { } , = ;" split ' ')
 /*
 
@@ -64,12 +64,6 @@ object ObSecParser extends StandardTokenParsers with PackratParsers with Implici
   def LOW ="L"
   def HIGH ="H"
 
-  def operPlus = "+"
-  def operMinus = "-"
-  def operCompare = "=="
-
-  lazy val operator : PackratParser[String] = operPlus | operMinus | operCompare
-
   def  program: PackratParser[ObSecExpr] = new Wrap("program",phrase(expr))
   lazy val expr : Parser[ObSecExpr] = {
     valExpr |||  varExpr ||| methodInvExpr | ifThenElse | letStarExpr | mkListExpr
@@ -79,10 +73,15 @@ object ObSecParser extends StandardTokenParsers with PackratParsers with Implici
     ((MKLIST ~ LEFTPAREN) ~> repsep(expr,",")) <~ RIGHTPAREN ^^ (l => ListConstructorExpr(l))
 
   lazy val letStarExpr :PackratParser[ObSecExpr] =
-    ((LET ~ LEFTBRACKET )~> (rep(typeAliasDecl) ~ rep(localDecl))) ~ ((RIGHTBRACKET ~ IN) ~> expr) ^^ {case tDecls ~ decls ~ expr => LetStarExpr(tDecls ++ decls,expr)}
+    ((LET ~ LEFTBRACKET )~> (rep(defTypeDecl)~ rep(typeAliasDecl) ~ rep(localDecl))) ~ ((RIGHTBRACKET ~ IN) ~> expr) ^^
+      {case defTypeDecls ~ tDecls ~ decls ~ expr => LetStarExpr(defTypeDecls++ tDecls ++ decls,expr)}
 
   lazy val typeAliasDecl : PackratParser[TypeAlias] =
     (("type" ~> ident <~ EQUALSSIGN) ~ objType) ^^ {case id ~ t => TypeAlias(id,t)}
+
+  lazy val defTypeDecl : PackratParser[TypeDefinition] =
+    "deftype" ~> ident ~ (LEFTBRACKET  ~> (methodList <~ RIGHTBRACKET)) ^^ {case tName ~ methodList => TypeDefinition(tName,methodList)}
+
 
   lazy val localDecl : PackratParser[LocalDeclaration] =
     localDecl11 | localDecl12

@@ -92,6 +92,7 @@ case class LetStarExpr(declarations: List[Declaration],body:ObSecExpr) extends O
 sealed trait Declaration
 case class LocalDeclaration(variable:String,rExpr:ObSecExpr) extends Declaration
 case class TypeAlias(aliasName: String,objType: ObjType) extends Declaration
+case class TypeDefinition(name:String,methods:List[MethodDeclaration]) extends Declaration
 
 
 

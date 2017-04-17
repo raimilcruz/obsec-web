@@ -210,4 +210,14 @@ class ParserSpec extends FlatSpec with Matchers {
       case Left(error) => fail(s"parse error: ${error.msg}")
     }
   }
+
+  "Parser" should "recognize deftype keyword" in {
+    var t = ObSecParser("let{deftype Tree{{left: -> Tree<L}}} in 1")
+    t match{
+      case Right(tt) =>
+        assert(tt == LetStarExpr(List(TypeDefinition("Tree",
+          List(MethodDeclaration("left",MType(List(),SType(TypeVar("Tree"),TypeVar("Tree"))))))),IntExpr(1)))
+      case Left(error) => fail(s"parse error: ${error.msg}")
+    }
+  }
 }

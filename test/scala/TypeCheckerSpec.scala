@@ -345,4 +345,25 @@ class TypeCheckerSpec extends FlatSpec {
     }
   }
 
+  "Deftype" should "work" in {
+    var t = ObSecParser("let{\n    deftype StringEq{{== : String<L -> Bool<L}}\n    val auth = new {z : [{login : String<StringEq String<L -> Int<L}]<L \n            => \n            def login password guess = if password.==(guess) then 1 else 0}\n} in \nauth.login(\"qwe123\",\"qwe123\")")
+    t match{
+      case Right(ast) =>
+        assert(TypeChecker(ast) == SType(IntType,IntType))
+      case Left(error) => fail(s"parse error: ${error.msg}")
+    }
+  }
+
+
+  "Deftype" should "fail" in {
+    var t = ObSecParser("let{\n    deftype StringEq{{== : String<Int -> Bool<L}}\n    val auth = new {z : [{login : String<StringEq String<L -> Int<L}]<L \n            => \n            def login password guess = if password.==(guess) then 1 else 0}\n} in \nauth.login(\"qwe123\",\"qwe123\")")
+    t match{
+      case Right(ast) =>
+        intercept[TypeError]{
+          TypeChecker(ast)
+        }
+
+      case Left(error) => fail(s"parse error: ${error.msg}")
+    }
+  }
 }
