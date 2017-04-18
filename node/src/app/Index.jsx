@@ -488,7 +488,9 @@ export default class Main extends React.Component {
                                     :
                                     <div>
                                         <Subheader>Type checking error</Subheader>
-                                        <div  style={errorStyle}>{this.state.error}</div>
+                                        <div  style={errorStyle}>{this.state.error.split('\n').map((item, key) => {
+                                            return <span key={key}>{item}<br/></span>
+                                        })}</div>
                                     </div>
                             }
                         </div> : null

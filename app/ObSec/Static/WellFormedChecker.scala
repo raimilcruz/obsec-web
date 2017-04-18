@@ -18,9 +18,12 @@ class WellFormedChecker(val errorCollector : ErrorCollector) {
     case TypeVar(x) =>  true
     case obj@ObjType(x,methods)=>
       val newEnv = Environment.extend(env,x.name,obj)
-      if (methods.map(x => x.name).distinct.size != methods.size)
-        throw TypeError("An object type can not have repeated method names")
-      methods.forall(m => m.mtype.domain.forall(s=> isWellFormed(newEnv,s)) && isWellFormed(newEnv,m.mtype.codomain))
+      if (methods.map(x => x.name).distinct.size != methods.size){
+        errorCollector.report("An object type can not have repeated method names")
+        false
+      }
+      else
+        methods.forall(m => m.mtype.domain.forall(s=> isWellFormed(newEnv,s)) && isWellFormed(newEnv,m.mtype.codomain))
   }
 
   def closeType(env: Environment[ObjType],t: Type):Type =
@@ -32,11 +35,11 @@ class WellFormedChecker(val errorCollector : ErrorCollector) {
 
   private def isWellFormed(env: Environment[ObjType], s:SType):Boolean =
     isWellFormed(env,s.privateType)&&isWellFormed(env,s.publicType)&&
-      sb.<::(closeType(env,s.privateType),closeType(env,s.publicType)) ||
+      (sb.<::(closeType(env,s.privateType),closeType(env,s.publicType)) ||
     {
       errorCollector.report(s"Private facet must be subtype of public facet in security type: ${s}")
       false
-    }
+    })
 
   def isClosed(s: SType): Boolean = isSClosed(Environment.empty[Boolean](), s)
 

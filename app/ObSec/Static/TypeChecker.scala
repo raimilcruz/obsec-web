@@ -95,7 +95,7 @@ class TypeChecker() {
       val sE1 = internalTypeCheck(scope, aliasScope, e1)
       val sE2 = internalTypeCheck(scope, aliasScope, e2)
       if (sE1 != sE2)
-        throw TypeError("Both expression in a if must have the same type")
+        throw TypeError("Both branches of an if expression must have the same type")
       //depending on the type of the condiction we should lift the public type of the resulting type
       //TODO: Implement this properly: I should check for the empty object type
       if (sCond.publicType != BooleanType)

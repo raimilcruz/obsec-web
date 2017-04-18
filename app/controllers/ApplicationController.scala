@@ -49,7 +49,7 @@ class ApplicationController extends Controller {
                 Ok(Json.obj("status" -> "KO", "error" -> e.getMessage))
             }
 
-          case Left(error) => Ok(Json.obj("status" -> "KO", "error" -> s"Parse error: ${error.msg}"))
+          case Left(error) => Ok(Json.obj("status" -> "KO", "error" -> s"Parser error. ${error.msg}"))
         }
 
       }
@@ -77,7 +77,7 @@ class ApplicationController extends Controller {
                 Ok(Json.obj("status" -> "KO", "error" -> e.getMessage))
             }
           //throw new  Exception(confs.last.toString+ " "+error.toString)
-          case Left(error) => Ok(Json.obj("status" -> "KO", "error" -> "Parse error"))
+          case Left(error) => Ok(Json.obj("status" -> "KO", "error" -> "Parser error"))
         }
 
       }

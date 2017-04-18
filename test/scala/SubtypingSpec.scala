@@ -144,7 +144,7 @@ class SubtypingSpec extends FlatSpec {
       case (_, _) => fail("types are not recognized!!")
     }
   }
-  "Subtyping case from A&C " must "work 1" in {
+  /*"Subtyping case from A&C " must "work 1" in {
     var subtyping = new AmadioCardelliSubtyping
     val t1 = ObSecParser.parseType("{ot x {f : x<x -> {ot y {f: x<x -> x<x}}<L }}")
     val t2 = ObSecParser.parseType("{ot y {f : {ot z {foo: y<y -> y<y}}<L -> y<y}}")
@@ -152,7 +152,7 @@ class SubtypingSpec extends FlatSpec {
       case (Right(t11), Right(t22)) => assert(subtyping.<::(t11, t22))
       case (_, _) => fail("types are not recognized!!")
     }
-  }
+  }*/
   "Subtyping specification for StrList" must "work" in {
     var subtyping = new AmadioCardelliSubtyping
     val t1 = ObSecParser.parseType("{ot l {isEmpty : -> Bool<L}{head : -> String<L}{tail : -> l<l}}")

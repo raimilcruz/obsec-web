@@ -28,6 +28,3 @@ To open the application go to http://localhost:9000/obsec/
 
 ## Acknowledgments:
 This project is a fork of the project [https://github.com/pleiad/intrinsifymysoul](https://github.com/pleiad/intrinsifymysoul)
-
-
-

@@ -16,7 +16,7 @@ case class SType(privateType: Type, publicType: Type) {
     val pString =
       if(TypeEquivalence.alphaEq(publicType,ObjType.top))"H"
       else if(TypeEquivalence.alphaEq(publicType,privateType)) "L"
-      else s"${privateType}"
+      else s"${publicType}"
     s"${privateType}<${pString}"
   }
 

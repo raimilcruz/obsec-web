@@ -6,6 +6,7 @@ import ObSec.Parsing.ObSecParser.rep1
 import scala.util.parsing.combinator.syntactical.StandardTokenParsers
 import scala.util.parsing.combinator.token.StdTokens
 import scala.util.parsing.combinator.{ImplicitConversions, JavaTokenParsers, PackratParsers}
+import scala.util.parsing.input.Position
 
 
 
@@ -64,7 +65,7 @@ object ObSecParser extends StandardTokenParsers with PackratParsers with Implici
   def LOW ="L"
   def HIGH ="H"
 
-  def  program: PackratParser[ObSecExpr] = new Wrap("program",phrase(expr))
+  def  program: PackratParser[ObSecExpr] = phrase(expr)//new Wrap("program",phrase(expr))
   lazy val expr : Parser[ObSecExpr] = {
     valExpr |||  varExpr ||| methodInvExpr | ifThenElse | letStarExpr | mkListExpr
   }
@@ -128,13 +129,18 @@ object ObSecParser extends StandardTokenParsers with PackratParsers with Implici
     "def" ~> (extendedIdentifier ~ rep(identifier)) ~ ((EQUALSSIGN ~> expr )) ^^
       { case mName ~ args ~ expr => MethodDef(mName,args,expr)}
   }
-  lazy val stype : PackratParser[SType] ={
+  lazy val stype : PackratParser[SType] = stypeX | publicTypeShortcut
+  lazy val stypeX : PackratParser[SType] ={
     ((singleType <~ LESSTHAN) ~ labelType) ^^ {case t1 ~ t2  => t2 match {
       case LowLabel => SType(t1,t1)
       case HighLabel => SType(t1,ObjType.top)
       case _ => SType(t1,t2)
     } }
   }
+  lazy val publicTypeShortcut: PackratParser[SType] ={
+    singleType ^^ {t1  => SType(t1,t1)}
+  }
+
   lazy val singleType : PackratParser[Type] ={
     objType  |  primType | varType
   }
@@ -191,8 +197,8 @@ object ObSecParser extends StandardTokenParsers with PackratParsers with Implici
     */
   def apply(string: String): Either[ObSecParserError, ObSecExpr] = {
     //parseAll(program,string) match {
-    program (new lexical.Scanner(string)) match {
-      case NoSuccess(msg, next) => Left(ObSecParserError(msg))
+    phrase(expr) (new lexical.Scanner(string)) match {
+      case x: NoSuccess => Left(ObSecParserError("["+x.next.pos+"] failure: "+x.msg,x.next.pos,x.next.offset))
       case Success(result, next) => Right(result)
     }
   }
@@ -205,7 +211,7 @@ object ObSecParser extends StandardTokenParsers with PackratParsers with Implici
   def parseType(string:String):Either[ObSecParserError, Type] = {
     //parseAll(singleType,string) match {
     phrase(singleType) (new lexical.Scanner(string)) match {
-      case NoSuccess(msg, next) => Left(ObSecParserError(msg))
+      case x: NoSuccess => Left(ObSecParserError("["+x.next.pos+"] failure: "+x.msg,x.next.pos,x.next.offset))
       case Success(result, next) => Right(result)
     }
   }
@@ -217,7 +223,7 @@ object ObSecParser extends StandardTokenParsers with PackratParsers with Implici
   def parseSType(string:String):Either[ObSecParserError, SType] = {
     //parseAll(stype,string) match {
     phrase(stype) (new lexical.Scanner(string)) match {
-      case NoSuccess(msg, next) => Left(ObSecParserError(msg))
+      case  x: NoSuccess => Left(ObSecParserError("["+x.next.pos+"] failure: "+x.msg,x.next.pos,x.next.offset))
       case Success(result, next) => Right(result)
     }
   }
@@ -225,6 +231,6 @@ object ObSecParser extends StandardTokenParsers with PackratParsers with Implici
 }
 
 trait ObSecCompilationError
-case class ObSecParserError(msg: String) extends ObSecCompilationError
+case class ObSecParserError(msg: String,pos:Position,offset:Int) extends ObSecCompilationError
 
 
