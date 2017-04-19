@@ -25,7 +25,7 @@ object ObSecParser extends StandardTokenParsers with PackratParsers with Implici
 */
 
   //lazy val identifier: PackratParser[String] = elem("ident",x=> reserved2.contains(x.toString)) ^^ (x=>x.toString)
-  lazy val identifier: PackratParser[String] = ident
+  lazy val identifier: PackratParser[String] = ident 
 
   lazy val symIdentifier:PackratParser[String] =  rep("+"| "-"| "="|"<"|"/") ^^ {case l => l.foldLeft("")((acc,a)=>acc+a)}
 
@@ -82,7 +82,7 @@ object ObSecParser extends StandardTokenParsers with PackratParsers with Implici
     (("type" ~> ident <~ EQUALSSIGN) ~ objType) ^^ {case id ~ t => TypeAlias(id,t)}
 
   lazy val defTypeDecl : PackratParser[TypeDefinition] =
-    "deftype" ~> ident ~ (LEFTBRACKET  ~> (methodList <~ RIGHTBRACKET)) ^^ {case tName ~ methodList => TypeDefinition(tName,methodList)}
+    "deftype" ~> ident ~ (LEFTBRACKET  ~> (methodList <~ RIGHTBRACKET)) ^^ {case tName ~ methodList =>  TypeDefinition(tName,methodList)}
 
 
   lazy val localDecl : PackratParser[LocalDeclaration] =

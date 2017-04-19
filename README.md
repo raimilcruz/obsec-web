@@ -1,30 +1,38 @@
 
-# ObSec Interpreter:
+# ObSec Pad:
 
-**ObSec** is an small object oriented language with security typing to express declassification policies using object types.
+**ObSec** is a simple object-oriented language that supports type-based declassification
 
+We provide an **online [ObSec Pad](https://pleiad.cl/obsec/)** that is ready to use, with predefined examples and it is always up-to-date
 
-## How to run this application:
+## Local execution of the ObSec Pad
 
-To run the application all you need is Java8 (you need Java8 in the PATH).
-Unzip the file.
-```sh
-unzip obsec-web-0.0.2.zip
-```
-go to the folder:
-```sh
-cd obsec-web-0.0.2
-```
-add run permissions to the binary file:
-```sh
-chmod +x bin/obsec
-```
-and then run
-```sh
-./bin/obsec-web
-```
-This should start a server in the port 9000.
-To open the application go to http://localhost:9000/obsec/
+To run the ObSec Pad locally, all you need is Java 1.8. Also check that you have Java 1.8 in the path.
+
+The following instructions are Unix valid commands. If you have Windows installed in your machine, you need to perform the corresponding commands.
+
+ - Unzip the file. 
+    ```sh
+    unzip obsec-web.zip
+    ```
+ - Go to the "obsec-web" folder:
+    ```sh
+    cd obsec-web
+    ```
+ - Add run permissions to the binary file:
+    ```sh
+    chmod +x bin/obsec-web
+    ```
+ - And then run:
+    ```sh
+    ./bin/obsec-web
+    ```
+    This should start a server in the port 9000. To open the ObSec Pad, go to [http://localhost:9000/obsec/](http://localhost:9000/obsec/)
+ - In case the port 9000 is already taken, run:
+    ```sh
+    ./bin/obsec-web -Dhttp.port=`<available-port-number>
+    ```
+
 
 ## Acknowledgments:
 This project is a fork of the project [https://github.com/pleiad/intrinsifymysoul](https://github.com/pleiad/intrinsifymysoul)
