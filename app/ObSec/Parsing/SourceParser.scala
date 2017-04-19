@@ -74,9 +74,10 @@ object ObSecParser extends StandardTokenParsers with PackratParsers with Implici
     ((MKLIST ~ LEFTPAREN) ~> repsep(expr,",")) <~ RIGHTPAREN ^^ (l => ListConstructorExpr(l))
 
   lazy val letStarExpr :PackratParser[ObSecExpr] =
-    ((LET ~ LEFTBRACKET )~> (rep(defTypeDecl)~ rep(typeAliasDecl) ~ rep(localDecl))) ~ ((RIGHTBRACKET ~ IN) ~> expr) ^^
-      {case defTypeDecls ~ tDecls ~ decls ~ expr => LetStarExpr(defTypeDecls++ tDecls ++ decls,expr)}
+    ((LET ~ LEFTBRACKET )~> (rep(typeDecl) ~ rep(localDecl))) ~ ((RIGHTBRACKET ~ IN) ~> expr) ^^
+      {case  tDecls ~ decls ~ expr => LetStarExpr(tDecls ++ decls,expr)}
 
+  lazy val typeDecl : PackratParser[Declaration] = defTypeDecl | typeAliasDecl
   lazy val typeAliasDecl : PackratParser[TypeAlias] =
     (("type" ~> ident <~ EQUALSSIGN) ~ objType) ^^ {case id ~ t => TypeAlias(id,t)}
 

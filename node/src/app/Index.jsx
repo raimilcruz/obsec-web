@@ -67,44 +67,48 @@ const examples = [
     {
         value: 1,
         text: "1.1: Introducing type-based declassification policies: Password policy",
-        program: "let{\n    type StringEq = [{== : String<L -> Bool<L}]\n    val auth = new {z : [{login : String<StringEq String<L -> Int<L}]<L \n            => \n            def login password guess = if password.==(guess) then 1 else 0}\n} in \nauth.login(\"qwe123\",\"qwe123\")",
+        program:   "let{\n  type StringEq = [{== : String -> Bool}]\n  deftype AuthServer {\n    {login: String<StringEq String -> Int}\n  }\n  val auth =  new {z : AuthServer<L => \n                def login password guess = if password.==(guess) then 1 else 0\n              }\n}\nin \nauth.login(\"qwe123\",\"qwe123\")",
         desc: "This is the first example of the paper. The login method receives two arguments: the 'secret' password " +
-        "and the user guess. The 'password' argument has a declassification policy that allow to release the result " +
+        "and the user guess. The 'password' argument has a declassification policy that allows to release the result " +
         "of the == comparison. The body of the 'login' method adheres to that policy, so the resulting integer is public"
     },
     {
         value: 2,
         text: "1.2: Method implementation does not respect the password policy",
-        program: "let{\n    type StringEq = [{== : String<L -> Bool<L}]\n    val auth = new {z : [{login : String<StringEq String<L -> Int<L}]<L \n            => \n            def login password guess = if password.hash().==(guess.hash()) then 1 else 0}\n} in \nauth.login(\"qwe123\",\"qwe123\")",
+        program:   "let{\n  type StringEq = [{== : String -> Bool}]\n  deftype AuthServer {\n    {login: String<StringEq String -> Int}\n  }\n  val auth =  new {z : AuthServer<L => \n                def login password guess = if password.hash().==(guess.hash()) then 1 else 0\n              }\n}\nin \nauth.login(\"qwe123\",\"qwe123\")",
         desc: "Now the 'login' method does not adhere to the password policy and it uses the hash method, which is not the public type. " +
         "Note that the conditional expression become high, and hence the result of the if expression is also high"
     },
     {
         value: 3,
-        text: "1.3: Password policy is full secret now",
-        program: "let{\n    val auth = new {z : [\n                {login : String<H String<L -> Int<L}]<L \n            => \n            def login password guess = if password.==(guess) then 1 else 0}\n} in \nauth.login(\"qwe123\",\"qwe123\")",
+        text: "1.3: Password policy is full secret",
+        program:   "let{\n  deftype AuthServer {\n    {login: String<H String -> Int}\n  }\n  val auth =  new {z : AuthServer<L => \n                def login password guess = if password.==(guess) then 1 else 0\n              }\n}\nin \nauth.login(\"qwe123\",\"qwe123\")",
         desc: "This example differs from the first one in that the first argument of the login method (i.e. the real password) is full secret." +
-        "In this case the implementation of the login does not adhere to the policy of password because it is " +
-        "using the == method that is not in the public facet, so the resulting type of the login method body is " +
-        "a secret integer. Hence the method implementation result type does not meet the method signature resulting type, deriving in a type error. " +
-        "Feel free to change the login method signature return type to Int\<H and then the program will be well-typed, meaning the result is secret"
+        " In this case, the implementation of the login does not adhere to the policy of password because it is using the == method that is" +
+        " not in the public facet, so the resulting type of the login method body is a secret integer." +
+        " Hence the method implementation result type is not subtype of the method signature return type, deriving in a type error." +
+        " Feel free to change the login method signature return type to Int<H and then the program will be well-typed, meaning the result is secret."
     },
     {
         value: 4,
         text: "2: Password policy with hash and eq",
-        program: "let {\n    type StringHashEq = [{hash : -> Int<[{== : Int<Int -> Bool<L}]}]\n    val auth = new {z : [{login : String<StringHashEq Int<L -> Int<L}]<L \n        => \n            def login password guess = if password.hash().==(guess) then 1 else 0}\n    \n} in\nauth.login(\"qwe123\",\"qwe123\".hash())",
-        desc: "The password policy now indicates that information about the password can be done be public by calling 1) the hash over the password, " +
-        " and then 2) to compare the result with a public string"
+        program: "let {\n  type StringHashEq = [{hash : -> Int<[{== : Int -> Bool}]}]\n  type AuthServer = [{login : String<StringHashEq String -> Int<L}]\n  val auth =  new {z : AuthServer<L => \n                def login password guess = if password.hash().==(guess.hash()) then 1 else 0\n              }\n} in\nauth.login(\"qwe123\",\"qwe123\")",
+        desc: "The password policy now indicates that information about the password can be done public by calling 1) the hash method over the password, " +
+        " and then 2) to compare the result with a public integer. The program adheres to the policy, so it is well-typed." +
+        " Any variation to the implementation of the login method that does not respect the policy will be ill-typed. " +
+        "For instance, change the conditional expression to password.hash().+(1).==(guess.hash().+(1))"
     },
     {
         value : 5,
         text:"3: Recursive declassification over list",
-        program: "let{\n    type StringEq = [{== : String<L -> Bool<L}]\n    type StrEqList = [y \n                        {isEmpty: -> Bool<L}\n                        {head: -> String<StringEq }\n                        {tail: -> StrList<y}\n                                \n                                ]\n    val listHelper = new {z : [\n                    {contains : StrList<StrEqList -> Bool<L}\n                ] <L \n                => \n                def contains myList  = \n                    if myList.isEmpty() \n                    then false \n                    else \n                        if myList.head().==(\"a\") \n                        then true \n                        else z.contains(myList.tail())\n                    \n             }\n} \nin\nlistHelper.contains(mklist(\"b\",\"c\",\"a\"))",
+        program: "let{\n  type StringEq = [{== : String -> Bool}]\n  deftype StrEqList{\n    {isEmpty: -> Bool<L}\n    {head: -> String<StringEq }\n    {tail: -> StrList<StrEqList}\n  }\n  val listHelper =  new {z : [{contains : StrList<StrEqList -> Bool<L}]<L  =>\n                      def contains myList  =\n                        if myList.isEmpty()\n                        then false\n                        else\n                          if myList.head().==(\"a\")\n                          then true\n                          else z.contains(myList.tail())\n                    }\n}\nin\nlistHelper.contains(mklist(\"b\",\"c\",\"a\"))",
         desc: "Recursive declassification policies are desirable to express interesting declassification of "+
         "either inductive data structures or object interfaces (whose essence are recursive types). Consider for instance a secret list" +
         " of strings, for which we want to allow traversal of the "+
         "structure and comparison of its elements with a given string. " +
-        "Note that the head method returns a String that only has the == operation public."
+        "Note that the head method returns a String that only has the == operation public." +
+        " Any method invocation over the head of the list (different than ==) renders the program ill-typed. " +
+        "For instance, changing the inner if condition to myList.head().hash().==(“a”.hash()): the type checker reports “Both branches of an if expression must have the same type”. This is because the else branch of the outer if has type Bool<H while the then branch has type Bool<L. "
     }
 ]
 const examplesItems = examples.map((e) => {
@@ -442,6 +446,7 @@ export default class Main extends React.Component {
                             mode="java"
                             theme="github"
                             width = "70%"
+                            tabSize = {2}
                             onChange={this.onChangeProgram}
                             minLines={5}
                             maxLines={30}

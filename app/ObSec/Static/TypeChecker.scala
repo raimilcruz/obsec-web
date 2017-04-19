@@ -105,24 +105,22 @@ class TypeChecker() {
       val newTypeAliasScope = new NestedScope[Type](aliasScope)
       val letScope = new NestedScope[SType](scope)
 
-      val typeDefs = declarations.filter(d => d.isInstanceOf[TypeDefinition]).map(td => td.asInstanceOf[TypeDefinition])
+      val typeDefs = declarations.filter(d => d.isInstanceOf[TypeDefinition] || d.isInstanceOf[TypeAlias])
       for (td <- typeDefs) {
-        val closedType = closeAliases(newTypeAliasScope.toList(), ObjType(TypeVar(td.name), td.methods))
-        //println(newTypeAliasScope.toList())
-        if (!wfChecker.isWellFormed(closedType))
-          throw TypeError(s"Type declaration '${td.name}' declaration is not well-formed: ${closedType}")
-        newTypeAliasScope.add(td.name, closedType)
-      }
-      //convert deftype A{...} to type A = {...}
-
-      //verify well-formedness of the type aliases
-      val typeAliases = declarations.filter(d => d.isInstanceOf[TypeAlias]).map(ld => ld.asInstanceOf[TypeAlias])
-      for (ta <- typeAliases) {
-        val closedType = closeAliases(newTypeAliasScope.toList(), ta.objType)
-        //println(newTypeAliasScope.toList())
-        if (!wfChecker.isWellFormed(closedType))
-          throw TypeError(s"Type in the type alias '${ta.aliasName}' declaration is not well-formed: ${closedType}")
-        newTypeAliasScope.add(ta.aliasName, closedType)
+        td match{
+          case deftype:TypeDefinition =>
+            val closedType = closeAliases(newTypeAliasScope.toList(), ObjType(TypeVar(deftype.name), deftype.methods))
+            //println(newTypeAliasScope.toList())
+            if (!wfChecker.isWellFormed(closedType))
+              throw TypeError(s"Type declaration '${deftype.name}' declaration is not well-formed: ${closedType}")
+            newTypeAliasScope.add(deftype.name, closedType)
+          case ta:TypeAlias =>
+            val closedType = closeAliases(newTypeAliasScope.toList(), ta.objType)
+            //println(newTypeAliasScope.toList())
+            if (!wfChecker.isWellFormed(closedType))
+              throw TypeError(s"Type in the type alias '${ta.aliasName}' declaration is not well-formed: ${closedType}")
+            newTypeAliasScope.add(ta.aliasName, closedType)
+        }
       }
 
       val varDeclarations = declarations.filter(d => d.isInstanceOf[LocalDeclaration]).map(ld => ld.asInstanceOf[LocalDeclaration])

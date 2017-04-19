@@ -220,4 +220,25 @@ class ParserSpec extends FlatSpec with Matchers {
       case Left(error) => fail(s"parse error: ${error.msg}")
     }
   }
+  "Parser" should "recognize type declaration in any order " in {
+    var t = ObSecParser("let{ type A = [] " +
+      "deftype Tree{{left: -> Tree}{a: -> A}}" +
+      "type B = [{m: -> Tree}]} in 1")
+    t match{
+      case Right(tt) =>
+        assert(tt ==
+          LetStarExpr(
+            List(
+              TypeAlias("A",ObjType(TypeVar("gen"),List())),
+              TypeDefinition("Tree",
+                List(
+                  MethodDeclaration("left",MType(List(),SType(TypeVar("Tree"),TypeVar("Tree")))),
+                  MethodDeclaration("a",MType(List(),SType(TypeVar("A"),TypeVar("A"))))
+                )),
+              TypeAlias("B",ObjType(TypeVar("gen"),
+                            List(MethodDeclaration("m",MType(List(),SType(TypeVar("Tree"),TypeVar("Tree")))))))
+            ),IntExpr(1)))
+      case Left(error) => fail(s"parse error: ${error.msg}")
+    }
+  }
 }

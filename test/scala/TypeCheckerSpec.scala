@@ -298,6 +298,15 @@ class TypeCheckerSpec extends FlatSpec {
       case _ => fail("parsing error")
     }
   }
+  "Recursive downgrading policy for list" must "work 2" in {
+    var expr = ObSecParser(" let{\n    type StringEq = [{== : String -> Bool}]\n    deftype StrEqList{\n      {isEmpty: -> Bool<L}\n      {head: -> String<StringEq }\n      {tail: -> StrList<StrEqList}\n    }\n    val listHelper = new {z : [{contains : StrList<StrEqList -> Bool<L}] <L  =>\n      def contains myList  =\n      if myList.isEmpty()\n      then false\n      else\n      if myList.head().==(\"a\")\n      then true\n      else z.contains(myList.tail())\n    }\n  }\n  in\n  listHelper.contains(mklist(\"b\",\"c\",\"a\"))")
+    expr match {
+      case Right(ast)=>
+        assert(TypeChecker(ast) == SType(BooleanType,BooleanType))
+      case _ => fail("parsing error")
+    }
+  }
+
 
   "Invalid arguments" must "fail" in {
     var expr = ObSecParser("\"abc\".hash().==(\"abc\")")

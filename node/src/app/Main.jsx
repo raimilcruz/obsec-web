@@ -123,7 +123,7 @@ class Main extends React.Component {
       <MuiThemeProvider muiTheme={muiTheme}>
         <div>
           <div className="main" style={styles.root}>
-            <AppBar onLeftIconButtonTouchTap={this.handleTouchTapLeftIconButton} title="ObSec"
+            <AppBar onLeftIconButtonTouchTap={this.handleTouchTapLeftIconButton} title="ObSec Pad"
             showMenuIconButton={false} style={styles.appBar}
             />
             <div className="content">
