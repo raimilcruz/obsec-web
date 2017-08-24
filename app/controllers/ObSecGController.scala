@@ -1,0 +1,70 @@
+package controllers
+
+import javax.inject._
+
+import ObSecG.Parsing.ObSecGParser
+import ObSecG.Runtime.InterpreterG
+import ObSecG.Static.TypeCheckerG
+import play.api.libs.json.{Json, _}
+import play.api.mvc._
+
+@Singleton
+class ObSecGController extends Controller {
+
+  case class Program(program: String)
+
+  implicit val fReads = Json.reads[Program]
+
+  def typecheck = Action(BodyParsers.parse.json) { implicit request =>
+    val fResult = request.body.validate[Program]
+    fResult.fold(
+      errors => {
+        BadRequest(Json.obj("status" -> "KO", "message" -> JsError.toJson(errors)))
+      },
+      f => {
+        ObSecGParser(f.program) match {
+          case Right(term) =>
+            try {
+              val aType = TypeCheckerG(term)
+              Ok(Json.obj("status" -> "OK", "program" -> f.program,"expressionType"-> aType.toString))
+            } catch {
+              case te : ObSec.Static.TypeError => Ok(Json.obj("status" -> "KO", "error" -> te.str))
+              case e: Throwable =>
+                Ok(Json.obj("status" -> "KO", "error" -> e.getMessage))
+            }
+
+          case Left(error) => Ok(Json.obj("status" -> "KO", "error" -> s"Parser error. ${error.msg}"))
+        }
+
+      }
+    )
+  }
+
+  def reduce = Action(BodyParsers.parse.json) { implicit request =>
+    val fResult = request.body.validate[Program]
+    fResult.fold(
+      errors => {
+        BadRequest(Json.obj("status" -> "KO", "message" -> JsError.toJson(errors)))
+      },
+      f => {
+        ObSecGParser(f.program) match {
+          case Right(term) =>
+            try {
+              val result = InterpreterG.run(term)
+              Ok(Json.obj("status" -> "OK",
+                "program" -> f.program,
+                "result"-> result.toString
+              ))
+            }
+            catch {
+              case e: Throwable =>
+                Ok(Json.obj("status" -> "KO", "error" -> e.getMessage))
+            }
+          //throw new  Exception(confs.last.toString+ " "+error.toString)
+          case Left(error) => Ok(Json.obj("status" -> "KO", "error" -> "Parser error"))
+        }
+
+      }
+    )
+  }
+}
