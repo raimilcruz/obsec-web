@@ -14,7 +14,7 @@ import scala.util.parsing.input.Position
   * Defining a parser for ObSec language
   */
 object ObSecParser extends StandardTokenParsers with PackratParsers with ImplicitConversions with DebugPackratParsers{
-  lexical.reserved += ("if" , "then" , "else" , "true", "false", "let" ,"in", "type", "new", "def","val","deftype", "ot" , "Int" , "String" , "Bool", "StrList" , "L" , "H"  ,"mklist" )
+  lexical.reserved += ("if" , "then" , "else" , "true", "false", "let" ,"in", "type", "new", "def","val","deftype", "ot" , "Int" , "String" , "Bool", "StrList" , "L" , "H"  ,"mklist","cons" )
   lexical.delimiters ++= (": . < -> => + - * / ( ) [ ] { } , = ;" split ' ')
 /*
 
@@ -67,8 +67,11 @@ object ObSecParser extends StandardTokenParsers with PackratParsers with Implici
 
   def  program: PackratParser[ObSecExpr] = phrase(expr)//new Wrap("program",phrase(expr))
   lazy val expr : Parser[ObSecExpr] = {
-    valExpr |||  varExpr ||| methodInvExpr | ifThenElse | letStarExpr | mkListExpr
+    valExpr |||  varExpr ||| methodInvExpr | ifThenElse | letStarExpr | mkListExpr | consList
   }
+
+  lazy val consList: Parser[ObSecExpr] =
+    (("cons" ~ LEFTPAREN) ~> ((expr <~ ",") ~ expr)) <~ RIGHTPAREN ^^ {case elem~l => ConsListExpr(elem,l)}
 
   lazy val mkListExpr : Parser[ObSecExpr] =
     ((MKLIST ~ LEFTPAREN) ~> repsep(expr,",")) <~ RIGHTPAREN ^^ (l => ListConstructorExpr(l))
@@ -157,7 +160,11 @@ object ObSecParser extends StandardTokenParsers with PackratParsers with Implici
   lazy val intType : PackratParser[Type] = INT ^^ {_=> IntType}
   lazy val stringType : PackratParser[Type] = STRING ^^ {_=> StringType}
   lazy val booleanType : PackratParser[Type] = BOOLEAN ^^ {_=> BooleanType}
-  lazy val stringListType : PackratParser[Type] = STRLIST ^^ {_=> StringListType}
+  lazy val stringListType : PackratParser[Type] =  stringListStringType | stringListGType//STRLIST ^^ {_=> StringListType}
+
+  lazy val stringListStringType : PackratParser[Type] = STRLIST ^^ {_=> StringListType}
+  lazy val stringListGType : PackratParser[Type] = (STRLIST~"[") ~> (singleType <~"]") ^^ (t => StringGListType(t))
+
 
 
   lazy val lowLabel : PackratParser[Type]= LOW ^^ {_ => LowLabel}

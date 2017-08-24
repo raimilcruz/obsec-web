@@ -14,7 +14,7 @@ case class SType(privateType: Type, publicType: Type) {
 
   override def toString: String ={
     val pString =
-      if(TypeEquivalence.alphaEq(publicType,ObjType.top))"H"
+      if(TypeEquivalence.alphaEq(publicType,ObjType.top) && !TypeEquivalence.alphaEq(privateType,ObjType.top))"H"
       else if(TypeEquivalence.alphaEq(publicType,privateType)) "L"
       else s"${publicType}"
     s"${privateType}<${pString}"
@@ -51,7 +51,8 @@ case class ObjType(typeVar: TypeVar, methods: List[MethodDeclaration]) extends T
   override def containsMethod(m: String): Boolean = methods.exists(x => x.name == m)
 
   override def toString: String =
-    s"[${typeVar.name} ${methods.map(x => x.toString).fold("")((x: String, y: String) => x + y).toString()}]"
+    if(methods.isEmpty)"[]"
+    else s"[${typeVar.name} ${methods.map(x => x.toString).fold("")((x: String, y: String) => x + y).toString}]"
 }
 
 object ObjType {
@@ -149,6 +150,7 @@ case object BooleanType extends Type with PrimType {
 
 }
 
+
 case object StringListType extends Type with PrimType{
   override def methSig(x: String): MType = x match{
     case "isEmpty" => MType(List(),SType(BooleanType,BooleanType))
@@ -168,6 +170,31 @@ case object StringListType extends Type with PrimType{
     ))
 
   override def toString: String = "StrList"
+}
+
+/**
+  *
+  * @param elemPolicy The type must be subtype of String
+  */
+case class StringGListType(elemPolicy: Type) extends Type with PrimType{
+  override def methSig(x: String): MType = x match{
+    case "isEmpty" => MType(List(),SType(BooleanType,BooleanType))
+    case "head" => MType(List(),SType(StringType,elemPolicy))
+    case "tail" => MType(List(),SType(StringGListType(elemPolicy),StringGListType(elemPolicy)))
+  }
+
+  override def containsMethod(x: String): Boolean = x match {
+    case "isEmpty" | "head" | "tail" => true
+    case _ => false
+  }
+
+  override def toObjType: ObjType = ObjType(TypeVar("x"),
+    List(MethodDeclaration("isEmpty",MType(List(),SType(BooleanType,BooleanType))),
+      MethodDeclaration("head",MType(List(),SType(StringType,elemPolicy))),
+      MethodDeclaration("tail",MType(List(),SType(TypeVar("x"),TypeVar("x"))))
+    ))
+
+  override def toString: String = s"StrList[$elemPolicy]"
 }
 
 

@@ -86,6 +86,7 @@ case class IntExpr(v: Int) extends SurfaceValExpr
 case class StringExpr(v:String) extends SurfaceValExpr
 case class BooleanExpr(v:Boolean) extends SurfaceValExpr
 case class ListConstructorExpr(elems: List[ObSecExpr]) extends ObSecExpr
+case class ConsListExpr(elem :ObSecExpr,list:ObSecExpr) extends ObSecExpr
 
 case class LetStarExpr(declarations: List[Declaration],body:ObSecExpr) extends ObSecExpr
 

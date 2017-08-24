@@ -128,8 +128,12 @@ class TypeChecker() {
       internalTypeCheck(letScope, newTypeAliasScope, body)
     case ListConstructorExpr(elems) =>
       if (!elems.forall(e => subTypingAlgorithm.<::(internalTypeCheck(scope, aliasScope, e), SType(StringType, StringType))))
-        throw TypeError("Elements of a list must be of type String<String")
-      SType(StringListType, StringListType)
+        throw TypeError("Arguments of 'mklist' must be of type String<String")
+      SType(StringGListType(StringType), StringGListType(StringType))
+    case ConsListExpr(elem,list) =>
+      val tList = internalTypeCheck(scope, aliasScope, list)
+      val tElem = internalTypeCheck(scope, aliasScope, elem)
+      throw new NotImplementedError()
   }
 
 
@@ -150,7 +154,7 @@ object TypeChecker {
   def apply(x: ObSecExpr) = {
     val tp = new TypeChecker()
     tp.typeCheck(x)
-  }
+}
 }
 
 

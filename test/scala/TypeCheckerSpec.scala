@@ -244,7 +244,7 @@ class TypeCheckerSpec extends FlatSpec {
     var typeChecker = new TypeChecker
     expr match {
       case Right(ast) =>
-        assert(typeChecker.typeCheck(ast) == SType(StringListType,StringListType))
+        assert(typeChecker.typeCheck(ast) == SType(StringGListType(StringType),StringGListType(StringType)))
       case _ => fail("parsing error")
     }
   }
