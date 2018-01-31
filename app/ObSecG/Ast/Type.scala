@@ -25,8 +25,7 @@ case class STypeG(privateType: TypeG, publicType: TypeG) {
 
 /**
   * Represents an abstract type in ObSec
-  * T ::= GO<T> | O | a | X
-  * GO ::= forall[X <:T].O
+  * T ::= O | a | X
   * O ::= Obj(a)[m<X<:T>: S -> S ...]
   */
 trait TypeG {
@@ -46,26 +45,13 @@ object ObjectG extends TypeG{
   override def containsMethod(x: String): Boolean = false
 }
 
-/**
-  *
-  * @param typeVar
-  * @param objectType
-  */
-case class ParametricObjectType(typeVar: String, objectType: ObjectType){
-  def instantiate(t : TypeG):TypeG = TypeSubstG.substTypeVar(objectType,typeVar,t)
-}
-
-object ParametricObjectType {
-  val top = ObjectG
-}
-
 case class ObjectType(selfVar: String, methods: List[MethodDeclarationG]) extends TypeG {
   override def methSig(x: String): MTypeG = {
     //we must close the type
     val mD = methods.find(m => m.name == x).get
     MTypeG(
       mD.mType.typeVar,
-      mD.mType.typeVarBound,
+      mD.mType.tVarUpperBound,
       mD.mType.domain.map(s => STypeG(TypeSubstG.substSelf(s.privateType,selfVar, this),
         TypeSubstG.substSelf(s.publicType, selfVar, this))),
       STypeG(TypeSubstG.substSelf(mD.mType.codomain.privateType, selfVar, this),
@@ -79,17 +65,6 @@ object ObjectType {
   val top = ObjectType("x", List())
 }
 
-/**
-  * Represents to GO<T>
-  * @param objectType
-  * @param actualType
-  */
-case class ObjTypeInst(objectType : ParametricObjectType, actualType: TypeG) extends TypeG {
-  override def methSig(x: String): MTypeG = objectType.instantiate(actualType).methSig(x)
-
-  override def containsMethod(m: String): Boolean = objectType.instantiate(actualType).containsMethod(m)
-
-}
 
 
 /**
@@ -271,7 +246,7 @@ case object HighLabel extends LabelType {
   * @param mType The method type
   */
 case class MethodDeclarationG(name: String, mType: MTypeG) {
-  override def toString: String = s"{$name[${mType.typeVar} <: ${mType.typeVarBound}}] :}" +
+  override def toString: String = s"{$name[${mType.typeVar} <: ${mType.tVarUpperBound}}] :}" +
     s"${mType.domain.foldLeft("")((acc, x) => acc + " " + x)} -> ${mType.codomain}"
 }
 
@@ -282,7 +257,7 @@ case class MethodDeclarationG(name: String, mType: MTypeG) {
   * @param domain   The domain type
   * @param codomain The codomain type
   */
-case class MTypeG(typeVar : String, typeVarBound : TypeG, domain: List[STypeG], codomain: STypeG) {
+case class MTypeG(typeVar : String,tVarUpperBound: TypeG, domain: List[STypeG], codomain: STypeG) {
   def map(f: STypeG => STypeG): MTypeG =
-    MTypeG(typeVar,typeVarBound,domain.map(f), f(codomain))
+    MTypeG(typeVar,tVarUpperBound,domain.map(f), f(codomain))
 }

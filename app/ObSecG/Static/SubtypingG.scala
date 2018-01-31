@@ -49,9 +49,9 @@ class AmadioCardelliSubtypingG {
                 Gamma , X<:U1 |- S2 <: T2
                 Gamma |- forall X<:U1.S2 <: forall X<:U1.T2
                 * */
-                if(m11.mType.typeVar != m2.mType.typeVar || !TypeEquivalenceG.alphaEq(m11.mType.typeVarBound, m11.mType.typeVarBound))
+                if(m11.mType.typeVar != m2.mType.typeVar || !TypeEquivalenceG.alphaEq(m11.mType.tVarUpperBound, m11.mType.tVarUpperBound))
                   throw SubtypingError("Type variables and type variable bound must be the same! (The first restriction for simplicity)")
-                set = set + Tuple2(TypeVar(m11.mType.typeVar),m11.mType.typeVarBound)
+                set = set + Tuple2(TypeVar(m11.mType.typeVar),m11.mType.tVarUpperBound)
                 for (pair <- m2.mType.domain.zip(m11.mType.domain)) {
                   set = <::(set, pair._1, pair._2)
                 }

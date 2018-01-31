@@ -1,6 +1,6 @@
 package ObSecG.Static
 
-import ObSecG.Ast.{ParametricObjectType, STypeG, TypeG, TypeVar}
+import ObSecG.Ast.{STypeG, TypeG, TypeVar}
 
 /**
   * Implements type equivalence for ObSecG.

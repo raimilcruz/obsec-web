@@ -85,7 +85,7 @@ object ObSecGParser extends StandardTokenParsers with PackratParsers with Implic
 
   lazy val typeDecl : PackratParser[Declaration] = defTypeDecl | typeAliasDecl
   lazy val typeAliasDecl : PackratParser[TypeAlias] =
-    (("type" ~> ident <~ EQUALSSIGN) ~ parametricObjType) ^^ {case id ~ t => TypeAlias(id,t)}
+    (("type" ~> ident <~ EQUALSSIGN) ~ objType) ^^ {case id ~ t => TypeAlias(id,t)}
 
   lazy val defTypeDecl : PackratParser[TypeDefinition] =
     "deftype" ~> ident ~ (LEFTBRACKET  ~> (methodList <~ RIGHTBRACKET)) ^^ {case tName ~ methodList =>  TypeDefinition(tName,methodList)}
@@ -181,8 +181,7 @@ object ObSecGParser extends StandardTokenParsers with PackratParsers with Implic
   lazy val negativeNumericLiteral : Parser[String]= "-" ~> numericLit ^^ {s=> "-"+s}
   lazy val boolExpr : PackratParser[ObSecGExpr] = ("true" | "false" ) ^^ {s => BooleanExpr(s == "true")}
 
-  lazy val parametricObjType : PackratParser[ParametricObjectType]=
-    ("forall" ~> identifier) ~ objType ^^ {case ident ~ objT => ParametricObjectType(ident,objT)}
+
   lazy val objType :  PackratParser[ObjectType]= objType11 | objType13 | objType12
 
   lazy val objType11 :  PackratParser[ObjectType]={

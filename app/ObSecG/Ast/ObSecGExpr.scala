@@ -18,8 +18,6 @@ package ObSecG.Ast
     */
   case class Var(name: String) extends ObSecGExpr{
     override def toString: String = name
-
-
   }
 
   /**
@@ -70,7 +68,7 @@ package ObSecG.Ast
     * @param mBody  The body expression
     */
   case class MethodDef(name: String, args: List[String], mBody: ObSecGExpr){
-    override def toString: String = s"{${name} : ${args.foldLeft("")((acc,x)=> acc + " " +x)} = $mBody}"
+    override def toString: String = s"{$name : ${args.foldLeft("")((acc,x)=> acc + " " +x)} = $mBody}"
   }
 
   case class IfExpr(cond:ObSecGExpr,thenPart:ObSecGExpr,elsePart:ObSecGExpr) extends ObSecGExpr
@@ -92,7 +90,7 @@ case class LetStarExpr(declarations: List[Declaration],body:ObSecGExpr) extends 
 
 sealed trait Declaration
 case class LocalDeclaration(variable:String,rExpr:ObSecGExpr) extends Declaration
-case class TypeAlias(aliasName: String,objType: ParametricObjectType) extends Declaration
+case class TypeAlias(aliasName: String,objType: ObjectType) extends Declaration
 case class TypeDefinition(name:String,methods:List[MethodDeclarationG]) extends Declaration
 
 
