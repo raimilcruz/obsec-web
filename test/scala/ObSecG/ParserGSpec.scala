@@ -12,8 +12,4 @@ class ParserGSpec extends FlatSpec with Matchers{
     val res = ObSecGParser("{self : {ot x }<{ot x} => }")
     assert(res == Right(Obj("self", STypeG(ObjectType("x", List()), ObjectType("x", List())), List())))
   }
-  "parser" should "work with {self : {ot x }<{ot x} => }" in {
-    val res = ObSecGParser("{self : {ot x }<{ot x} => }")
-    assert(res == Right(Obj("self", STypeG(ObjectType("x", List()), ObjectType("x", List())), List())))
-  }
 }

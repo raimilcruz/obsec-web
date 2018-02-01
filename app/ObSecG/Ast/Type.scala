@@ -271,18 +271,25 @@ case object HighLabel extends LabelType {
   * @param mType The method type
   */
 case class MethodDeclarationG(name: String, mType: MTypeG) {
-  override def toString: String = s"{$name[${mType.typeVar} <: ${mType.typeVarBound}}] :}" +
+  override def toString: String = s"{$name[${mType.typeVars.foldLeft("")((acc,x)=>acc+","+x)}] :}" +
     s"${mType.domain.foldLeft("")((acc, x) => acc + " " + x)} -> ${mType.codomain}"
 }
 
 /**
   * Represents a generic method type  <X> S1 -> S2
   *
-  * @param typeVar the generic type variable of the method.
+  * @param typeVars A list of generic variables constraints:  <X<:T>
   * @param domain   The domain type
   * @param codomain The codomain type
   */
-case class MTypeG(typeVar : String, typeVarBound : TypeG, domain: List[STypeG], codomain: STypeG) {
+case class MTypeG(typeVars:List[TypeVarSubConstraint], domain: List[STypeG], codomain: STypeG) {
   def map(f: STypeG => STypeG): MTypeG =
-    MTypeG(typeVar,typeVarBound,domain.map(f), f(codomain))
+    MTypeG(typeVars,domain.map(f), f(codomain))
+}
+trait TypeVarSubConstraint
+case class TypeVarSub(x:String,upperBound:TypeG) extends TypeVarSubConstraint{
+  override def toString: String = s"$x<:$upperBound"
+}
+case class TypeVarSuper(lowerBound:TypeG,x:String)extends TypeVarSubConstraint{
+  override def toString: String = s"$lowerBound<:$x"
 }
