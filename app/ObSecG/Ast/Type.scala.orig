@@ -34,7 +34,7 @@ trait TypeG {
   def containsMethod(x: String): Boolean
 
   def unUsedTypeVar:String = "unused"
-  def UnUsedTypeVars:List[TypeVarSub]= List(TypeVarSub("x",ObjectType.top))
+  def UnusedTypeVarG:String = "unused"
 }
 
 /**
@@ -50,7 +50,8 @@ case class ObjectType(selfVar: String, methods: List[MethodDeclarationG]) extend
     //we must close the type
     val mD = methods.find(m => m.name == x).get
     MTypeG(
-      mD.mType.typeVars,
+      mD.mType.typeVar,
+      mD.mType.tVarUpperBound,
       mD.mType.domain.map(s => STypeG(TypeSubstG.substSelf(s.privateType,selfVar, this),
         TypeSubstG.substSelf(s.publicType, selfVar, this))),
       STypeG(TypeSubstG.substSelf(mD.mType.codomain.privateType, selfVar, this),
@@ -85,9 +86,8 @@ case class TypeVar(name: String) extends TypeG {
 
   override def toString: String = name
 }*/
-
-object UnUsedTypeVars {
-  def apply:List[TypeVarSub] = List(TypeVarSub("unused",ObjectType.top))
+object UnusedTypeVarG{
+  def apply:String=  "unused"
 }
 
 trait PrimType {
@@ -95,11 +95,10 @@ trait PrimType {
 }
 
 case object IntType extends TypeG with PrimType {
-
   override def methSig(x: String): MTypeG = x match {
-    case "+" => MTypeG(UnUsedTypeVars,List(STypeG(IntType, IntType)), STypeG(IntType, IntType))
-    case "-" => MTypeG(UnUsedTypeVars, List(STypeG(IntType, IntType)), STypeG(IntType, IntType))
-    case "==" => MTypeG(UnUsedTypeVars,List(STypeG(IntType, IntType)), STypeG(BooleanType, BooleanType))
+    case "+" => MTypeG(unUsedTypeVar, ObjectType.top,List(STypeG(IntType, IntType)), STypeG(IntType, IntType))
+    case "-" => MTypeG(unUsedTypeVar,ObjectType.top, List(STypeG(IntType, IntType)), STypeG(IntType, IntType))
+    case "==" => MTypeG(UnusedTypeVarG,ObjectType.top,List(STypeG(IntType, IntType)), STypeG(BooleanType, BooleanType))
     case _ => throw new Error("Message not understood")
   }
 
@@ -115,17 +114,20 @@ case object IntType extends TypeG with PrimType {
       List(
         MethodDeclarationG("+",
           MTypeG(
-            UnUsedTypeVars,
+            UnusedTypeVarG,
+            ObjectType.top,
             List(STypeG(TypeVar("x"), TypeVar("x"))),
             STypeG(TypeVar("x"), TypeVar("x")))),
         MethodDeclarationG("-",
           MTypeG(
-            UnUsedTypeVars,
+            UnusedTypeVarG,
+            ObjectType.top,
             List(STypeG(TypeVar("x"), TypeVar("x"))),
             STypeG(TypeVar("x"), TypeVar("x")))),
         MethodDeclarationG("==",
           MTypeG(
-            UnUsedTypeVars,
+            UnusedTypeVarG,
+            ObjectType.top,
             List(STypeG(TypeVar("x"), TypeVar("x"))),
             STypeG(BooleanType, BooleanType)))
       ))
@@ -133,11 +135,12 @@ case object IntType extends TypeG with PrimType {
 
 case object StringType extends TypeG with PrimType {
   override def methSig(method: String): MTypeG = method match {
-    case "==" => MTypeG(UnUsedTypeVars,
+    case "==" => MTypeG(
+      UnusedTypeVarG,ObjectType.top,
       List(STypeG(StringType, StringType)), STypeG(BooleanType, BooleanType)
     )
-    case "length" => MTypeG(UnUsedTypeVars, List(), STypeG(IntType, IntType))
-    case "hash" => MTypeG(UnUsedTypeVars, List(), STypeG(IntType, IntType))
+    case "length" => MTypeG(UnusedTypeVarG,ObjectType.top, List(), STypeG(IntType, IntType))
+    case "hash" => MTypeG(UnusedTypeVarG,ObjectType.top, List(), STypeG(IntType, IntType))
     case _ => throw new Error(s"Method $method not found! ")
   }
 
@@ -151,11 +154,11 @@ case object StringType extends TypeG with PrimType {
   override def toObjType: ObjectType = ObjectType(
     "x",
     List(
-      MethodDeclarationG("==", MTypeG(UnUsedTypeVars,
+      MethodDeclarationG("==", MTypeG(UnusedTypeVarG,ObjectType.top,
         List(STypeG(TypeVar("x"), TypeVar("x"))), STypeG(BooleanType, BooleanType))),
-      MethodDeclarationG("length", MTypeG(UnUsedTypeVars,
+      MethodDeclarationG("length", MTypeG(UnusedTypeVarG,ObjectType.top,
         List(), STypeG(IntType, IntType))),
-      MethodDeclarationG("hash", MTypeG(UnUsedTypeVars,
+      MethodDeclarationG("hash", MTypeG(UnusedTypeVarG,ObjectType.top,
         List(), STypeG(IntType, IntType)))
     )
   )
@@ -170,16 +173,16 @@ case object BooleanType extends TypeG with PrimType {
 
   override def toObjType: ObjectType =
     ObjectType("x", List(MethodDeclarationG("$notarealmethod$",
-              MTypeG(UnUsedTypeVars, List(),STypeG(TypeVar("x"),TypeVar("x"))))))
+              MTypeG(UnusedTypeVarG,ObjectType.top, List(),STypeG(TypeVar("x"),TypeVar("x"))))))
 
 }
 
 
 case object StringListType extends TypeG with PrimType{
   override def methSig(x: String): MTypeG = x match{
-    case "isEmpty" => MTypeG(UnUsedTypeVars, List(),STypeG(BooleanType,BooleanType))
-    case "head" => MTypeG(UnUsedTypeVars,List(),STypeG(StringType,StringType))
-    case "tail" => MTypeG(UnUsedTypeVars,List(),STypeG(StringListType,StringListType))
+    case "isEmpty" => MTypeG(unUsedTypeVar,ObjectType.top, List(),STypeG(BooleanType,BooleanType))
+    case "head" => MTypeG(unUsedTypeVar,ObjectType.top,List(),STypeG(StringType,StringType))
+    case "tail" => MTypeG(unUsedTypeVar,ObjectType.top,List(),STypeG(StringListType,StringListType))
   }
 
   override def containsMethod(x: String): Boolean = x match {
@@ -188,9 +191,9 @@ case object StringListType extends TypeG with PrimType{
   }
 
   override def toObjType: ObjectType = ObjectType("x",
-    List(MethodDeclarationG("isEmpty",MTypeG(UnUsedTypeVars, List(),STypeG(BooleanType,BooleanType))),
-      MethodDeclarationG("head",MTypeG(UnUsedTypeVars,List(),STypeG(StringType,StringType))),
-      MethodDeclarationG("tail",MTypeG(UnUsedTypeVars,List(),STypeG(TypeVar("x"),TypeVar("x"))))
+    List(MethodDeclarationG("isEmpty",MTypeG(unUsedTypeVar,ObjectType.top, List(),STypeG(BooleanType,BooleanType))),
+      MethodDeclarationG("head",MTypeG(unUsedTypeVar,ObjectType.top,List(),STypeG(StringType,StringType))),
+      MethodDeclarationG("tail",MTypeG(unUsedTypeVar,ObjectType.top,List(),STypeG(TypeVar("x"),TypeVar("x"))))
     ))
 
   override def toString: String = "StrList"
@@ -202,9 +205,9 @@ case object StringListType extends TypeG with PrimType{
   */
 case class StringGListType(elemPolicy: TypeG) extends TypeG with PrimType{
   override def methSig(x: String): MTypeG = x match{
-    case "isEmpty" => MTypeG(UnUsedTypeVars, List(),STypeG(BooleanType,BooleanType))
-    case "head" => MTypeG(UnUsedTypeVars,List(),STypeG(StringType,elemPolicy))
-    case "tail" => MTypeG(UnUsedTypeVars,List(),STypeG(StringGListType(elemPolicy),StringGListType(elemPolicy)))
+    case "isEmpty" => MTypeG(UnusedTypeVarG,ObjectType.top, List(),STypeG(BooleanType,BooleanType))
+    case "head" => MTypeG(UnusedTypeVarG,ObjectType.top,List(),STypeG(StringType,elemPolicy))
+    case "tail" => MTypeG(UnusedTypeVarG,ObjectType.top,List(),STypeG(StringGListType(elemPolicy),StringGListType(elemPolicy)))
   }
 
   override def containsMethod(x: String): Boolean = x match {
@@ -213,9 +216,9 @@ case class StringGListType(elemPolicy: TypeG) extends TypeG with PrimType{
   }
 
   override def toObjType: ObjectType = ObjectType("x",
-    List(MethodDeclarationG("isEmpty",MTypeG(UnUsedTypeVars, List(),STypeG(BooleanType,BooleanType))),
-      MethodDeclarationG("head",MTypeG(UnUsedTypeVars,List(),STypeG(StringType,elemPolicy))),
-      MethodDeclarationG("tail",MTypeG(UnUsedTypeVars,List(),STypeG(TypeVar("x"),TypeVar("x"))))
+    List(MethodDeclarationG("isEmpty",MTypeG(UnusedTypeVarG,ObjectType.top, List(),STypeG(BooleanType,BooleanType))),
+      MethodDeclarationG("head",MTypeG(UnusedTypeVarG,ObjectType.top,List(),STypeG(StringType,elemPolicy))),
+      MethodDeclarationG("tail",MTypeG(UnusedTypeVarG,ObjectType.top,List(),STypeG(TypeVar("x"),TypeVar("x"))))
     ))
 
   override def toString: String = s"StrList[$elemPolicy]"
@@ -243,7 +246,11 @@ case object HighLabel extends LabelType {
   * @param mType The method type
   */
 case class MethodDeclarationG(name: String, mType: MTypeG) {
-  override def toString: String = s"{$name[${mType.typeVars.map(tv => s"${tv.toString}").foldLeft("")((acc,e)=> acc+","+e)}] :}" +
+<<<<<<< HEAD
+  override def toString: String = s"{$name[${mType.typeVars.foldLeft("")((acc,x)=>acc+","+x)}] :}" +
+=======
+  override def toString: String = s"{$name[${mType.typeVar} <: ${mType.tVarUpperBound}}] :}" +
+>>>>>>> 1646af2a43c39df9d36cdd87e4c2e5f143cd89ba
     s"${mType.domain.foldLeft("")((acc, x) => acc + " " + x)} -> ${mType.codomain}"
 }
 
@@ -254,25 +261,20 @@ case class MethodDeclarationG(name: String, mType: MTypeG) {
   * @param domain   The domain type
   * @param codomain The codomain type
   */
-case class MTypeG(typeVars : List[TypeVarSubConstraint], domain: List[STypeG], codomain: STypeG) {
+<<<<<<< HEAD
+case class MTypeG(typeVars:List[TypeVarSubConstraint], domain: List[STypeG], codomain: STypeG) {
   def map(f: STypeG => STypeG): MTypeG =
     MTypeG(typeVars,domain.map(f), f(codomain))
 }
-trait TypeVarSubConstraint{
-  def typeVar : String
-  def typeBound :TypeG
-}
+trait TypeVarSubConstraint
 case class TypeVarSub(x:String,upperBound:TypeG) extends TypeVarSubConstraint{
   override def toString: String = s"$x<:$upperBound"
-
-  override def typeVar: String = x
-
-  override def typeBound: TypeG = upperBound
 }
 case class TypeVarSuper(lowerBound:TypeG,x:String)extends TypeVarSubConstraint{
   override def toString: String = s"$lowerBound<:$x"
-
-  override def typeVar: String = x
-
-  override def typeBound: TypeG = lowerBound
+=======
+case class MTypeG(typeVar : String,tVarUpperBound: TypeG, domain: List[STypeG], codomain: STypeG) {
+  def map(f: STypeG => STypeG): MTypeG =
+    MTypeG(typeVar,tVarUpperBound,domain.map(f), f(codomain))
+>>>>>>> 1646af2a43c39df9d36cdd87e4c2e5f143cd89ba
 }

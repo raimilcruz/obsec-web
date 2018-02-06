@@ -85,7 +85,7 @@ object ObSecGParser extends StandardTokenParsers with PackratParsers with Implic
 
   lazy val typeDecl : PackratParser[Declaration] = defTypeDecl | typeAliasDecl
   lazy val typeAliasDecl : PackratParser[TypeAlias] =
-    (("type" ~> ident <~ EQUALSSIGN) ~ parametricObjType) ^^ {case id ~ t => TypeAlias(id,t)}
+    (("type" ~> ident <~ EQUALSSIGN) ~ objType) ^^ {case id ~ t => TypeAlias(id,t)}
 
   lazy val defTypeDecl : PackratParser[TypeDefinition] =
     "deftype" ~> ident ~ (LEFTBRACKET  ~> (methodList <~ RIGHTBRACKET)) ^^ {case tName ~ methodList =>  TypeDefinition(tName,methodList)}
@@ -181,8 +181,7 @@ object ObSecGParser extends StandardTokenParsers with PackratParsers with Implic
   lazy val negativeNumericLiteral : Parser[String]= "-" ~> numericLit ^^ {s=> "-"+s}
   lazy val boolExpr : PackratParser[ObSecGExpr] = ("true" | "false" ) ^^ {s => BooleanExpr(s == "true")}
 
-  lazy val parametricObjType : PackratParser[ParametricObjectType]=
-    ("forall" ~> identifier) ~ objType ^^ {case ident ~ objT => ParametricObjectType(ident,objT)}
+
   lazy val objType :  PackratParser[ObjectType]= objType11 | objType13 | objType12
 
   lazy val objType11 :  PackratParser[ObjectType]={
@@ -198,15 +197,28 @@ object ObSecGParser extends StandardTokenParsers with PackratParsers with Implic
   lazy val methodList : PackratParser[List[MethodDeclarationG]]={
     rep(methodSignature)
   }
-  lazy val methodSignature : PackratParser[MethodDeclarationG]= methodSignature1 | methodSignature2
-  lazy val methodSignature1 : PackratParser[MethodDeclarationG]={
+  lazy val methodSignature : PackratParser[MethodDeclarationG]=  methodSignature2
+  /*lazy val methodSignature1 : PackratParser[MethodDeclarationG]={
     ((LEFTBRACKET ~> extendedIdentifier) ~ ("[" ~> identifier <~ "extends") ~ (singleType <~ "]") <~ COLON) ~ (rep(stype) <~ ARROW) ~ (stype <~ RIGHTBRACKET) ^^
-      {case  mName ~ mTypeVar ~ tVarBound ~ argTypes ~ t2 => MethodDeclarationG(mName,MTypeG(mTypeVar,tVarBound,argTypes,t2))}
+      {case  mName ~ typeVarBound ~ argTypes ~ t2 => MethodDeclarationG(mName,MTypeG(mTypeVar,tVarBound,argTypes,t2))}
   }
+  */
   lazy val methodSignature2 : PackratParser[MethodDeclarationG]={
     ((LEFTBRACKET ~> extendedIdentifier)  <~ COLON) ~ (rep(stype) <~ ARROW) ~ (stype <~ RIGHTBRACKET) ^^
-      {case  mName  ~ argTypes ~ t2 => MethodDeclarationG(mName,MTypeG("gen",ObjectType.top,argTypes,t2))}
+      {case  mName  ~ argTypes ~ t2 => MethodDeclarationG(mName,MTypeG(List(),argTypes,t2))}
   }
+  /*
+  lazy val typeVarBounds : PackratParser[List[TypeVarSubConstraint]]={
+    rep(typeVarBound)
+  }
+  lazy val typeVarBound:PackratParsers[TypeVarSubConstraint]={
+    upperConstraint | downConstraint
+  }
+  lazy val upperConstraint:PackratParsers[TypeVarSub]={
+
+  }
+  lazy val downConstraint:PackratParsers[TypeVarSuper]={
+  }*/
 
   /**
     * Api method: Builds an AST from a source

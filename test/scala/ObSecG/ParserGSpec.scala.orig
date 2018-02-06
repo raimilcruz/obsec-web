@@ -8,7 +8,11 @@ import org.scalatest.{FlatSpec, Matchers}
   * Created by racruz on 24-08-2017.
   */
 class ParserGSpec extends FlatSpec with Matchers{
+<<<<<<< HEAD
+  "parser" should "work with {self : {ot x }<{ot x} => }" in {
+=======
   "parser with " should "work with {self : {ot x }<{ot x} => }" in {
+>>>>>>> 1646af2a43c39df9d36cdd87e4c2e5f143cd89ba
     val res = ObSecGParser("{self : {ot x }<{ot x} => }")
     assert(res == Right(Obj("self", STypeG(ObjectType("x", List()), ObjectType("x", List())), List())))
   }
