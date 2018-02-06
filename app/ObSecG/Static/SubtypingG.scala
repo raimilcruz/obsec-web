@@ -27,6 +27,14 @@ class AmadioCardelliSubtypingG {
 
   type SubtypinAssumptions = Set[Tuple2[TypeG, TypeG]]
 
+  private def equivalentTypeVariablesAndConstraints(m11: MethodDeclarationG, m2: MethodDeclarationG) = {
+    if(m11.mType.typeVars.lengthCompare(m2.mType.typeVars.size) != 0)
+      false
+    m11.mType.typeVars.zip(m2.mType.typeVars).forall(p =>
+      p._1.typeVar == p._2.typeVar || TypeEquivalenceG.alphaEq(p._1.typeBound, p._1.typeBound)
+    )
+  }
+
   private def innerSubType(alreadySeen: SubtypinAssumptions, t1: TypeG, t2: TypeG): SubtypinAssumptions = {
     // println(s"Already seen: ${alreadySeen}")
     //println(s"st goal: ${t1} and ${t2}")
@@ -48,11 +56,13 @@ class AmadioCardelliSubtypingG {
               case Some(m11) =>
                 /*
                 Gamma , X<:U1 |- S2 <: T2
+                ----------------------------------
                 Gamma |- forall X<:U1.S2 <: forall X<:U1.T2
                 * */
-                if(m11.mType.typeVar != m2.mType.typeVar || !TypeEquivalenceG.alphaEq(m11.mType.tVarUpperBound, m11.mType.tVarUpperBound))
+                if(!equivalentTypeVariablesAndConstraints(m11,m2))
                   throw SubtypingError("Type variables and type variable bound must be the same! (The first restriction for simplicity)")
-                set = set + Tuple2(TypeVar(m11.mType.typeVar),m11.mType.tVarUpperBound)
+                val newSet:Set[(TypeG,TypeG)] = m11.mType.typeVars.map(c => (TypeVar(c.typeVar),c.typeBound)).toSet[(TypeG,TypeG)]
+                set = set.union(newSet)
                 for (pair <- m2.mType.domain.zip(m11.mType.domain)) {
                   set = <::(set, pair._1, pair._2)
                 }

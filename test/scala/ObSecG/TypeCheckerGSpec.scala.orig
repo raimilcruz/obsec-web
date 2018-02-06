@@ -1,7 +1,11 @@
 package scala.ObSecG
 
 import ObSecG.Ast._
+<<<<<<< HEAD
+import ObSecG.Static.TypeCheckerG
+=======
 import ObSecG.Static._
+>>>>>>> 1646af2a43c39df9d36cdd87e4c2e5f143cd89ba
 import org.scalatest.{FlatSpec, Matchers}
 
 /**
@@ -13,11 +17,12 @@ class TypeCheckerGSpec extends FlatSpec with Matchers{
   private def OT(x:String,methods:List[MethodDeclarationG]) =ObjectType(x,methods)
   private def MD(x:String,mt:MTypeG):MethodDeclarationG=MethodDeclarationG(x,mt)
 
-  "Type checker with : {z : [Obj(a){m<T> : T -> T}] => def m(x)= x}" should "work" in{
+<<<<<<< HEAD
+  "Type checker with : {z : [Obj(a){m<T<:Top> : T -> T}] => def m(x)= x}" should "work" in{
     val methodType = MTypeG(List(TypeVarSub("T",ObjectType.top)),List(ST("T","T")),ST("T","T"))
     val objType = OT("a",List(MD("m",methodType)))
     val st = ST(objType,objType)
-    val expr = Obj("z",st,List(MethodDef("m",List("x"),Var("x"))))
+    val expr = Obj("z",st,List(n("m",List("x"),Var("x"))))
 
     assert(TypeCheckerG(expr) == st)
   }
@@ -26,7 +31,14 @@ class TypeCheckerGSpec extends FlatSpec with Matchers{
     val methodType = MTypeG(List(TypeVarSub("T",ObjectType.top)),List(ST("T","T")),ST("T","T"))
     val objType = OT("a",List(MD("m",methodType)))
     val st = ST(objType,objType)
+    val expr = Obj("z",st,List(n("m",List("x"),Var("x"))))
+=======
+  "Type checker with : {z : [Obj(a){m<T> : T -> T}] => def m(x)= x}" should "work" in{
+    val methodType = MTypeG("T",List(ST("T","T")),ST("T","T"))
+    val objType = OT("a",List(MD("m",methodType)))
+    val st = ST(objType,objType)
     val expr = Obj("z",st,List(MethodDef("m",List("x"),Var("x"))))
+>>>>>>> 1646af2a43c39df9d36cdd87e4c2e5f143cd89ba
 
     assert(TypeCheckerG(expr) == st)
   }
