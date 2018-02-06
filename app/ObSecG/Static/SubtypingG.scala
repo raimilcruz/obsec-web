@@ -18,6 +18,7 @@ class AmadioCardelliSubtypingG {
     } catch {
       case x: SubtypingError => false
     }
+  def <::(s1: STypeG, s2: STypeG): Boolean = <::(s1.privateType, s2.privateType) && <::(s1.publicType, s2.publicType)
 
   private def <::(alreadySeen: Set[Tuple2[TypeG, TypeG]], s1: STypeG, s2: STypeG): SubtypinAssumptions = {
     val set = innerSubType(alreadySeen, s1.publicType, s2.publicType)

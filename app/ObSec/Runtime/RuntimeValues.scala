@@ -1,5 +1,6 @@
 package ObSec.Runtime {
 
+  import Common.Environment
   import ObSec.Ast._
 
   abstract class RuntimeValue {

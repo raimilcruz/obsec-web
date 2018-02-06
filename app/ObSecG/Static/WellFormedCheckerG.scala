@@ -1,8 +1,7 @@
 package ObSecG.Static
 
 
-import ObSec.Runtime.Environment
-import ObSec.Static.ErrorCollector
+import Common.{Environment, ErrorCollector}
 import ObSecG.Ast._
 
 /**

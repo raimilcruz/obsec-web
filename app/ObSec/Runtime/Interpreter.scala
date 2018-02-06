@@ -2,6 +2,7 @@ import ObSec.Ast._
 
 package ObSec.Runtime {
 
+  import Common.Environment
   import ObSec.Ast.{ObSecExpr, Obj}
   import ObSec.Parsing.{ObSecParser, ObSecParserError}
 

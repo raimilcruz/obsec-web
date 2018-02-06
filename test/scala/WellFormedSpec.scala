@@ -1,5 +1,6 @@
 package scala
 
+import Common.ErrorCollector
 import ObSec.Parsing.ObSecParser
 import ObSec.Static._
 import org.scalatest.FlatSpec

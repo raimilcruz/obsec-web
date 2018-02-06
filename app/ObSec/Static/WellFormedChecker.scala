@@ -1,8 +1,7 @@
 package ObSec.Static
 
+import Common.{Environment, ErrorCollector}
 import ObSec.Ast._
-import ObSec.Runtime.{EmptyEnvironment, Environment}
-
 /**
   * Created by racruz on 31-03-2017.
   */

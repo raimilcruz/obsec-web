@@ -1,6 +1,4 @@
-package ObSec.Static
-
-import scala.collection.mutable
+package Common
 
 /**
   * Created by racruz on 04-04-2017.
