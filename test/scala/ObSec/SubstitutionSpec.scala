@@ -1,7 +1,9 @@
+package scala.ObSec
+
 
 
 import ObSec.Parsing.ObSecParser
-import ObSec.Static.{TypeEquivalence, AmadioCardelliSubtyping, TypeSubst}
+import ObSec.Static.{TypeEquivalence, TypeSubst}
 import org.scalatest.FlatSpec
 
 /**

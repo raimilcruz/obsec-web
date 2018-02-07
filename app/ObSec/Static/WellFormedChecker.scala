@@ -1,5 +1,4 @@
 package ObSec.Static
-
 import Common.{Environment, ErrorCollector}
 import ObSec.Ast._
 /**

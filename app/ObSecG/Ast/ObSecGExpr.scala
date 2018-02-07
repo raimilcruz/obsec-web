@@ -54,8 +54,9 @@ package ObSecG.Ast
     * @param args The actual arguments
     * @param method The method to invoke
     */
-  case class MethodInv(e1: ObSecGExpr, args: List[ObSecGExpr], method: String) extends ObSecGExpr {
-    def map[T](f: ObSecGExpr => ObSecGExpr) = new MethodInv(f(e1), args.map(f), method)
+  case class MethodInv(e1: ObSecGExpr, types:List[TypeG], args: List[ObSecGExpr], method: String) extends ObSecGExpr {
+    def map[T](f: ObSecGExpr => ObSecGExpr) =
+      MethodInv(f(e1), types, args.map(f), method)
 
     //override def toString: String = s"${e1}.$method(${if(args.size==0)"" else args(0) + args.drop(1).foldLeft("")((acc,x)=> acc+","+ x)})"
   }

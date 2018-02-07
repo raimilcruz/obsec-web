@@ -33,7 +33,3 @@ class NestedScope[T](parent: Scope[T]) extends Scope[T] {
 }
 
 
-
-
-case class TypeError(str: String) extends Error
-

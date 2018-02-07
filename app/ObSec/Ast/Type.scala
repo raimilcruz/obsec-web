@@ -72,6 +72,8 @@ case class TypeVar(name: String) extends Type {
   override def toString: String = name
 }
 
+
+
 trait PrimType {
   def toObjType: ObjType
 }

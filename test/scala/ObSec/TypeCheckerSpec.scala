@@ -1,5 +1,8 @@
+package scala.ObSec
 
 
+
+import Common.{NestedScope, Scope, TypeError}
 import ObSec.Ast._
 import ObSec.Parsing.ObSecParser
 import ObSec.Static._

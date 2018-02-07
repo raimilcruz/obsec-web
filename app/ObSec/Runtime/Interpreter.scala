@@ -1,10 +1,12 @@
 import ObSec.Ast._
+import Common.Environment
+import ObSec.Ast.{ObSecExpr, Obj}
+import ObSec.Parsing.{ObSecParser, ObSecParserError}
 
 package ObSec.Runtime {
 
-  import Common.Environment
-  import ObSec.Ast.{ObSecExpr, Obj}
-  import ObSec.Parsing.{ObSecParser, ObSecParserError}
+  import Common.StuckError
+
 
   /**
     * Defines an interpreter for the ObSe language
@@ -58,9 +60,7 @@ package ObSec.Runtime {
     }
   }
 
-  class StuckError(m: String = "") extends Error {
 
-  }
 
   object Interpreter {
     def apply(x: String): Either[ObSecParserError, RuntimeValue] = {

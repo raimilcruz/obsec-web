@@ -8,6 +8,7 @@ abstract class Environment[T] {
   def isEmpty:Boolean
   def head:(String,T)
   def tail:Environment[T]
+  def contains(x:String):Boolean
 }
 class EmptyEnvironment[T] extends Environment[T]{
   override def lookup(x: String): T = throw new Error("Empty environment")
@@ -17,6 +18,11 @@ class EmptyEnvironment[T] extends Environment[T]{
   override def head: (String,T) = throw new Error("Invalid operation")
 
   override def tail: Environment[T] = throw new Error("Invalid operation")
+
+  def contains(x:String):Boolean = false
+
+
+  override def toString: String = "[]"
 }
 class ExtEnvironment[T](env:Environment[T],x:String,v:T) extends Environment[T]{
   override def lookup(y: String): T = if(x.equals(y))v else env.lookup(y)
@@ -25,6 +31,10 @@ class ExtEnvironment[T](env:Environment[T],x:String,v:T) extends Environment[T]{
   override def head: (String,T) = (x,v)
 
   override def tail: Environment[T] = env
+
+  def contains(y:String):Boolean = if(x.equals(y)) true else env.contains(y)
+
+  override def toString: String = s"($x,$v)::$env"
 }
 
 object Environment{

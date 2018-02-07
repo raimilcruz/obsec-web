@@ -2,20 +2,19 @@ package controllers
 
 import javax.inject._
 
-
 import play.api.libs.json.{Json, Writes}
 import play.api.mvc._
 
 import scala.concurrent.{ExecutionContext, Future}
-
 import play.api.mvc._
 import play.api.libs.json._
 import play.api.libs.functional.syntax._
-
 import ObSec.Parsing.ObSecParser
 import ObSec.Runtime.Interpreter
 import ObSec.Static.TypeChecker
-
+import ObSecG.Static.TypeCheckerG
+import ObSecG.Parsing._
+import ObSecG.Runtime.InterpreterG
 
 import scala.pickling.Defaults._
 import scala.pickling.json._
@@ -38,13 +37,13 @@ class ApplicationController extends Controller {
         BadRequest(Json.obj("status" -> "KO", "message" -> JsError.toJson(errors)))
       },
       f => {
-        ObSecParser(f.program) match {
+        ObSecGParser(f.program) match {
           case Right(term) =>
             try {
-              val aType = TypeChecker(term)
+              val aType = TypeCheckerG(term)
               Ok(Json.obj("status" -> "OK", "program" -> f.program,"expressionType"-> aType.toString))
             } catch {
-              case te : ObSec.Static.TypeError => Ok(Json.obj("status" -> "KO", "error" -> te.str))
+              case te : Common.TypeError => Ok(Json.obj("status" -> "KO", "error" -> te.str))
               case e: Throwable =>
                 Ok(Json.obj("status" -> "KO", "error" -> e.getMessage))
             }
@@ -63,10 +62,10 @@ class ApplicationController extends Controller {
         BadRequest(Json.obj("status" -> "KO", "message" -> JsError.toJson(errors)))
       },
       f => {
-        ObSecParser(f.program) match {
+        ObSecGParser(f.program) match {
           case Right(term) =>
             try {
-              val result = Interpreter.run(term)
+              val result = InterpreterG.run(term)
               Ok(Json.obj("status" -> "OK",
                 "program" -> f.program,
                 "result"-> result.toString

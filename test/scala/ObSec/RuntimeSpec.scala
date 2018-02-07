@@ -1,9 +1,10 @@
+package scala.ObSec
+
 
 
 import ObSec.Ast._
 import ObSec.Parsing.ObSecParser
 import ObSec.Runtime._
-import ObSec.Static.TypeChecker
 import org.scalatest._
 
 

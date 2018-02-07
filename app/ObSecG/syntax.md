@@ -2,9 +2,15 @@
 
 ##Syntax
 ```
-e ::= x | e.m<T>(e) | new {z:S => mdef ...}
-mdef ::= m<X<:T>(x)= e
+e    ::=    x                                           (variable) 
+            | e.m<T>(e)                                 (method invocation)
+            | new {z:S => mdef ...}                     (object)
+            
+mdef ::=    m(x)= e                                     (method definition)
 
-T ::= X | a | Obj(a)[msig ...]
-msig ::= m<x<:T>. T->T
+T,U   ::=    X                                          (generic type variable) 
+            | a                                         (self type variable)
+            | Obj(a)[msig ...]                          (object type)
+S    ::=    T<U                                         (security type)
+msig ::=    m<x<:T>: S->S                               (method signature)
 ```

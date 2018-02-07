@@ -2,6 +2,7 @@ package ObSecG.Parsing
 
 
 import ObSec.Parsing.DebugPackratParsers
+import ObSecG.Ast
 import ObSecG.Ast._
 
 import scala.util.parsing.combinator.syntactical.StandardTokenParsers
@@ -26,7 +27,8 @@ object ObSecGParser extends StandardTokenParsers with PackratParsers with Implic
 */
 
   //lazy val identifier: PackratParser[String] = elem("ident",x=> reserved2.contains(x.toString)) ^^ (x=>x.toString)
-  lazy val identifier: PackratParser[String] = ident 
+  lazy val identifier: PackratParser[String] = ident
+  lazy val gidentifier: PackratParser[String] = "T" ~> ident ^^ {id => "T"+ id}
 
   lazy val symIdentifier:PackratParser[String] =  rep("+"| "-"| "="|"<"|"/") ^^ {case l => l.foldLeft("")((acc,a)=>acc+a)}
 
@@ -106,9 +108,15 @@ object ObSecGParser extends StandardTokenParsers with PackratParsers with Implic
   def varExpr : PackratParser[ObSecGExpr] =  identifier ^^ (vName => Var(vName))
 
 
-  lazy val methodInvExpr :PackratParser[ObSecGExpr]={
+  lazy val methodInvExpr :PackratParser[ObSecGExpr]= methodInvExpr2 | methodInvExpr1
+
+  lazy val methodInvExpr1 :PackratParser[ObSecGExpr]={
     (expr <~ DOT) ~ (extendedIdentifier) ~ ((LEFTPAREN ~> repsep(expr, COMMMA)) <~ RIGHTPAREN)^^
-      {case e1 ~ id ~ args => MethodInv(e1,args,id)}
+      {case e1 ~ id ~ args => MethodInv(e1,List(),args,id)}
+  }
+  lazy val methodInvExpr2 :PackratParser[ObSecGExpr]={
+    (expr <~ DOT) ~ (extendedIdentifier) ~ ((LEFTSBRACKET ~> repsep(singleType,COMMMA)) <~ RIGHTSBRACKET) ~ ((LEFTPAREN ~> repsep(expr, COMMMA)) <~ RIGHTPAREN)^^
+      {case e1 ~ id ~ types  ~ args => MethodInv(e1,types,args,id)}
   }
 
   lazy val ifThenElse :PackratParser[ObSecGExpr]= {
@@ -152,7 +160,8 @@ object ObSecGParser extends StandardTokenParsers with PackratParsers with Implic
     objType  |  primType | varType
   }
 
-  lazy val varType : PackratParser[TypeG] = identifier ^^ { id => TypeVar(id)}
+  lazy val varType : PackratParser[TypeG] = identifier ^^
+    { id => if(id.startsWith("T")) GenericTypeVar(id) else  TypeVar(id)}
 
   lazy val labelType : PackratParser[TypeG] ={
     objType | lowLabel | highLabel | primType | varType
@@ -197,28 +206,32 @@ object ObSecGParser extends StandardTokenParsers with PackratParsers with Implic
   lazy val methodList : PackratParser[List[MethodDeclarationG]]={
     rep(methodSignature)
   }
-  lazy val methodSignature : PackratParser[MethodDeclarationG]=  methodSignature2
-  /*lazy val methodSignature1 : PackratParser[MethodDeclarationG]={
-    ((LEFTBRACKET ~> extendedIdentifier) ~ ("[" ~> identifier <~ "extends") ~ (singleType <~ "]") <~ COLON) ~ (rep(stype) <~ ARROW) ~ (stype <~ RIGHTBRACKET) ^^
-      {case  mName ~ typeVarBound ~ argTypes ~ t2 => MethodDeclarationG(mName,MTypeG(mTypeVar,tVarBound,argTypes,t2))}
+  lazy val methodSignature : PackratParser[MethodDeclarationG]=
+    methodSignature1 | methodSignature2
+
+  lazy val methodSignature1 : PackratParser[MethodDeclarationG]={
+    ((LEFTBRACKET ~> extendedIdentifier) ~ ("[" ~> typeVarBounds <~  "]") <~ COLON) ~ (rep(stype) <~ ARROW) ~ (stype <~ RIGHTBRACKET) ^^
+      {case  mName ~ typeParamaters ~ argTypes ~ t2 =>
+        MethodDeclarationG(mName,MTypeG(typeParamaters,argTypes,t2))}
   }
-  */
+
   lazy val methodSignature2 : PackratParser[MethodDeclarationG]={
     ((LEFTBRACKET ~> extendedIdentifier)  <~ COLON) ~ (rep(stype) <~ ARROW) ~ (stype <~ RIGHTBRACKET) ^^
       {case  mName  ~ argTypes ~ t2 => MethodDeclarationG(mName,MTypeG(List(),argTypes,t2))}
   }
-  /*
-  lazy val typeVarBounds : PackratParser[List[TypeVarSubConstraint]]={
-    rep(typeVarBound)
-  }
-  lazy val typeVarBound:PackratParsers[TypeVarSubConstraint]={
-    upperConstraint | downConstraint
-  }
-  lazy val upperConstraint:PackratParsers[TypeVarSub]={
 
+  lazy val typeVarBounds : PackratParser[List[TypeVarSubConstraint]]={
+    repsep(typeVarBound,",")
   }
-  lazy val downConstraint:PackratParsers[TypeVarSuper]={
-  }*/
+  lazy val typeVarBound:PackratParser[TypeVarSubConstraint]={
+    upperConstraint
+  }
+  lazy val upperConstraint:PackratParser[TypeVarSub]={
+    ((identifier <~ "extends") ~ singleType) ^^
+    {case id ~ rawType => TypeVarSub(id,rawType)}
+  }
+
+
 
   /**
     * Api method: Builds an AST from a source

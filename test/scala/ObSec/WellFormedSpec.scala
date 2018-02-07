@@ -1,4 +1,4 @@
-package scala
+package scala.ObSec
 
 import Common.ErrorCollector
 import ObSec.Parsing.ObSecParser

@@ -1,6 +1,6 @@
 package ObSec.Runtime {
 
-  import Common.Environment
+  import Common.{Environment, StuckError}
   import ObSec.Ast._
 
   abstract class RuntimeValue {

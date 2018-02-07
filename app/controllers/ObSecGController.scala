@@ -15,6 +15,10 @@ class ObSecGController extends Controller {
 
   implicit val fReads = Json.reads[Program]
 
+  def index(prod: Int) = Action { implicit request =>
+    Ok(views.html.index(prod))
+  }
+
   def typecheck = Action(BodyParsers.parse.json) { implicit request =>
     val fResult = request.body.validate[Program]
     fResult.fold(
@@ -28,7 +32,7 @@ class ObSecGController extends Controller {
               val aType = TypeCheckerG(term)
               Ok(Json.obj("status" -> "OK", "program" -> f.program,"expressionType"-> aType.toString))
             } catch {
-              case te : ObSec.Static.TypeError => Ok(Json.obj("status" -> "KO", "error" -> te.str))
+              case te : Common.TypeError => Ok(Json.obj("status" -> "KO", "error" -> te.str))
               case e: Throwable =>
                 Ok(Json.obj("status" -> "KO", "error" -> e.getMessage))
             }
