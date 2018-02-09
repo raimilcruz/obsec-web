@@ -92,18 +92,20 @@ class TypeCheckerG extends ITypeChecker {
             s" match the formal arguments amount")
         //check subtyping between $mType.domain and s2
         for (pair <- argTypes.zip(mType.domain)) {
-          if (!subTypingAlgorithm.<::(extendedGenVarEnv,pair._1, pair._2)) {
+          val subtitutedType =closeGenType(pair._2,mType.typeVars.zip(types))
+          if (!subTypingAlgorithm.<::(extendedGenVarEnv,
+            pair._1,subtitutedType)) {
             throw TypeError(
               s"""Invocation of ${m}: Type ${pair._1}
-             (of actual argument) is not subtyping of ${pair._2}""")
+             (of actual argument) is not subtyping of ${subtitutedType}""")
           }
         }
 
         if (publicFacet.containsMethod(m))
-          closeGenType(mType.codomain,publicFacet.methSig(m).typeVars,types)
+          closeGenType(mType.codomain,publicFacet.methSig(m).typeVars.zip(types))
         else
           closeGenType(STypeG(mType.codomain.privateType, ObjectType.top),
-            privateFacet.methSig(m).typeVars,types)
+            privateFacet.methSig(m).typeVars.zip(types))
 
       }
       else
@@ -227,9 +229,17 @@ class TypeCheckerG extends ITypeChecker {
   }
 
   private def closeGenType(g: STypeG,
-                           typeVars: List[TypeVarSubConstraint],
-                           types: List[TypeG]): STypeG =
-    throw new NotImplementedError()
+                           substitutions: List[(TypeVarSubConstraint,TypeG)]
+                          ): STypeG = substitutions match {
+    case List() => g
+    case h::t => closeGenType(
+                    STypeG(
+                      TypeSubstG.substGenVar(g.privateType,h._1.typeVar,h._2),
+                      TypeSubstG.substGenVar(g.publicType,h._1.typeVar,h._2)
+                    ),t)
+
+  }
+
 
 
 }

@@ -1,0 +1,42 @@
+let{
+  type ListFactory = 
+    [{nil[T extends []] : -> 
+      {ot X
+        {isEmpty: -> Bool}
+        {head: -> T}
+        {tail: -> X}
+      }}
+      {con[T extends []] : T {ot X {isEmpty: -> Bool}
+                         {head: -> T}
+                         {tail: -> X}
+                    }
+                 -> {ot X {isEmpty: -> Bool}
+                         {head: -> T}
+                         {tail: -> X}
+                 }
+      }]
+  val lf =  new {z : ListFactory<L => 
+                def nil = new {
+                  z1 : {ot X {isEmpty: -> Bool}
+                         {head: -> T}
+                         {tail: -> X}
+                  }
+                   => 
+                   def isEmpty = true
+                   def head = z1.head()
+                   def tail = z1.tail()
+                }
+                def con x l = new {
+                  z1: {ot X {isEmpty: -> Bool}
+                         {head: -> T}
+                         {tail: -> X}
+                  }
+                   =>
+                   def isEmpty = false
+                   def head = x
+                   def tail = l
+                }
+              }
+}
+in 
+lf.con[Int](3,lf.con[Int](2,lf.nil[Int]()))

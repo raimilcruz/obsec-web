@@ -76,4 +76,14 @@ class ParserGSpec extends FlatSpec with Matchers with BaseSpec {
     var topLevelExpr = MethodInv(expr,List(IntType),List(IntExpr(2)),"m")
     assert(res == Right(topLevelExpr))
   }
+
+  "Parser" should "accept generic methods" in {
+    val program =
+      "   [{nil[T extends []] : -> \n  " +
+      "       [X\n        " +
+      "         {isEmpty : -> Bool}\n{head : -> T}\n{tail : -> X}\n ]} \n      " +
+    "      {cons[T extends []] : T [X {isEmpty: -> Bool}{head: -> T}{tail: -> X}\n ]\n " +
+      "       -> [X {isEmpty: -> Bool}\n{head: -> T}\n{tail: -> X}\n]\n}]"
+    assert(ObSecGParser.parseType(program) == Right(Var("x")))
+  }
 }

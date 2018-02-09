@@ -194,13 +194,13 @@ object ObSecGParser extends StandardTokenParsers with PackratParsers with Implic
   lazy val objType :  PackratParser[ObjectType]= objType11 | objType13 | objType12
 
   lazy val objType11 :  PackratParser[ObjectType]={
-    (LEFTSBRACKET  ~> identifier) ~ (methodList <~ RIGHTSBRACKET) ^^ {case tVar ~ methodList => ObjectType(tVar,methodList)}
+    (LEFTSBRACKET  ~> identifier) ~ (methodList <~ RIGHTSBRACKET) ^^ {case tVar ~ mList=> ObjectType(tVar,mList)}
   }
   lazy val objType12 :  PackratParser[ObjectType]={
-    ((LEFTBRACKET ~ OT) ~> identifier) ~ (methodList <~ RIGHTBRACKET) ^^ {case tVar ~ methodList => ObjectType(tVar,methodList)}
+    ((LEFTBRACKET ~ OT) ~> identifier) ~ (methodList <~ RIGHTBRACKET) ^^ {case tVar ~ mList => ObjectType(tVar,mList)}
   }
   lazy val objType13 :  PackratParser[ObjectType]={
-    LEFTSBRACKET  ~>  (methodList <~ RIGHTSBRACKET) ^^ {case methodList => ObjectType("gen",methodList)}
+    LEFTSBRACKET  ~>  (methodList <~ RIGHTSBRACKET) ^^ (mList => ObjectType("gen", mList))
   }
 
   lazy val methodList : PackratParser[List[MethodDeclarationG]]={

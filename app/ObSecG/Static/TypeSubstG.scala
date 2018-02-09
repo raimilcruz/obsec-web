@@ -57,8 +57,43 @@ object TypeSubstG {
       }
   }
 
-
-  //def subst(t: TypeG, x: String, t2: TypeG): TypeG = throw  new Error("Not implemented")
+  //let assume that t2 is closed (it does not contains free type vars)
+  def substGenVar(t: TypeG, x: String, t2: TypeG): TypeG = t match {
+    case p:PrimType => p
+    case TypeVar(y: String) => t
+    case GenericTypeVar(y) => if(x==y) t2 else t
+    case RecordTypeG(methods) =>
+      RecordTypeG(methods.map(m =>
+        MethodDeclarationG(m.name,
+          MTypeG(
+            m.mType.typeVars,
+            m.mType.domain.map(stype =>
+              STypeG(
+                substGenVar(stype.privateType, x, t2),
+                substGenVar(stype.publicType, x, t2))),
+            STypeG(
+              substGenVar(m.mType.codomain.privateType, x, t2),
+              substGenVar(m.mType.codomain.publicType, x, t2)
+            )))))
+    case ObjectType(y, methods) =>
+      ObjectType(
+        y,
+        methods.map(m =>
+          //do not substitute if there is a variable with that name
+          if(m.mType.typeVars.exists(p=> p.typeVar == x)) m
+          else
+            MethodDeclarationG(
+              m.name,
+              MTypeG(
+                m.mType.typeVars,
+                m.mType.domain.map(stype => STypeG(
+                  substGenVar(stype.privateType,x, t2),
+                  substGenVar(stype.publicType,x, t2))),
+                STypeG(
+                  substGenVar(m.mType.codomain.privateType, x, t2),
+                  substGenVar(m.mType.codomain.publicType, x, t2))
+              ))))
+  }
 
 
   private def getFreshSelfVarNotIn(x: String,

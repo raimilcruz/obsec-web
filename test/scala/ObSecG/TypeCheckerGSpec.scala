@@ -1,5 +1,6 @@
 package scala.ObSecG
 
+import Common.TypeError
 import ObSecG.Ast._
 import ObSecG.Parsing.ObSecGParser
 import ObSecG.Static._
@@ -133,6 +134,14 @@ class TypeCheckerGSpec extends FlatSpec with Matchers with BaseSpec{
     ObSecGParser(program) match{
       case Right(ast)=> assert(TypeCheckerG(ast) == ST(IntType,IntType))
     }
-
+  }
+  "Type substitution for generic variable " should "work" in {
+    var program = "{z : {ot X {m[T extends []] : T -> T}}<L => \n def m p  = p \n }.m[String](1)"
+    ObSecGParser(program) match{
+      case Right(ast)=>
+        intercept[TypeError] {
+          TypeCheckerG(ast)
+        }
+    }
   }
 }
