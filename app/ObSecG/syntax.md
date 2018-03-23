@@ -3,14 +3,22 @@
 ##Syntax
 ```
 e    ::=    x                                           (variable) 
-            | e.m<T>(e)                                 (method invocation)
+            | e.m<I>(e)                                 (method invocation)
             | new {z:S => mdef ...}                     (object)
             
 mdef ::=    m(x)= e                                     (method definition)
 
-T,U   ::=    X                                          (generic type variable) 
+T   ::=     X                                          (generic type variable) 
             | a                                         (self type variable)
             | Obj(a)[msig ...]                          (object type)
-S    ::=    T<U                                         (security type)
+            
+l   :: =    T
+            | X*
+            | this
+            | this*
+            
+I   :: =    T | l | *            
+            
+S    ::=    T<l                                         (security type)
 msig ::=    m<x<:T>: S->S                               (method signature)
 ```

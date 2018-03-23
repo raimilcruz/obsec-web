@@ -23,20 +23,53 @@ case class STypeG(privateType: TypeG, publicType: TypeG) {
   override def toString: String = s"ST($privateType,$publicType)"
 }
 
+trait TypeOrAsterisk
+
+trait LabelG extends TypeOrAsterisk{
+  def methSig(x: String): MTypeG
+  def containsMethod(x: String): Boolean
+}
+
 /**
   * Represents an abstract type in ObSec
   * T ::= O | a | X
   * O ::= Obj(a)[m<X<:T>: S -> S ...]
   */
-trait TypeG {
-  def methSig(x: String): MTypeG
-
-  def containsMethod(x: String): Boolean
+trait TypeG extends LabelG{
 
   def unUsedTypeVar:String = "unused"
   def UnUsedTypeVars:List[TypeVarSub]= List(TypeVarSub("x",ObjectType.top))
 }
 
+/*
+Use to instantiate constraint of the form
+X > Int, X > String. Without * the only way is to provide A type that
+satisfies both constraint. However with * we can also instantiate usages
+of the form Int<X to Int and usages of the form String<X to String.
+ */
+object Asterisk extends  TypeOrAsterisk
+
+/**
+  * The self label statically does not provide any method.
+  */
+object SelfLabel extends LabelG{
+  override def methSig(x: String): MTypeG =
+    throw new Error("It is an error to ask methSig to the self label")
+
+  override def containsMethod(x: String): Boolean = false
+}
+object LowSelfLabel extends LabelG{
+  override def methSig(x: String): MTypeG =
+    throw new Error("It is an error to ask methSig to the low self label")
+
+  override def containsMethod(x: String): Boolean = false
+}
+object BoundGenericLabel extends LabelG{
+  override def methSig(x: String): MTypeG =
+    throw new Error("It is an error to ask methSig to the low self label")
+
+  override def containsMethod(x: String): Boolean = false
+}
 
 case class ObjectType(selfVar: String, methods: List[MethodDeclarationG]) extends TypeG {
   override def methSig(x: String): MTypeG = {
@@ -134,6 +167,34 @@ case object IntType extends TypeG with PrimType {
       ))
 }
 
+/**
+  * typedef String{
+  *   //This is bad, because we know for sure that the join operation
+  *   //(on the standard subtyping lattice) will be Top, excepto for other String.
+  *
+  *   bool{this join Po} equals[Po](Top@Po);
+  *   int@{this join Pch} indexOf[Pch](int@Pch ch);
+  *   String@{this join Pstr} concat[Pstr](String@Pstr str);
+  *   String@{this} replace(char@{this} oldChar, char@{this} newChar);
+  *   String@{this} toUpperCase();
+  *   String@{this} trim();
+  *   //it can throws exception. Exceptions are treated as diverging computation
+  *   String@{this join PbI join PeI} substring[Pbi,Pei](int beginIndex, int endIndex)
+  *
+  *
+  *
+  *   //the hash signature does not have sense. this>String, so we do not have
+  *   //a way to relate it to int.
+  *   int@{this} hash();
+  *
+  *   We need a label that behaves in the following
+  *   way:
+  *   this* :=  if(this == String) int then (this join int).
+  *   int@{this*} hash();
+  *
+  *   String@{this join other} concatInt[Pi](Int@Pi a);  *
+  * }
+  */
 case object StringType extends TypeG with PrimType {
   override def methSig(method: String): MTypeG = method match {
     case "==" => MTypeG(List(),
