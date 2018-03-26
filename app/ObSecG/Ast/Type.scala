@@ -42,7 +42,7 @@ trait TypeG extends LabelG{
 }
 
 /*
-Use to instantiate constraint of the form
+Used to instantiate constraints of the form
 X > Int, X > String. Without * the only way is to provide A type that
 satisfies both constraint. However with * we can also instantiate usages
 of the form Int<X to Int and usages of the form String<X to String.
