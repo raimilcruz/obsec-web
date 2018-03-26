@@ -15,7 +15,9 @@ object TypeSubstG {
     * @param t2
     * @return
     */
-  def substTypeVar(t: TypeG, x: String, t2: TypeG): TypeG = t match {
+  def substRecVar(t: LabelG, x: String, t2: TypeG): LabelG = t match {
+    case SelfLabel => t
+    case LowSelfLabel => t
     case p:PrimType => p
     case TypeVar(y: String) => if (x == y) t2 else t
     case gv:GenericTypeVar => gv
@@ -26,11 +28,11 @@ object TypeSubstG {
             m.mType.typeVars,
             m.mType.domain.map(stype =>
               STypeG(
-                substTypeVar(stype.privateType, x, t2),
-                substTypeVar(stype.publicType, x, t2))),
+                substRecVar(stype.privateType, x, t2).asInstanceOf[TypeG],
+                substRecVar(stype.publicType, x, t2))),
             STypeG(
-              substTypeVar(m.mType.codomain.privateType, x, t2),
-              substTypeVar(m.mType.codomain.publicType, x, t2)
+              substRecVar(m.mType.codomain.privateType, x, t2).asInstanceOf[TypeG],
+              substRecVar(m.mType.codomain.publicType, x, t2)
           )))))
     case ObjectType(y, methods) =>
       if (y == x) t
@@ -44,21 +46,23 @@ object TypeSubstG {
               MTypeG(
                 m.mType.typeVars,
                 m.mType.domain.map(stype => STypeG(
-                  substTypeVar(substTypeVar(stype.privateType, y, TypeVar(newVar)),
-                  x, t2),
-                  substTypeVar(substTypeVar(stype.publicType, y, TypeVar(newVar)),
+                  substRecVar(substRecVar(stype.privateType, y, TypeVar(newVar)),
+                  x, t2).asInstanceOf[TypeG],
+                  substRecVar(substRecVar(stype.publicType, y, TypeVar(newVar)),
                   x, t2))),
               STypeG(
-                substTypeVar(substTypeVar(m.mType.codomain.privateType, y, TypeVar(newVar)),
-                  x, t2),
-                substTypeVar(substTypeVar(m.mType.codomain.publicType, y, TypeVar(newVar)),
+                substRecVar(substRecVar(m.mType.codomain.privateType, y, TypeVar(newVar)),
+                  x, t2).asInstanceOf[TypeG],
+                substRecVar(substRecVar(m.mType.codomain.publicType, y, TypeVar(newVar)),
                   x, t2))
             ))))
       }
   }
 
   //let assume that t2 is closed (it does not contains free type vars)
-  def substGenVar(t: TypeG, x: String, t2: TypeG): TypeG = t match {
+  def substGenVar(t: LabelG, x: String, t2: TypeG): LabelG = t match {
+    case SelfLabel => t
+    case LowSelfLabel => t
     case p:PrimType => p
     case TypeVar(y: String) => t
     case GenericTypeVar(y) => if(x==y) t2 else t
@@ -69,10 +73,10 @@ object TypeSubstG {
             m.mType.typeVars,
             m.mType.domain.map(stype =>
               STypeG(
-                substGenVar(stype.privateType, x, t2),
+                substGenVar(stype.privateType, x, t2).asInstanceOf[TypeG],
                 substGenVar(stype.publicType, x, t2))),
             STypeG(
-              substGenVar(m.mType.codomain.privateType, x, t2),
+              substGenVar(m.mType.codomain.privateType, x, t2).asInstanceOf[TypeG],
               substGenVar(m.mType.codomain.publicType, x, t2)
             )))))
     case ObjectType(y, methods) =>
@@ -87,10 +91,10 @@ object TypeSubstG {
               MTypeG(
                 m.mType.typeVars,
                 m.mType.domain.map(stype => STypeG(
-                  substGenVar(stype.privateType,x, t2),
+                  substGenVar(stype.privateType,x, t2).asInstanceOf[TypeG],
                   substGenVar(stype.publicType,x, t2))),
                 STypeG(
-                  substGenVar(m.mType.codomain.privateType, x, t2),
+                  substGenVar(m.mType.codomain.privateType, x, t2).asInstanceOf[TypeG],
                   substGenVar(m.mType.codomain.publicType, x, t2))
               ))))
   }
@@ -106,7 +110,9 @@ object TypeSubstG {
   }
 
   private def freeSelfVars(set: Set[String],
-                           t: TypeG): List[String] = t match {
+                           t: LabelG): List[String] = t match {
+    case SelfLabel => List()
+    case LowSelfLabel => List()
     case TypeVar(x) => if (set.contains(x)) List() else List(x)
     case GenericTypeVar(x) => List()
     case ObjectType(tv, methods) =>
@@ -147,5 +153,5 @@ object TypeSubstG {
     case _ => List()
   }
 
-  private def freeSelfVars(t: TypeG): List[String] = freeSelfVars(Set(), t)
+  private def freeSelfVars(t: LabelG): List[String] = freeSelfVars(Set(), t)
 }

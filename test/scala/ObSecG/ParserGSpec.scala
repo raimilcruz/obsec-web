@@ -86,4 +86,8 @@ class ParserGSpec extends FlatSpec with Matchers with BaseSpec {
       "       -> [X {isEmpty: -> Bool}\n{head: -> T}\n{tail: -> X}\n]\n}]"
     assert(ObSecGParser.parseType(program) == Right(Var("x")))
   }
+  "parser" should "recognize self label" in {
+    var program = "{z : {ot X {hash : -> X<this}}<L => \n def m  = z.m()\n}"
+    val res = ObSecGParser(program)
+  }
 }
