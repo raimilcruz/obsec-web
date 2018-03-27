@@ -178,9 +178,9 @@ case object IntType extends TypeG with PrimType {
 /**
   * typedef String{
   * //This is bad, because we know for sure that the join operation
-  * //(on the standard subtyping lattice) will be Top, excepto for other String.
+  * //(on the standard subtyping lattice) will be Top, except for other String.
   *
-  * bool{this join Po} equals[Po](Top@Po);
+  * bool{this join Po} equals[Po<:Top](Top@Po);
   * int@{this join Pch} indexOf[Pch](int@Pch ch);
   * String@{this join Pstr} concat[Pstr](String@Pstr str);
   * String@{this} replace(char@{this} oldChar, char@{this} newChar);

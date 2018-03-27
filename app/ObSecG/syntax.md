@@ -11,6 +11,7 @@ mdef ::=    m(x*)= e                                    (method definition)
 T   ::=     X                                           (generic type variable) 
             | a                                         (self type variable)
             | Obj(a)[msig*]                             (object type)
+            | T join T                                  (join/union type)
             
 lc   :: =    X
             | a 
@@ -27,9 +28,9 @@ S    ::=    T<l                                         (security type)
 msig ::=    m<varc>: S->S                               (method signature)
 
 Sc   ::=    T<lc
-msigc ::=    m<varc>: Sc->Sc                               (method signature)
-varc ::=    X op T                                      (subtyping constraint)
-            | XL op T;T                                 (low/subtyping constraint)
+msigc ::=    m<varc>: Sc->Sct                               (method signature)
+varc ::=    X : T..T                                      (subtyping constraint)
+            | XL : T;T                                 (low/subtyping constraint)
 op   ::=    <:
             | >:
 ```
@@ -123,5 +124,26 @@ typedef XUser = {
 typedef User<User<this> :> this :> User<this>> = {
     self =>
     User@this
+}
+```
+
+
+## Interfaces for Bool, Int, String and List
+
+```
+Bool = {
+    //if the boolean is HIGH, then the result is HIGH
+    //if the boolean is LOW, then the result is T join l
+    T<{r} if[T, l<:T, r <: thisL join l](T<l t, T<l f); 
+}
+
+String = {
+    //we need to be careful here. The thing that we want
+    //to express:
+    //if this is <: StringEq then the result is bool<bool
+    //otherwise is bool<H.
+    bool<{this join l} eq[l<String](String<l other);
+    
+    bool<l eq[l>bool](String<l other);
 }
 ```
