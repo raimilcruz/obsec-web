@@ -128,22 +128,234 @@ typedef User<User<this> :> this :> User<this>> = {
 ```
 
 
-## Interfaces for Bool, Int, String and List
+## Interfaces for Bool, Int, String and List (To Éric)
 
 ```
 Bool = {
-    //if the boolean is HIGH, then the result is HIGH
-    //if the boolean is LOW, then the result is T join l
-    T<{r} if[T, l<:T, r <: thisL join l](T<l t, T<l f); 
+    //if the boolean is HIGH, then the result is HIGH. We do not control 
+    //this.
+    
+    //So we only control when the "if" method is in the declassification type
+    //In that context, we can make the signature of "if" more rigid or flexibile
+    //depending of the security concerns
+    
+    wif the boolean is LOW, then the result is T join l
+    T<{r} if[T, l<:T, r <: thisL join l](T<l t, T<l f);
 }
 
 String = {
-    //we need to be careful here. The thing that we want
-    //to express:
-    //if this is <: StringEq then the result is bool<bool
-    //otherwise is bool<H.
-    bool<{this join l} eq[l<String](String<l other);
+    //Security signature of eq method:
+    //In an non-security OO language the signature is what follows:
+    //Bool ==(String s); 
     
-    bool<l eq[l>bool](String<l other);
+    //For a IFC point of view what we want to capture is that the result must
+    //be as secret as the self String and the arguments of eq:
+    //In JIF the signature is what follows:
+    //Bool@{this join l} eq[l][String@l other]
+    
+    //With faceted-types we know that the result of invoking eq will be
+    //HIGH when the declassification policy (attached to String) does not 
+    //containt eq. So we need just to care when the eq method is in the 
+    //declassification policy. Then the signature that we put here on eq is just 
+    //to constraint what the signature of the eq method in the policy is allowed 
+    //to expose.
+    
+    //A monomorphic version of this method in ObSec could be:
+    //bool<bool eq(String<String other);
+    
+    //With the above version a policy StringEq can only abstract the resulting
+   //policy, but it can touch the argument. Example:
+   //StringEq1 = { bool<H eq(String<String other);} is a valid policy for String
+   //However, StringEq1 = {bool<bool eq(String<H other);} is not a valid policy
+   //because String<H is not subtype of String<String. 
+   
+   //The above aspect is not satisfactory in general, one could be more relaxed 
+   //and yet to be sound.
+   
+   //For instance we can express that the argument must be as "public" as the
+   //self label       
+   //bool<bool eq[l<:this](String<l other);
+   
+   //Then StringEq1 is still a valid declassification type for String. Note that
+   //we put crete the security type String<StringEq1, we close the private facet,
+   //then the method eq has now signature (in the private facet):
+   //bool<bool eq(String<StringEq1 other)
+   //note that the eq methods are in the subtyping relation:
+   //String<String <: String<StringEq1. However String<H as argument of eq in 
+   //StringEq1 is not valid.
+   //However, no StringEq3 = {bool<bool eq(String<StringEq a2}} is a valid 
+   //declassification type for String... Nice!
+   //Then we conclude that this signature is more appropiated for eq method in 
+   //String:
+   
+   bool<bool eq[l<:this](String<l other);
+   
+   //Note that there is no problem with bool<bool as return method because the
+   //declassificaiton policy always can refined that to anything between 
+   //Bool and Top. Nice!!
+   
+   //--> TRIM
+   
+   //simple version:
+   //String trim();
+   
+   //JIF version
+   //String@this trim();
+   
+   //ObSec version
+   //String<String trim();
+   
+   //GObSec version
+   String@this trim();
+   //<-- TRIM
+   
+   //--> Concat
+   //simple version:
+   //String concat(String s);
+   
+   //Jif version
+   //String@{this join l} concat[l](String@l a;)
+   
+   //ObSec version
+   //String@String concat(String@String a)
+   
+   //GObSec version   
+   //String@l concat[l<:this](String@l a)   
+   //<-- Concat   
+}
+Int = {
+    //simple version:
+    //Int add(Int a);
+    
+    //JiF Version
+    //Int@{this join l} add[l](Int@l a);
+    
+    //ObSec conservative version    
+    //Int@Int add(Int@Int a);
+    
+    //ObSec parametric version
+    Int@l add[l<:this] (Int@l a);
+}
+
+List[l,X<:L]{
+   Bool<Bool isEmpty();
+   X<L head();
+   List[L,X]<List[L,X] tail();
+}
+//another option to define List is to abstract over security types
+List[S]{
+   Bool<Bool isEmpty();
+   S head();
+   List[S]<List[S] tail():  
+}
+//then we can instantiate it with Int<Eq[Int]
+//A great different between data-structures in our approach and 
+//data-structure in standard/jif approaches is that label of the element
+//does not affect the label of the data-structure (at the end they are different
+//types)
+//For instance we can implement a generic method length for list without
+//to take care of the label of the elements:
+//
+Int<Int length[S](List[S]<List[S] l){
+   if(l.isEmpty()) 0
+   else length[S](l.tail).add(1) 
+}
+//then we can use the length method with a list of secret passwords
+List[String<H] passwords = ...
+Int<Int l = length[String<H](l)
+```
+
+
+## Final explanation
+
+- From an implementor perspective we define a single type (not a faceted type)
+ (for instance String, Int, PasswordChecker)
+- From a client perspective, he consumes a security type. So it never uses 
+ directly on the facet, but after the creation of a security type. 
+ The pairing of two types to form a security type has more
+ meaning that we anticipate.
+- To remark the above point: THERE IS NO WAY of using an object without a 
+security type. A place to see that is the definition of an object (the object 
+itself must know its security type). This is huge!!
+- That's said. At the moment of defining a type we have a decision to take: to 
+provide concrete declassification interfaces or to left open the specification
+of declassification interfaces to the moment of creating a security type. In the
+former case declassification types are taken from the attached declassification 
+type.
+- We need to name the "method-dependent label", because in many scenarios we
+do not want to know who it is, however we want to constraint it.
+
+Let us explain how the self label works by examples. Recall the `String` and
+`StringEq` interfaces:
+```
+String = {
+    ...
+    Bool<Bool eq[lm <: this](String@lm a): 
+    ...
+}
+StringEq = {
+    ...
+    Bool<Bool eq(String@StringEq a): 
+    ...
 }
 ```
+
+The label `lm` is a declassification-provided label, ie. it will be provided
+when creating a security type.
+For instance when we create `String<StringEq` the following things happens:
+- The `this` parameter is instantiated, in this case to `StringEq`
+- We extract the type to instantiate the label `lm`. In this case it corresponds
+to label of the parameter `a` which is `StringEq`. 
+-  Then we need to verify if the constraint over `lm` (`lm < this`) is 
+satisfied by StringEq, which is the case `StringEq <: StringEq`
+- Then we obtain the instantiated private facet, in this case is:
+   ```
+   String' = {
+        ...
+        Bool<Bool eq(String@StringEq a);
+        ...  
+   }
+   ``` 
+- Then we verify that `String' <:StringEq` which is case.
+- After doing all these step we can assert the security type is well-formed.
+
+In some case is not necesary to name the declassification-provided label because
+we do not constraint it. In that case we can use a wildcard label `l*`
+
+There are a few technical considerations with declassification-provided labels
+- If the declassification type does not contains a method, what are the type
+to instantiate those labels?. For instance what happen to labels of the method
+`concat` in the security type String<StringEq. It is sound to assume the LOW
+label everywhere? For the concat method it works, however, .... maybe a 
+condition would be that the signature must work if change all 
+declassication-provided labels by LOW.
+ 
+- I have to think about non-satisfiable constraints. 
+
+So far we have presented the "self label" with an own syntactic constructor. 
+However the self label is just an special case of declassification-provided 
+label, but instead of be taken from it is position in a method signature in the 
+declassification type, it is the whole declassification type. We can unify the 
+syntax for the self label in the following way:
+
+```
+String<l1{
+   ...
+   String<l1 eq[lm <: l1](String<lm a);        
+   ...   
+}
+```  
+
+It is position a type level definition give the idea that is taken from the 
+concrete declassification policy. In the formal model for the paper we can 
+express this with the following notation:
+
+```
+Obj(z,l1)[
+   ... 
+   z<l1 eq[lm <: l1](z<lm a);
+   ...    
+]
+```
+
+       
