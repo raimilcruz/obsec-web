@@ -12,7 +12,7 @@ object TypeEquivalenceG {
     * @param t2
     * @return
     */
-  def alphaEq(t1:TypeG,t2:TypeG):Boolean = recAlphaEq(Set(),t1,t2)
+  def alphaEq(t1:LabelG,t2:LabelG):Boolean = recAlphaEq(Set(),t1,t2)
 
   /**
     * Alpha equivalence for security types
@@ -25,10 +25,10 @@ object TypeEquivalenceG {
 
 
   private def recAlphaEq(set: Set[Tuple2[String, String]],
-                         t1: TypeG,
-                         t2: TypeG): Boolean = (t1, t2) match {
+                         t1: LabelG,
+                         t2: LabelG): Boolean = (t1, t2) match {
     case (TypeVar(x), TypeVar(y)) => x == y || set.contains(Tuple2(x, y))
-    case (GenericTypeVar(x),GenericTypeVar(y)) => x==y
+    //case (GenericTypeVar(x),GenericTypeVar(y)) => x==y
     case (ObjectType(x, methods1), ObjectType(y, methods2)) =>
       val newSet = set + Tuple2(x, y)
       if (methods1.map(x => x.name).toSet != methods2.map(x => x.name).toSet)

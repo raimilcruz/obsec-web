@@ -10,7 +10,7 @@ class Scope[T] {
 
   def add(x: String, v: T): Unit = throw new Error("Not a functional scope")
 
-  def toList(): List[(String, T)] = List()
+  def toList: List[(String, T)] = List()
 }
 
 class NestedScope[T](parent: Scope[T]) extends Scope[T] {
@@ -29,7 +29,7 @@ class NestedScope[T](parent: Scope[T]) extends Scope[T] {
     bindings(x) = v
   }
 
-  override def toList(): List[(String, T)] = parent.toList() ++ bindings.toList
+  override def toList: List[(String, T)] = parent.toList ++ bindings.toList
 }
 
 

@@ -108,13 +108,13 @@ class TypeChecker() {
       for (td <- typeDefs) {
         td match{
           case deftype:TypeDefinition =>
-            val closedType = closeAliases(newTypeAliasScope.toList(), ObjType(TypeVar(deftype.name), deftype.methods))
+            val closedType = closeAliases(newTypeAliasScope.toList, ObjType(TypeVar(deftype.name), deftype.methods))
             //println(newTypeAliasScope.toList())
             if (!wfChecker.isWellFormed(closedType))
               throw TypeError(s"Type declaration '${deftype.name}' declaration is not well-formed: ${closedType}")
             newTypeAliasScope.add(deftype.name, closedType)
           case ta:TypeAlias =>
-            val closedType = closeAliases(newTypeAliasScope.toList(), ta.objType)
+            val closedType = closeAliases(newTypeAliasScope.toList, ta.objType)
             //println(newTypeAliasScope.toList())
             if (!wfChecker.isWellFormed(closedType))
               throw TypeError(s"Type in the type alias '${ta.aliasName}' declaration is not well-formed: ${closedType}")
@@ -138,7 +138,7 @@ class TypeChecker() {
 
   def closeAliases(aliasScope: Scope[Type], sType: SType): SType = {
     //TODO: Check problem with alias with same name at different scopes
-    val aliases = aliasScope.toList()
+    val aliases = aliasScope.toList
     SType(closeAliases(aliases, sType.privateType), closeAliases(aliases, sType.publicType))
   }
 

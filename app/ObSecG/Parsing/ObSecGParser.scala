@@ -16,8 +16,10 @@ import scala.util.parsing.input.Position
   * Defining a parser for ObSec language
   */
 object ObSecGParser extends StandardTokenParsers with PackratParsers with ImplicitConversions with DebugPackratParsers{
-  lexical.reserved += ("if" , "then" , "else" , "true", "false", "let" ,"in", "type", "new", "def","val","deftype", "ot" , "Int" , "String" , "Bool", "StrList" , "L" , "H"  ,"mklist","cons","extends" )
-  lexical.delimiters ++= (": . < > -> => + - * / ( ) [ ] { } , = ; <:" split ' ')
+  lexical.reserved += ("if" , "then" , "else" , "true", "false", "let" ,"in", "type", "new", "def","val","deftype", "ot" , "Int" , "String" , "Bool", "StrList" , "L" , "H"  ,"mklist",
+    "cons",
+    "extends","super" )
+  lexical.delimiters ++= (": . < > -> => + - * / ( ) [ ] { } , = ; <: .." split ' ')
 /*
 
   val reserved: PackratParser[String] =
@@ -59,6 +61,7 @@ object ObSecGParser extends StandardTokenParsers with PackratParsers with Implic
   def TYPEKEYWORD = "type"
   def MKLIST = "mklist"
 
+  def TOP = "Top"
   def INT = "Int"
   def STRING = "String"
   def BOOLEAN = "Bool"
@@ -70,165 +73,175 @@ object ObSecGParser extends StandardTokenParsers with PackratParsers with Implic
   def LOW ="L"
   def HIGH ="H"
 
-  def  program: PackratParser[ObSecGExpr] = phrase(expr)//new Wrap("program",phrase(expr))
-  lazy val expr : Parser[ObSecGExpr] = {
+  def  program: PackratParser[ObSecGAstExprNode] = phrase(expr)//new Wrap("program",phrase(expr))
+  lazy val expr : Parser[ObSecGAstExprNode] = {
     valExpr |||  varExpr ||| methodInvExpr | ifThenElse | letStarExpr | mkListExpr | consList
   }
 
-  lazy val consList: Parser[ObSecGExpr] =
-    (("cons" ~ LEFTPAREN) ~> ((expr <~ ",") ~ expr)) <~ RIGHTPAREN ^^ {case elem~l => ConsListExpr(elem,l)}
+  lazy val consList: Parser[ObSecGAstExprNode] =
+    (("cons" ~ LEFTPAREN) ~> ((expr <~ ",") ~ expr)) <~ RIGHTPAREN ^^ {case elem~l => ConsListOperatorNode(elem,l)}
 
-  lazy val mkListExpr : Parser[ObSecGExpr] =
-    ((MKLIST ~ LEFTPAREN) ~> repsep(expr,",")) <~ RIGHTPAREN ^^ (l => ListConstructorExpr(l))
+  lazy val mkListExpr : Parser[ObSecGAstExprNode] =
+    ((MKLIST ~ LEFTPAREN) ~> repsep(expr,",")) <~ RIGHTPAREN ^^ (l => ListLiteral(l))
 
-  lazy val letStarExpr :PackratParser[ObSecGExpr] =
+  lazy val letStarExpr :PackratParser[ObSecGAstExprNode] =
     ((LET ~ LEFTBRACKET )~> (rep(typeDecl) ~ rep(localDecl))) ~ ((RIGHTBRACKET ~ IN) ~> expr) ^^
-      {case  tDecls ~ decls ~ expr => LetStarExpr(tDecls ++ decls,expr)}
+      {case  tDecls ~ decls ~ expr => LetStarExpressionNode(tDecls ++ decls,expr)}
 
-  lazy val typeDecl : PackratParser[Declaration] = defTypeDecl | typeAliasDecl
-  lazy val typeAliasDecl : PackratParser[TypeAlias] =
-    (("type" ~> ident <~ EQUALSSIGN) ~ objType) ^^ {case id ~ t => TypeAlias(id,t)}
+  lazy val typeDecl : PackratParser[DeclarationNode] = defTypeDecl | typeAliasDecl
+  lazy val typeAliasDecl : PackratParser[TypeAliasDeclarationNode] =
+    (("type" ~> ident <~ EQUALSSIGN) ~ objType) ^^ {case id ~ t => TypeAliasDeclarationNode(id,t)}
 
-  lazy val defTypeDecl : PackratParser[TypeDefinition] =
-    "deftype" ~> ident ~ (LEFTBRACKET  ~> (methodList <~ RIGHTBRACKET)) ^^ {case tName ~ methodList =>  TypeDefinition(tName,methodList)}
+  lazy val defTypeDecl : PackratParser[DefTypeNode] =
+    "deftype" ~> ident ~ (LEFTBRACKET  ~> (methodList <~ RIGHTBRACKET)) ^^ {case tName ~ methodList =>  DefTypeNode(tName,methodList)}
 
 
-  lazy val localDecl : PackratParser[LocalDeclaration] =
+  lazy val localDecl : PackratParser[LocalDeclarationNode] =
     localDecl11 | localDecl12
 
-  lazy val localDecl11 : PackratParser[LocalDeclaration] =
-    ((identifier <~ EQUALSSIGN) ~ expr) ^^ {case id ~ expr => LocalDeclaration(id,expr)}
+  lazy val localDecl11 : PackratParser[LocalDeclarationNode] =
+    ((identifier <~ EQUALSSIGN) ~ expr) ^^ {case id ~ expr => LocalDeclarationNode(id,expr)}
 
-  lazy val localDecl12 : PackratParser[LocalDeclaration] =
-    (("val" ~> identifier <~ EQUALSSIGN) ~ expr) ^^ {case id ~ expr => LocalDeclaration(id,expr)}
-
-
-  lazy val valExpr :  Parser[ObSecGExpr] = objectExpr | objectExpr2 | primVal
-
-  def varExpr : PackratParser[ObSecGExpr] =  identifier ^^ (vName => Var(vName))
+  lazy val localDecl12 : PackratParser[LocalDeclarationNode] =
+    (("val" ~> identifier <~ EQUALSSIGN) ~ expr) ^^ {case id ~ expr => LocalDeclarationNode(id,expr)}
 
 
-  lazy val methodInvExpr :PackratParser[ObSecGExpr]= methodInvExpr2 | methodInvExpr1
+  lazy val valExpr :  Parser[ObSecGAstExprNode] = objectExpr | objectExpr2 | primVal
 
-  lazy val methodInvExpr1 :PackratParser[ObSecGExpr]={
+  def varExpr : PackratParser[ObSecGAstExprNode] =  identifier ^^ (vName => VariableNode(vName))
+
+
+  lazy val methodInvExpr :PackratParser[MethodInvocationNode]= methodInvExpr2 | methodInvExpr1
+
+  lazy val methodInvExpr1 :PackratParser[MethodInvocationNode]={
     (expr <~ DOT) ~ (extendedIdentifier) ~ ((LEFTPAREN ~> repsep(expr, COMMMA)) <~ RIGHTPAREN)^^
-      {case e1 ~ id ~ args => MethodInv(e1,List(),args,id)}
+      {case e1 ~ id ~ args => MethodInvocationNode(e1,List(),args,id)}
   }
-  lazy val methodInvExpr2 :PackratParser[ObSecGExpr]={
-    (expr <~ DOT) ~ (extendedIdentifier) ~ ((LEFTSBRACKET ~> repsep(singleType,COMMMA)) <~ RIGHTSBRACKET) ~ ((LEFTPAREN ~> repsep(expr, COMMMA)) <~ RIGHTPAREN)^^
-      {case e1 ~ id ~ types  ~ args => MethodInv(e1,types,args,id)}
-  }
-
-  lazy val ifThenElse :PackratParser[ObSecGExpr]= {
-    (IF ~> expr) ~ (THEN ~> expr) ~ (ELSE ~> expr) ^^ {case c ~ e1 ~ e2 => IfExpr(c,e1,e2)}
+  lazy val methodInvExpr2 :PackratParser[MethodInvocationNode]={
+    (expr <~ DOT) ~ (extendedIdentifier) ~ ((LEFTSBRACKET ~> repsep(labelType,COMMMA)) <~ RIGHTSBRACKET) ~ ((LEFTPAREN ~> repsep(expr, COMMMA)) <~ RIGHTPAREN)^^
+      {case e1 ~ id ~ types  ~ args => MethodInvocationNode(e1,types,args,id)}
   }
 
-  lazy val  objectExpr: PackratParser[ObSecGExpr] = {
+  lazy val ifThenElse :PackratParser[IfExpressionNode]= {
+    (IF ~> expr) ~ (THEN ~> expr) ~ (ELSE ~> expr) ^^ {case c ~ e1 ~ e2 => IfExpressionNode(c,e1,e2)}
+  }
+
+  lazy val  objectExpr: PackratParser[ObSecGAstExprNode] = {
     ((LEFTBRACKET ~> identifier) <~ COLON) ~ stype ~ ((RARROW ~> methodDefs) <~ RIGHTBRACKET) ^^
-      {case self ~ stype ~ methodDefs => Obj(self,stype,methodDefs)}
+      {case self ~ stype ~ methodDefs => ObjectDefinitionNode(self,stype,methodDefs)}
   }
-  lazy val  objectExpr2: PackratParser[ObSecGExpr] = {
+  lazy val  objectExpr2: PackratParser[ObSecGAstExprNode] = {
     "new" ~> (((LEFTBRACKET ~> identifier) <~ COLON) ~ stype ~ ((RARROW ~> methodDefs) <~ RIGHTBRACKET)) ^^
-      {case self ~ stype ~ methodDefs => Obj(self,stype,methodDefs)}
+      {case self ~ stype ~ methodDefs => ObjectDefinitionNode(self,stype,methodDefs)}
   }
-  lazy val methodDefs : PackratParser[List[MethodDef]]={
+  lazy val methodDefs : PackratParser[List[MethodDefinitionNode]]={
     rep(methodDef)
   }
 
-  lazy val methodDef : PackratParser[MethodDef] = methodDef11 | methodDef12
-  lazy val methodDef11 : PackratParser[MethodDef] = {
+  lazy val methodDef : PackratParser[MethodDefinitionNode] = methodDef11 | methodDef12
+  lazy val methodDef11 : PackratParser[MethodDefinitionNode] = {
     LEFTBRACKET ~> (extendedIdentifier ~ rep(identifier)) ~ ((EQUALSSIGN ~> expr ) <~ RIGHTBRACKET) ^^
-      { case mName ~ args ~ expr => MethodDef(mName,args,expr)}
+      { case mName ~ args ~ expr => MethodDefinitionNode(mName,args,expr)}
   }
-  lazy val methodDef12 : PackratParser[MethodDef] = {
+  lazy val methodDef12 : PackratParser[MethodDefinitionNode] = {
     "def" ~> (extendedIdentifier ~ rep(identifier)) ~ ((EQUALSSIGN ~> expr )) ^^
-      { case mName ~ args ~ expr => MethodDef(mName,args,expr)}
+      { case mName ~ args ~ expr => MethodDefinitionNode(mName,args,expr)}
   }
-  lazy val stype : PackratParser[STypeG] = stypeX | publicTypeShortcut
-  lazy val stypeX : PackratParser[STypeG] ={
-    ((singleType <~ LESSTHAN) ~ labelType) ^^ {case t1 ~ t2  => t2 match {
-      case LowLabel => STypeG(t1,t1)
-      case HighLabel => STypeG(t1,ObjectType.top)
-      case _ => STypeG(t1,t2)
-    } }
+  lazy val stype : PackratParser[AnnotatedFacetedType] = stypeX | publicTypeShortcut
+
+  lazy val stypeX : PackratParser[AnnotatedFacetedType] ={
+    ((privateType <~ LESSTHAN) ~ labelType) ^^
+      {case t1 ~ t2  => AnnotatedFacetedType(t1,t2)
+    }
   }
-  lazy val publicTypeShortcut: PackratParser[STypeG] ={
-    singleType ^^ {t1  => STypeG(t1,t1)}
+  lazy val publicTypeShortcut: PackratParser[AnnotatedFacetedType] ={
+    privateType ^^ {t1  => AnnotatedFacetedType(t1,t1)}
   }
 
-  lazy val singleType : PackratParser[TypeG] ={
-    objType  |  primType | varType
+  lazy val privateType : PackratParser[TypeAnnotation] ={
+    objType  |  primType |  varType
   }
 
-  lazy val varType : PackratParser[TypeG] = identifier ^^
-    { id => if(id.startsWith("T")) GenericTypeVar(id) else  TypeVar(id)}
+  lazy val varType : PackratParser[TypeIdentifier] = identifier ^^
+    { id => TypeIdentifier(id)}
 
-  lazy val labelType : PackratParser[TypeG] ={
-    objType | lowLabel | highLabel | primType | varType
+
+
+  lazy val labelType : PackratParser[TypeAnnotation] ={
+    objType | lowLabel | highLabel | primType  | varType
   }
-  lazy val primType : PackratParser[TypeG] = {
+  lazy val primType : PackratParser[TypeAnnotation] = {
     intType | booleanType | stringListType | stringType
   }
-  lazy val intType : PackratParser[TypeG] = INT ^^ {_=> IntType}
-  lazy val stringType : PackratParser[TypeG] = STRING ^^ {_=> StringType}
-  lazy val booleanType : PackratParser[TypeG] = BOOLEAN ^^ {_=> BooleanType}
-  lazy val stringListType : PackratParser[TypeG] =  stringListStringType | stringListGType//STRLIST ^^ {_=> StringListType}
+  lazy val intType : PackratParser[TypeAnnotation] = INT ^^ {_=> TypeIdentifier(INT)}
+  lazy val stringType : PackratParser[TypeAnnotation] = STRING ^^ {_=> TypeIdentifier(STRING)}
+  lazy val booleanType : PackratParser[TypeAnnotation] = BOOLEAN ^^ {_=> TypeIdentifier(BOOLEAN)}
+  lazy val stringListType : PackratParser[TypeAnnotation] =  stringListStringType //| stringListGType//STRLIST ^^ {_=> StringListType}
 
-  lazy val stringListStringType : PackratParser[TypeG] = STRLIST ^^ {_=> StringListType}
-  lazy val stringListGType : PackratParser[TypeG] = (STRLIST~"[") ~> (singleType <~"]") ^^ (t => StringGListType(t))
+  lazy val stringListStringType : PackratParser[TypeAnnotation] = STRLIST ^^ {_=>  TypeIdentifier(STRLIST)}
+  //lazy val stringListGType : PackratParser[TypeAnnotation] = (STRLIST~"[") ~> (privateType <~"]") ^^ (t => StringGListType(t))
 
 
 
-  lazy val lowLabel : PackratParser[TypeG]= LOW ^^ {_ => LowLabel}
-  lazy val highLabel : PackratParser[TypeG]= HIGH ^^ {_ => HighLabel}
+  lazy val lowLabel : PackratParser[TypeAnnotation]= LOW ^^ {_ => TypeIdentifier(LOW)}
+  lazy val highLabel : PackratParser[TypeAnnotation]= HIGH ^^ {_ => TypeIdentifier(HIGH)}
 
-  lazy val primVal :  Parser[ObSecGExpr] = stringLiteralExpr | integerExpr | boolExpr
+  lazy val primVal :  Parser[ObSecGAstExprNode] = stringLiteralExpr | integerExpr | boolExpr
 
   //lazy val stringLiteralExpr : PackratParser[ObSecGExpr] = stringLit ^^ {s => StringExpr(s.substring(1,s.length-1))}
-  lazy val stringLiteralExpr : Parser[ObSecGExpr] = stringLit ^^ {s => StringExpr(s)}
-  lazy val integerExpr : Parser[ObSecGExpr] = (numericLit | negativeNumericLiteral) ^^ {s => IntExpr(s.toInt)}
+  lazy val stringLiteralExpr : Parser[StringLiteral] = stringLit ^^ {s => StringLiteral(s)}
+  lazy val integerExpr : Parser[IntLiteral] = (numericLit | negativeNumericLiteral) ^^ {s => IntLiteral(s.toInt)}
   lazy val negativeNumericLiteral : Parser[String]= "-" ~> numericLit ^^ {s=> "-"+s}
-  lazy val boolExpr : PackratParser[ObSecGExpr] = ("true" | "false" ) ^^ {s => BooleanExpr(s == "true")}
+  lazy val boolExpr : PackratParser[BooleanLiteral] = ("true" | "false" ) ^^ {s => BooleanLiteral(s == "true")}
 
 
-  lazy val objType :  PackratParser[ObjectType]= objType11 | objType13 | objType12
+  lazy val objType :  PackratParser[ObjectTypeAnnotation]= objType11 | objType13 | objType12
 
-  lazy val objType11 :  PackratParser[ObjectType]={
-    (LEFTSBRACKET  ~> identifier) ~ (methodList <~ RIGHTSBRACKET) ^^ {case tVar ~ mList=> ObjectType(tVar,mList)}
+  lazy val objType11 :  PackratParser[ObjectTypeAnnotation]={
+    (LEFTSBRACKET  ~> identifier) ~ (methodList <~ RIGHTSBRACKET) ^^ {case tVar ~ mList=> ObjectTypeNode(tVar,mList)}
   }
-  lazy val objType12 :  PackratParser[ObjectType]={
-    ((LEFTBRACKET ~ OT) ~> identifier) ~ (methodList <~ RIGHTBRACKET) ^^ {case tVar ~ mList => ObjectType(tVar,mList)}
+  lazy val objType12 :  PackratParser[ObjectTypeAnnotation]={
+    ((LEFTBRACKET ~ OT) ~> identifier) ~ (methodList <~ RIGHTBRACKET) ^^ {case tVar ~ mList => ObjectTypeNode(tVar,mList)}
   }
-  lazy val objType13 :  PackratParser[ObjectType]={
-    LEFTSBRACKET  ~>  (methodList <~ RIGHTSBRACKET) ^^ (mList => ObjectType("gen", mList))
+  lazy val objType13 :  PackratParser[ObjectTypeAnnotation]={
+    LEFTSBRACKET  ~>  (methodList <~ RIGHTSBRACKET) ^^ (mList => NoRecursiveObjectTypeNode(mList))
   }
 
-  lazy val methodList : PackratParser[List[MethodDeclarationG]]={
+  lazy val methodList : PackratParser[List[MethodDeclarationNode]]={
     rep(methodSignature)
   }
-  lazy val methodSignature : PackratParser[MethodDeclarationG]=
+  lazy val methodSignature : PackratParser[MethodDeclarationNode]=
     methodSignature1 | methodSignature2
 
-  lazy val methodSignature1 : PackratParser[MethodDeclarationG]={
+  lazy val methodSignature1 : PackratParser[MethodDeclarationNode]={
     ((LEFTBRACKET ~> extendedIdentifier) ~ ("[" ~> typeVarBounds <~  "]") <~ COLON) ~ (rep(stype) <~ ARROW) ~ (stype <~ RIGHTBRACKET) ^^
       {case  mName ~ typeParamaters ~ argTypes ~ t2 =>
-        MethodDeclarationG(mName,MTypeG(typeParamaters,argTypes,t2))}
+        MethodDeclarationNode(mName,MethodTypeNode(typeParamaters,argTypes,t2))}
   }
 
-  lazy val methodSignature2 : PackratParser[MethodDeclarationG]={
+  lazy val methodSignature2 : PackratParser[MethodDeclarationNode]={
     ((LEFTBRACKET ~> extendedIdentifier)  <~ COLON) ~ (rep(stype) <~ ARROW) ~ (stype <~ RIGHTBRACKET) ^^
-      {case  mName  ~ argTypes ~ t2 => MethodDeclarationG(mName,MTypeG(List(),argTypes,t2))}
+      {case  mName  ~ argTypes ~ t2 => MethodDeclarationNode(mName,MethodTypeNode(List(),argTypes,t2))}
   }
 
-  lazy val typeVarBounds : PackratParser[List[TypeVarSubConstraint]]={
+  lazy val typeVarBounds : PackratParser[List[LabelVariableDeclarationNode]]={
     repsep(typeVarBound,",")
   }
-  lazy val typeVarBound:PackratParser[TypeVarSubConstraint]={
-    upperConstraint
+  lazy val typeVarBound:PackratParser[LabelVariableDeclarationNode]={
+    upperConstraint | lowerConstraint | boundConstraint
   }
-  lazy val upperConstraint:PackratParser[TypeVarSub]={
-    ((identifier <~ "extends") ~ singleType) ^^
-    {case id ~ rawType => TypeVarSub(id,rawType)}
+  lazy val upperConstraint:PackratParser[SubLabelVariableDeclaration]={
+    ((identifier <~ "extends") ~ labelType) ^^
+    {case id ~ rawType => SubLabelVariableDeclaration(id,rawType)}
+  }
+
+  lazy val lowerConstraint:PackratParser[SuperLabelVariableDeclaration]={
+    ((identifier <~ "super") ~ labelType) ^^
+      {case id ~ rawType => SuperLabelVariableDeclaration(id,rawType)}
+  }
+  lazy val boundConstraint:PackratParser[BoundedLabelVariableDeclaration]={
+    ((identifier <~ ":") ~ (labelType <~ "..") ~ labelType) ^^
+      {case id ~ lower ~ upper => BoundedLabelVariableDeclaration(id,lower,upper)}
   }
 
 
@@ -238,7 +251,7 @@ object ObSecGParser extends StandardTokenParsers with PackratParsers with Implic
     * @param string The program source
     * @return An AST
     */
-  def apply(string: String): Either[ObSecParserError, ObSecGExpr] = {
+  def apply(string: String): Either[ObSecParserError, ObSecGAstExprNode] = {
     //parseAll(program,string) match {
     phrase(expr) (new lexical.Scanner(string)) match {
       case x: NoSuccess => Left(ObSecParserError("["+x.next.pos+"] failure: "+x.msg,x.next.pos,x.next.offset))
@@ -251,9 +264,9 @@ object ObSecGParser extends StandardTokenParsers with PackratParsers with Implic
     * @param string The type syntax
     * @return The expression representing the type
     */
-  def parseType(string:String):Either[ObSecParserError, TypeG] = {
+  def parseType(string:String):Either[ObSecParserError, TypeAnnotation] = {
     //parseAll(singleType,string) match {
-    phrase(singleType) (new lexical.Scanner(string)) match {
+    phrase(privateType) (new lexical.Scanner(string)) match {
       case x: NoSuccess => Left(ObSecParserError("["+x.next.pos+"] failure: "+x.msg,x.next.pos,x.next.offset))
       case Success(result, next) => Right(result)
     }
@@ -263,7 +276,7 @@ object ObSecGParser extends StandardTokenParsers with PackratParsers with Implic
     * @param string The type syntax
     * @return The expression representing the type
     */
-  def parseSType(string:String):Either[ObSecParserError, STypeG] = {
+  def parseSType(string:String):Either[ObSecParserError, AnnotatedFacetedType] = {
     //parseAll(stype,string) match {
     phrase(stype) (new lexical.Scanner(string)) match {
       case  x: NoSuccess => Left(ObSecParserError("["+x.next.pos+"] failure: "+x.msg,x.next.pos,x.next.offset))

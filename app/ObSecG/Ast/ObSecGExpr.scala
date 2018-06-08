@@ -1,7 +1,8 @@
 package ObSecG.Ast
 
 /**
-    * <Expr> ::= <Var> | <Obj> | <MethodInv>
+    * <Expr> ::= <Var> | <Obj> | <MethodInv> | <PrimitiveLiteral>
+  *   (| <SurfaceExpr> )
     */
 
   /**
@@ -54,7 +55,7 @@ package ObSecG.Ast
     * @param args The actual arguments
     * @param method The method to invoke
     */
-  case class MethodInv(e1: ObSecGExpr, types:List[TypeG], args: List[ObSecGExpr], method: String) extends ObSecGExpr {
+  case class MethodInv(e1: ObSecGExpr, types:List[LabelG], args: List[ObSecGExpr], method: String) extends ObSecGExpr {
     def map[T](f: ObSecGExpr => ObSecGExpr) =
       MethodInv(f(e1), types, args.map(f), method)
 
@@ -75,15 +76,19 @@ package ObSecG.Ast
   case class IfExpr(cond:ObSecGExpr,thenPart:ObSecGExpr,elsePart:ObSecGExpr) extends ObSecGExpr
 
 
+
+sealed trait PrimitiveLiteral extends ObSecGExpr
+
+//Primitive literals: Int,String, Boolean
+case class IntExpr(v: Int) extends PrimitiveLiteral
+case class StringExpr(v:String) extends PrimitiveLiteral
+case class BooleanExpr(v:Boolean) extends PrimitiveLiteral
+
 /**
   * Surface expressions start here
   */
 sealed trait SurfaceExpr extends ObSecGExpr
-sealed trait SurfaceValExpr extends ObSecGExpr
 
-case class IntExpr(v: Int) extends SurfaceValExpr
-case class StringExpr(v:String) extends SurfaceValExpr
-case class BooleanExpr(v:Boolean) extends SurfaceValExpr
 case class ListConstructorExpr(elems: List[ObSecGExpr]) extends ObSecGExpr
 case class ConsListExpr(elem :ObSecGExpr,list:ObSecGExpr) extends ObSecGExpr
 
@@ -93,6 +98,7 @@ sealed trait Declaration
 case class LocalDeclaration(variable:String,rExpr:ObSecGExpr) extends Declaration
 case class TypeAlias(aliasName: String,objType: ObjectType) extends Declaration
 case class TypeDefinition(name:String,methods:List[MethodDeclarationG]) extends Declaration
+
 
 
 

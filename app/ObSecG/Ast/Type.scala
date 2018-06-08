@@ -23,13 +23,12 @@ case class STypeG(privateType: TypeG, publicType: LabelG) {
   override def toString: String = s"ST($privateType,$publicType)"
 }
 
-trait TypeOrAsterisk
 
-trait LabelG extends TypeOrAsterisk {
+trait IObject{
   def methSig(x: String): MTypeG
-
   def containsMethod(x: String): Boolean
 }
+trait LabelG extends IObject
 
 /**
   * Represents an abstract type in ObSec
@@ -43,39 +42,49 @@ trait TypeG extends LabelG {
   def UnUsedTypeVars: List[TypeVarSub] = List(TypeVarSub("x", ObjectType.top))
 }
 
-/*
+/*/*
 Used to instantiate constraints of the form
 X > Int, X > String. Without * the only way is to provide A type that
 satisfies both constraint. However with * we can also instantiate usages
 of the form Int<X to Int and usages of the form String<X to String.
  */
-object Asterisk extends TypeOrAsterisk
+object Asterisk extends TypeOrAsterisk*/
+
+trait LabelVar extends  LabelG{
+  def name : String
+  override def methSig(x: String): MTypeG =
+    throw new Error("It is an error to ask methSig to a label var")
+
+  override def containsMethod(x: String): Boolean = false
+}
 
 /**
-  * The self label statically does not provide any method.
+  * T ::= ... X ...
+  * @param name the variable name
   */
-object SelfLabel extends LabelG {
-  override def methSig(x: String): MTypeG =
-    throw new Error("It is an error to ask methSig to the self label")
+case class LabelVarImpl(name: String) extends LabelVar
+
+/**
+  * T ::= ... X* ...
+  * @param name the variable name
+  */
+case class LabelVarAster(name : String) extends LabelVar
+
+object Bottom extends LabelG {
+  override def methSig(x: String): MTypeG =  throw new Error("methSig over bottom")
 
   override def containsMethod(x: String): Boolean = false
 }
 
-object LowSelfLabel extends LabelG {
-  override def methSig(x: String): MTypeG =
-    throw new Error("It is an error to ask methSig to the low self label")
+case class UnionLabel(left: LabelG,right: LabelG) extends LabelG {
+  override def methSig(x: String): MTypeG = throw new Error("notimplemented: UnionLabel.methsig")
 
-  override def containsMethod(x: String): Boolean = false
+  override def containsMethod(x: String): Boolean = throw new Error("notimplemented: UnionLabel.containsMethod")
 }
 
-object BoundGenericLabel extends LabelG {
-  override def methSig(x: String): MTypeG =
-    throw new Error("It is an error to ask methSig to the low self label")
-
-  override def containsMethod(x: String): Boolean = false
-}
-
-case class ObjectType(selfVar: String, methods: List[MethodDeclarationG]) extends TypeG {
+trait ObjectTypeInterface extends TypeG{
+  def selfVar: String
+  def methods:List[MethodDeclarationG]
   override def methSig(x: String): MTypeG = {
     //we must close the type
     val mD = methods.find(m => m.name == x).get
@@ -92,8 +101,14 @@ case class ObjectType(selfVar: String, methods: List[MethodDeclarationG]) extend
   }
 
   override def containsMethod(m: String): Boolean = methods.exists(x => x.name == m)
-
+}
+case class ObjectType(selfVar: String, methods: List[MethodDeclarationG]) extends ObjectTypeInterface {
   override def toString: String = s"OT($selfVar,$methods)"
+}
+
+case class PrimObjectType(selfVar: String, methods:List[MethodDeclarationG])
+  extends ObjectTypeInterface {
+  override def toString: String = s"PT($selfVar,$methods)"
 }
 
 object ObjectType {
@@ -114,13 +129,13 @@ case class TypeVar(name: String) extends TypeG {
   override def toString: String = name
 }
 
-case class GenericTypeVar(name: String) extends TypeG {
+/*case class GenericTypeVar(name: String) extends TypeG {
   override def methSig(x: String): MTypeG = throw new Error("Generic type var does not have methods")
 
   override def containsMethod(x: String): Boolean = throw new Error("Generic Type var does not have methods")
 
   override def toString: String = s"GV($name)"
-}
+}*/
 
 /*case class TypeVarG(name: String) extends TypeG {
   override def methSig(x: String): MTypeG = throw new Error("Type var does not have methods")
@@ -135,7 +150,7 @@ object UnUsedTypeVars {
 }
 
 trait PrimType {
-  def toObjType: ObjectType
+  def toObjType: PrimObjectType
 }
 
 case object IntType extends TypeG with PrimType {
@@ -154,8 +169,8 @@ case object IntType extends TypeG with PrimType {
 
   override def toString: String = "Int"
 
-  override def toObjType: ObjectType =
-    ObjectType("x",
+  override def toObjType: PrimObjectType =
+    PrimObjectType("x",
       List(
         MethodDeclarationG("+",
           MTypeG(
@@ -220,7 +235,7 @@ case object StringType extends TypeG with PrimType {
 
   override def toString: String = "String"
 
-  override def toObjType: ObjectType = ObjectType(
+  override def toObjType: PrimObjectType = PrimObjectType(
     "x",
     List(
       MethodDeclarationG("==", MTypeG(List(),
@@ -240,8 +255,8 @@ case object BooleanType extends TypeG with PrimType {
 
   override def toString: String = "Bool"
 
-  override def toObjType: ObjectType =
-    ObjectType("x", List(MethodDeclarationG("$notarealmethod$",
+  override def toObjType: PrimObjectType =
+    PrimObjectType("x", List(MethodDeclarationG("$notarealmethod$",
       MTypeG(List(), List(), STypeG(TypeVar("x"), TypeVar("x"))))))
 
 }
@@ -259,7 +274,7 @@ case object StringListType extends TypeG with PrimType {
     case _ => false
   }
 
-  override def toObjType: ObjectType = ObjectType("x",
+  override def toObjType: PrimObjectType = PrimObjectType("x",
     List(MethodDeclarationG("isEmpty", MTypeG(List(), List(), STypeG(BooleanType, BooleanType))),
       MethodDeclarationG("head", MTypeG(List(), List(), STypeG(StringType, StringType))),
       MethodDeclarationG("tail", MTypeG(List(), List(), STypeG(TypeVar("x"), TypeVar("x"))))
@@ -284,7 +299,7 @@ case class StringGListType(elemPolicy: TypeG) extends TypeG with PrimType {
     case _ => false
   }
 
-  override def toObjType: ObjectType = ObjectType("x",
+  override def toObjType: PrimObjectType = PrimObjectType("x",
     List(MethodDeclarationG("isEmpty", MTypeG(UnUsedTypeVars, List(), STypeG(BooleanType, BooleanType))),
       MethodDeclarationG("head", MTypeG(UnUsedTypeVars, List(), STypeG(StringType, elemPolicy))),
       MethodDeclarationG("tail", MTypeG(UnUsedTypeVars, List(), STypeG(TypeVar("x"), TypeVar("x"))))
@@ -294,17 +309,17 @@ case class StringGListType(elemPolicy: TypeG) extends TypeG with PrimType {
 }
 
 
-sealed trait LabelType extends TypeG {
+sealed trait ExtremeLabelG extends LabelG {
   override def methSig(x: String): MTypeG = throw new Error("It does not sense")
 
   override def containsMethod(x: String): Boolean = throw new Error("It does not sense")
 }
 
-case object LowLabel extends LabelType {
+case object LowLabel extends ExtremeLabelG {
   override def toString: String = "L"
 }
 
-case object HighLabel extends LabelType {
+case object HighLabel extends ExtremeLabelG {
   override def toString: String = "H"
 }
 
@@ -341,29 +356,34 @@ case class MethodDeclarationG(name: String, mType: MTypeG) {
   * @param domain   The domain type
   * @param codomain The codomain type
   */
-case class MTypeG(typeVars: List[TypeVarSubConstraint], domain: List[STypeG], codomain: STypeG) {
+case class MTypeG(typeVars: List[BoundedTypeVar], domain: List[STypeG], codomain: STypeG) {
   def map(f: STypeG => STypeG): MTypeG =
     MTypeG(typeVars, domain.map(f), f(codomain))
 }
 
-trait TypeVarSubConstraint {
+trait BoundedTypeVar {
   def typeVar: String
 
-  def typeBound: TypeG
+  def bounds: TypeVarBounds = TypeVarBounds(lowerBound,upperBound)
+  def lowerBound : LabelG
+  def upperBound: LabelG
 }
 
-case class TypeVarSub(x: String, upperBound: TypeG) extends TypeVarSubConstraint {
-  override def toString: String = s"$x<:$upperBound"
+case class TypeVarSub(typeVar: String,upperBound: LabelG) extends BoundedTypeVar {
+  override def toString: String = s"$typeVar<:$upperBound"
 
-  override def typeVar: String = x
-
-  override def typeBound: TypeG = upperBound
+  override def lowerBound: LabelG = Bottom
 }
 
-case class TypeVarSuper(lowerBound: TypeG, x: String) extends TypeVarSubConstraint {
-  override def toString: String = s"$lowerBound<:$x"
+case class TypeVarSuper(lowerBound: LabelG, typeVar: String) extends BoundedTypeVar {
+  override def toString: String = s"$lowerBound<:$typeVar"
 
-  override def typeVar: String = x
-
-  override def typeBound: TypeG = lowerBound
+  override def upperBound: LabelG = ObjectType.top
 }
+case class BoundedTypeVarImpl( typeVar: String
+                               ,lowerBound: LabelG
+                               ,upperBound: LabelG) extends BoundedTypeVar {
+  override def toString: String = s"$typeVar :$lowerBound..$upperBound"
+}
+
+case class TypeVarBounds(lower:LabelG,upper:LabelG)

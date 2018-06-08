@@ -4,25 +4,29 @@ import ObSecG.Ast._
 import Common._
 
 
-trait ITypeChecker {
+abstract class ITypeChecker(judgements: GObSecJudgements,
+                            errorCollector: ErrorCollector)
+  extends IJudgment(judgements, errorCollector) {
+
   def typeCheck(x: ObSecGExpr): STypeG
 
-  def typeCheck(genVarEnv: Environment[TypeG], scope: Scope[STypeG],
-                aliasScope: Scope[TypeG], expr: ObSecGExpr): STypeG
+  def typeCheck(labelVarEnv: LabelVarEnvironment,
+                scope: TypeEnvironment,
+                aliasScope: TypeAliasScope,
+                expr: ObSecGExpr): STypeG
 }
 
 /**
   * Created by racruz on 24-08-2017.
   */
-class TypeCheckerG extends ITypeChecker {
-  val auxiliaryFunctions = new AuxiliaryFunctions
-  val subTypingAlgorithm = new AmadioCardelliSubtypingG()
-  val wfChecker = new WellFormedCheckerG(new ErrorCollector)
+class TypeChecker(judgements: GObSecJudgmentsExtensions,
+                  errorCollector: ErrorCollector)
+  extends ITypeChecker(judgements: GObSecJudgements, errorCollector) {
 
+  private val auxiliaryFunctions = judgements.auxiliaryDefinitions
 
   def typeCheck(x: ObSecGExpr): STypeG =
-    typeCheck(new EmptyEnvironment[TypeG], new Scope, new Scope, x)
-
+    typeCheck(Environment.empty(), new Scope, new Scope, x)
 
 
   /**
@@ -33,9 +37,9 @@ class TypeCheckerG extends ITypeChecker {
     * @param expr       The expression
     * @return
     */
-  def typeCheck(genVarEnv: Environment[TypeG],
-                scope: Scope[STypeG],
-                aliasScope: Scope[TypeG],
+  def typeCheck(genVarEnv: LabelVarEnvironment,
+                scope: TypeEnvironment,
+                aliasScope: TypeAliasScope,
                 expr: ObSecGExpr): STypeG = expr match {
     case Var(x) => scope.lookup(x)
     case IntExpr(_) => STypeG(IntType, IntType)
@@ -48,12 +52,12 @@ class TypeCheckerG extends ITypeChecker {
       //println(s"Args: ${argTypes}")
       //facet analysis
       //get the upper bound of both types
-      val privateFacet = auxiliaryFunctions.tBound(genVarEnv, s1.privateType)
+      val privateFacet = auxiliaryFunctions.tUpperBound(genVarEnv, s1.privateType)
       println("typeCheck:" + s"private facet:$privateFacet")
       if (privateFacet.containsMethod(m)) {
         var mType = privateFacet.methSig(m)
         //println(s"Method type : ${mType}")
-        val publicFacet = auxiliaryFunctions.tBound(genVarEnv, s1.publicType)
+        val publicFacet = auxiliaryFunctions.tUpperBound(genVarEnv, s1.publicType)
         if (publicFacet.containsMethod(m)) {
           mType = publicFacet.methSig(m)
         }
@@ -63,21 +67,21 @@ class TypeCheckerG extends ITypeChecker {
           throw TypeError(s"Method '$m' : Actual types amount must" +
             s" match the formal type variable amount")
 
-        var extendedGenVarEnv = Helper.multiExtend(genVarEnv,mType.typeVars)
+        var extendedGenVarEnv = auxiliaryFunctions.multiExtend(genVarEnv, mType.typeVars)
         for (pair <- mType.typeVars.zip(types)) {
           pair._1 match {
             case TypeVarSub(x, ubound) =>
-              if (!subTypingAlgorithm.<::(
+              if (!judgements.<::(
                 genVarEnv,
                 pair._2,
-                auxiliaryFunctions.tBound(extendedGenVarEnv , pair._1.typeBound)))
+                auxiliaryFunctions.tUpperBound(extendedGenVarEnv, pair._1.lowerBound)))
                 throw TypeError(s"Invocation of $m : Actual type for generic" +
                   s" type variable ${pair._1.typeVar} does not satisfy subtyping" +
                   s" constraint")
-            case TypeVarSuper(x,lowerBound)=>
-              if (!subTypingAlgorithm.<::(
+            case TypeVarSuper(x, lowerBound) =>
+              if (!judgements.<::(
                 genVarEnv,
-                pair._1.typeBound,
+                pair._1.upperBound,
                 pair._2))
                 throw TypeError(s"Invocation of $m : Actual type for generic" +
                   s" type variable ${pair._1.typeVar} does not satisfy subtyping" +
@@ -92,9 +96,10 @@ class TypeCheckerG extends ITypeChecker {
             s" match the formal arguments amount")
         //check subtyping between $mType.domain and s2
         for (pair <- argTypes.zip(mType.domain)) {
-          val subtitutedType =closeGenType(pair._2,mType.typeVars.zip(types))
-          if (!subTypingAlgorithm.<::(extendedGenVarEnv,
-            pair._1,subtitutedType)) {
+          val subtitutedType = closeGenType(pair._2,
+            mType.typeVars.map(x => x.typeVar).zip(types))
+          if (!judgements.<::(extendedGenVarEnv,
+            pair._1, subtitutedType)) {
             throw TypeError(
               s"""Invocation of ${m}: Type ${pair._1}
              (of actual argument) is not subtyping of ${subtitutedType}""")
@@ -102,10 +107,11 @@ class TypeCheckerG extends ITypeChecker {
         }
 
         if (publicFacet.containsMethod(m))
-          closeGenType(mType.codomain,publicFacet.methSig(m).typeVars.zip(types))
+          closeGenType(mType.codomain,
+            publicFacet.methSig(m).typeVars.map(x => x.typeVar).zip(types))
         else
           closeGenType(STypeG(mType.codomain.privateType, ObjectType.top),
-            privateFacet.methSig(m).typeVars.zip(types))
+            privateFacet.methSig(m).typeVars.map(x => x.typeVar).zip(types))
 
       }
       else
@@ -114,9 +120,9 @@ class TypeCheckerG extends ITypeChecker {
     case Obj(self, selfType, methods) =>
       val stype = closeAliases(aliasScope, selfType)
       //verify well-formed for stype
-      if (!wfChecker.isWellFormed(genVarEnv,stype))
+      if (!judgements.isWellFormed(genVarEnv, stype))
         throw CommonTypeError.secTypeIsNotWellFormed(stype.toString,
-          s" ${wfChecker.errorCollector.errors}")
+          s" ${errorCollector.errors}")
       //the private type must be an object type
       if (!stype.privateType.isInstanceOf[ObjectType])
         throw TypeError("The private facet must be an object type")
@@ -146,9 +152,9 @@ class TypeCheckerG extends ITypeChecker {
         methodScope.add(self, stype)
         m.args.zip(mType.domain).foreach(a => methodScope.add(a._1, a._2))
 
-        var methodGenVarEnv = Helper.multiExtend(genVarEnv,mType.typeVars)
+        var methodGenVarEnv = auxiliaryFunctions.multiExtend(genVarEnv, mType.typeVars)
         var s = typeCheck(methodGenVarEnv, methodScope, aliasScope, m.mBody)
-        if (!subTypingAlgorithm.<::(methodGenVarEnv,s, mType.codomain))
+        if (!judgements.<::(methodGenVarEnv, s, mType.codomain))
           throw TypeError(s"Definition of method '${m.name}': " +
             s"the return type in the implementation ($s) is not subtype of " +
             s"the return type in the signature (${mType.codomain})")
@@ -175,19 +181,21 @@ class TypeCheckerG extends ITypeChecker {
       for (td <- typeDefs) {
         td match {
           case deftype: TypeDefinition =>
-            val closedType = closeAliases(newTypeAliasScope.toList(), ObjectType(deftype.name, deftype.methods))
+            val closedType = closeAliases(
+              newTypeAliasScope.toList,
+              ObjectType(deftype.name, deftype.methods))
             //println(newTypeAliasScope.toList())
-            if (!wfChecker.isWellFormed(closedType))
+            if (!judgements.isWellFormed(Environment.empty():LabelVarEnvironment, closedType))
               throw TypeError(s"Type declaration '${deftype.name}' declaration " +
                 s"is not well-formed: ${closedType}")
-            newTypeAliasScope.add(deftype.name, closedType)
+            newTypeAliasScope.add(deftype.name, closedType.asInstanceOf[TypeG])
           case ta: TypeAlias =>
-            val closedType = closeAliases(newTypeAliasScope.toList(), ta.objType)
+            val closedType = closeAliases(newTypeAliasScope.toList, ta.objType)
             //println(newTypeAliasScope.toList())
-            if (!wfChecker.isWellFormed(closedType))
+            if (!judgements.isWellFormed(Environment.empty():LabelVarEnvironment, closedType))
               throw TypeError(s"Type in the type alias '${ta.aliasName}' " +
                 s"declaration is not well-formed: ${closedType}")
-            newTypeAliasScope.add(ta.aliasName, closedType)
+            newTypeAliasScope.add(ta.aliasName, closedType.asInstanceOf[TypeG])
         }
       }
 
@@ -203,8 +211,8 @@ class TypeCheckerG extends ITypeChecker {
     case ListConstructorExpr(elems) =>
       if (!elems
         .forall(e =>
-          subTypingAlgorithm
-            .<::(genVarEnv,typeCheck(genVarEnv, scope, aliasScope, e),
+          judgements
+            .<::(genVarEnv, typeCheck(genVarEnv, scope, aliasScope, e),
               STypeG(StringType, StringType))))
         throw TypeError("Arguments of 'mklist' must be of type String<String")
       STypeG(StringGListType(StringType), StringGListType(StringType))
@@ -214,67 +222,43 @@ class TypeCheckerG extends ITypeChecker {
       throw new NotImplementedError()
   }
 
-  def closeAliases(aliasScope: Scope[TypeG], sType: STypeG): STypeG = {
+  def closeAliases(aliasScope: TypeAliasScope, sType: STypeG): STypeG = {
     //TODO: Check problem with alias with same name at different scopes
-    val aliases = aliasScope.toList()
-    STypeG(closeAliases(aliases, sType.privateType),
+    val aliases = aliasScope.toList
+    STypeG(closeAliases(aliases, sType.privateType).asInstanceOf[TypeG],
       closeAliases(aliases, sType.publicType))
   }
 
   def closeAliases(aliases: List[(String, TypeG)],
-                   theType: TypeG): TypeG = aliases match {
+                   theType: LabelG): LabelG = aliases match {
     case List() => theType
     case binding :: tail =>
-      closeAliases(tail, TypeSubstG.substTypeVar(theType, binding._1, binding._2))
+      closeAliases(tail, TypeSubstG.substRecVar(theType, binding._1, binding._2))
   }
 
   private def closeGenType(g: STypeG,
-                           substitutions: List[(TypeVarSubConstraint,TypeG)]
+                           substitutions: List[(String, LabelG)]
                           ): STypeG = substitutions match {
     case List() => g
-    case h::t => closeGenType(
-                    STypeG(
-                      TypeSubstG.substGenVar(g.privateType,h._1.typeVar,h._2),
-                      TypeSubstG.substGenVar(g.publicType,h._1.typeVar,h._2)
-                    ),t)
+    case h :: t => closeGenType(
+      STypeG(
+        TypeSubstG.substLabelVar(g.privateType, h._1, h._2).asInstanceOf[TypeG],
+        TypeSubstG.substLabelVar(g.publicType, h._1, h._2)
+      ), t)
 
   }
-
 
 
 }
 
 object TypeCheckerG {
   def apply(x: ObSecGExpr): STypeG = {
-    val typeChecker = new TypeCheckerG()
-    typeChecker.typeCheck(x)
+    val judgmentsImpl = new GObSecGJudgmentImpl(new ErrorCollector)
+    judgmentsImpl.typeCheck(
+      Environment.empty(),
+      new Scope,
+      new Scope,
+      x)
   }
 }
 
-trait IAuxiliaryFunctions {
-  /**
-    * Computes the upper bound of a type (variable) according the
-    * generic type variable environment
-    *
-    * @param genVarEnv The generic type variable environment
-    * @param theType   The type (probably a type variable)
-    * @return
-    */
-  def tBound(genVarEnv: Environment[TypeG], theType: TypeG): TypeG
-}
-
-class AuxiliaryFunctions extends IAuxiliaryFunctions {
-  /**
-    * Computes the upper bound of a type (variable) according the
-    * generic type variable environment
-    *
-    * @param genVarEnv The generic type variable environment
-    * @param theType   The type (probably a type variable)
-    * @return
-    */
-  override def tBound(genVarEnv: Environment[TypeG],
-                      theType: TypeG): TypeG = theType match {
-    case GenericTypeVar(x) => tBound(genVarEnv, genVarEnv.lookup(x))
-    case _ => theType
-  }
-}

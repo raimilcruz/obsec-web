@@ -40,7 +40,8 @@ class ApplicationController extends Controller {
         ObSecGParser(f.program) match {
           case Right(term) =>
             try {
-              val aType = TypeCheckerG(term)
+              var modelTerm = ObSecGTypeIdentifierResolver(term)
+              val aType = TypeCheckerG(modelTerm)
               Ok(Json.obj("status" -> "OK", "program" -> f.program,"expressionType"-> aType.toString))
             } catch {
               case te : Common.TypeError => Ok(Json.obj("status" -> "KO", "error" -> te.str))
@@ -65,7 +66,8 @@ class ApplicationController extends Controller {
         ObSecGParser(f.program) match {
           case Right(term) =>
             try {
-              val result = InterpreterG.run(term)
+              var modelTerm = ObSecGTypeIdentifierResolver(term)
+              val result = InterpreterG.run(modelTerm)
               Ok(Json.obj("status" -> "OK",
                 "program" -> f.program,
                 "result"-> result.toString

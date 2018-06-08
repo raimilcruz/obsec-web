@@ -2,7 +2,7 @@ package controllers
 
 import javax.inject._
 
-import ObSecG.Parsing.ObSecGParser
+import ObSecG.Parsing.{ObSecGParser, ObSecGTypeIdentifierResolver}
 import ObSecG.Runtime.InterpreterG
 import ObSecG.Static.TypeCheckerG
 import play.api.libs.json.{Json, _}
@@ -29,7 +29,8 @@ class ObSecGController extends Controller {
         ObSecGParser(f.program) match {
           case Right(term) =>
             try {
-              val aType = TypeCheckerG(term)
+              var modelTerm = ObSecGTypeIdentifierResolver(term)
+              val aType = TypeCheckerG(modelTerm)
               Ok(Json.obj("status" -> "OK", "program" -> f.program,"expressionType"-> aType.toString))
             } catch {
               case te : Common.TypeError => Ok(Json.obj("status" -> "KO", "error" -> te.str))
@@ -54,7 +55,8 @@ class ObSecGController extends Controller {
         ObSecGParser(f.program) match {
           case Right(term) =>
             try {
-              val result = InterpreterG.run(term)
+              var modelTerm = ObSecGTypeIdentifierResolver(term)
+              val result = InterpreterG.run(modelTerm)
               Ok(Json.obj("status" -> "OK",
                 "program" -> f.program,
                 "result"-> result.toString

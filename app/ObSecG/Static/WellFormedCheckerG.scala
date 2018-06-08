@@ -4,8 +4,10 @@ package ObSecG.Static
 import Common.{EmptyEnvironment, Environment, ErrorCollector}
 import ObSecG.Ast._
 
-trait IWellFormedCheckerG {
-  def isWellFormed(genVarEnv: Environment[TypeG], stype: STypeG): Boolean
+abstract class IWellFormedCheckerG(judgements: GObSecJudgements, errors: ErrorCollector)
+  extends IJudgment(judgements, errors){
+
+  def isWellFormed(genVarEnv: LabelVarEnvironment, stype: STypeG): Boolean
 
   def isWellFormed(stype: STypeG): Boolean
 }
@@ -13,40 +15,34 @@ trait IWellFormedCheckerG {
 /**
   * Implements well-formed judgments for types.
   */
-class WellFormedCheckerG(val errorCollector: ErrorCollector)
-  extends IWellFormedCheckerG {
-
-  val sb = new AmadioCardelliSubtypingG
-  type Delta = Set[String]
+class WellFormedCheckerG(judgements: GObSecJudgements, errorCollector: ErrorCollector)
+  extends IWellFormedCheckerG(judgements,errorCollector) {
 
   def isWellFormed(stype: STypeG): Boolean =
-    isWellFormed(stype.privateType) && isWellFormed(stype.publicType)
+    //isWellFormed(stype.privateType) && isWellFormed(stype.publicType)
+  throw new NotImplementedError()
 
-  def isWellFormed(genVarEnv: Environment[TypeG],
+  def isWellFormed(genVarEnv: LabelVarEnvironment,
                    stype: STypeG): Boolean =
-    isWellFormed(genVarEnv, stype.privateType) &&
-      isWellFormed(genVarEnv, stype.publicType)
+    //isWellFormed(genVarEnv, stype.privateType) &&
+     // isWellFormed(genVarEnv, stype.publicType)
+    throw new NotImplementedError()
 
-  /**
-    * Verifies if a type is well-formed
-    *
-    * @param t
-    * @return
-    */
-  def isWellFormed(t: TypeG): Boolean =
+
+  /*def isWellFormed(t: LabelG): Boolean =
     isWellFormed(
-      new EmptyEnvironment[TypeG],
+      Environment.empty(),
       Set[String](),
       Environment.empty[ObjectType]()
       , t)
 
-  def isWellFormed(genVarEnv: Environment[TypeG], t: TypeG): Boolean =
-    isWellFormed(genVarEnv, Set[String](), Environment.empty[ObjectType](), t)
+  def isWellFormed(labelVariableEnv: LabelVarEnvironment, t: LabelG): Boolean =
+    isWellFormed(labelVariableEnv, Set[String](), Environment.empty[ObjectType](), t)
 
 
-  private def constraintsAreWellFormed(genVarEnv: Environment[TypeG],
-                                       delta: Delta,
-                                       env: Environment[ObjectType],
+  private def constraintsAreWellFormed(genVarEnv: LabelVarEnvironment,
+                                       delta: SelfVariableSet,
+                                       env: SelfDefinitionEnvironment,
                                        typeVars: List[TypeVarSubConstraint]):Boolean = {
     val vars = typeVars.map(x=>x.typeVar)
     if(vars.distinct.size != vars.size) {
@@ -152,5 +148,5 @@ class WellFormedCheckerG(val errorCollector: ErrorCollector)
     catch {
       case _: Throwable => false
     }
-  }
+  }*/
 }

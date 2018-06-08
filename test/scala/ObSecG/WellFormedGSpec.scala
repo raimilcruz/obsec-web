@@ -7,7 +7,7 @@ import org.scalatest.{FlatSpec, Matchers}
 
 
 class WellFormedGSpec extends FlatSpec with Matchers with BaseSpec {
-  "Type [Obj(a){m<T> : T -> T}]" must "be well formed" in{
+  /*"Type [Obj(a){m<T> : T -> T}]" must "be well formed" in{
     val methodType =
       MTypeG(
         List(TypeVarSub("T",ObjectType.top)),
@@ -19,5 +19,5 @@ class WellFormedGSpec extends FlatSpec with Matchers with BaseSpec {
     val errorCollector = new ErrorCollector
     val wfChecker = new WellFormedCheckerG(errorCollector)
     assert(wfChecker.isWellFormed(objType))
-  }
+  }*/
 }

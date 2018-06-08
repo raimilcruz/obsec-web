@@ -9,8 +9,15 @@ abstract class Environment[T] {
   def head:(String,T)
   def tail:Environment[T]
   def contains(x:String):Boolean
+
+
+  def keys:List[String]
+  def values:List[T]
+  def toList:List[(String,T)]
+  //not a pure OO method but it is convenient
+  def extend(x:String,v:T):Environment[T] = new ExtEnvironment(this,x,v)
 }
-class EmptyEnvironment[T] extends Environment[T]{
+private class EmptyEnvironment[T] extends Environment[T]{
   override def lookup(x: String): T = throw new Error("Empty environment")
 
   override def isEmpty: Boolean = true
@@ -21,10 +28,14 @@ class EmptyEnvironment[T] extends Environment[T]{
 
   def contains(x:String):Boolean = false
 
+  def keys:List[String]= List()
+  def values:List[T]= List()
+  def toList:List[(String,T)] = List()
 
   override def toString: String = "[]"
+
 }
-class ExtEnvironment[T](env:Environment[T],x:String,v:T) extends Environment[T]{
+private class ExtEnvironment[T](env:Environment[T],x:String,v:T) extends Environment[T]{
   override def lookup(y: String): T = if(x.equals(y))v else env.lookup(y)
   override def isEmpty: Boolean = false
 
@@ -34,10 +45,14 @@ class ExtEnvironment[T](env:Environment[T],x:String,v:T) extends Environment[T]{
 
   def contains(y:String):Boolean = if(x.equals(y)) true else env.contains(y)
 
+  def keys:List[String]= env.keys ++ List(x)
+  def values:List[T] = env.values ++ List(v)
+  def toList:List[(String,T)] = env.toList ++ List((x,v))
+
   override def toString: String = s"($x,$v)::$env"
 }
 
 object Environment{
-  def empty[T]() = new EmptyEnvironment[T]
-  def extend[T](env:Environment[T],x:String,v:T) = new ExtEnvironment[T](env,x,v)
+  def empty[T]():Environment[T] = new EmptyEnvironment[T]
+  def extend[T](env:Environment[T],x:String,v:T):Environment[T] = new ExtEnvironment[T](env,x,v)
 }
