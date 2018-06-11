@@ -88,7 +88,10 @@ class GObSecGJudgmentImpl(val errorCollector: ErrorCollector) extends GObSecJudg
     */
   override def alphaEq(t1: LabelG, t2: LabelG): Boolean = ???
 
-  override def isWellFormed(labelVarEnvironment: LabelVarEnvironment, stype: LabelG): Boolean = ???
+  override def isWellFormed(labelVarEnvironment: LabelVarEnvironment, theType: LabelG): Boolean = {
+    val wellFormedChecker = new WellFormedCheckerG(this,errorCollector)
+    wellFormedChecker.isWellFormed(labelVarEnvironment,theType)
+  }
 
   override def <::(labelVariableEnv: LabelVarEnvironment, t1: LabelG, t2: LabelG): Boolean = {
     var subtyping = new AmadioCardelliSubtypingG(this,errorCollector)

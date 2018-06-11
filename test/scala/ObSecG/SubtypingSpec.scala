@@ -5,7 +5,7 @@ import ObSecG.Ast._
 import ObSecG.Static._
 import org.scalatest.{FlatSpec, Matchers}
 
-class SubtypingSpec extends FlatSpec with Matchers with BaseSpec {
+class SubtypingSpec extends FlatSpec with Matchers with ElementServiceBaseSpec {
 
   "Type [Obj(a){m<T> : T -> T}]" must "be well formed" in{
 

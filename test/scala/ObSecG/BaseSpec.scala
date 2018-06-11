@@ -2,12 +2,15 @@ package scala.ObSecG
 
 import ObSecG.Ast._
 
-trait BaseSpec {
+trait ElementServiceBaseSpec{
   implicit def stringToTypeVar(x:String):TypeVar = TypeVar(x)
   def GV(x:String) = LabelVarImpl(x)
   def ST(t1:TypeG,t2:LabelG)=STypeG(t1,t2)
+  def OT(x:String,methods:List[MethodDeclarationG]) = ObjectType(x,methods)
+  def MD(x:String,mt:MTypeG)=MethodDeclarationG(x,mt)
+}
 
-
+trait BaseSpec {
 
   def tI(x:String)= TypeIdentifier(x)
   def bL(x:String,lower :TypeAnnotation,upper:TypeAnnotation)= BoundedLabelVariableDeclaration(x,lower,upper)

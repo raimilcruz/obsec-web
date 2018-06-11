@@ -129,22 +129,82 @@ typedef User<User<this> :> this :> User<this>> = {
 
 
 ## Interfaces for Bool, Int, String and List (To Éric)
+Slogan: "I want to be polymorphic respect to label until you create a security type"
 
 ```
 Bool = {
-    //if the boolean is HIGH, then the result is HIGH. We do not control 
-    //this.
+
+    //-> if
+    //The standard signature is:
+    //T if[T]({T apply();} t, {T apply();} f);
     
+    //In Jif is could be like this.
+    //T@{this join l1 join l2} if[T2][label l1][label l2]({T@l1 apply();} t, {T@l2 apply();} f);
+    
+    //In ObSec, for the case of integer, would be this
+    //Int<Int if({Int<Int apply();} t, {Int<Int apply();} f);
+    //
+    //However, it not possible to use it with branches different that LOW.
+    
+    //In ObSec, with generics (but without generic labels)
+    //T<T if[T]({T<T apply();} t, {T<T apply();} f);
+    //
+    //However, it has the same problem that above.
+    
+    //We want to capture that the result depends on:
+    //1. The current instances of bool if is LOW or HIGH
+    //2. Both branches
+    //
+    //If the current boolean is HIGH, then the result is HIGH. We can not 
+    //control this fact (at the definition time).    
+    //
     //So we only control when the "if" method is in the declassification type
     //In that context, we can make the signature of "if" more rigid or flexibile
-    //depending of the security concerns
+    //depending of the security concerns.
+    //To satisfy constraint 2 we can implement this.
     
-    wif the boolean is LOW, then the result is T join l
-    T<{r} if[T, l<:T, r <: thisL join l](T<l t, T<l f);
+    //if the boolean is LOW, then the result is T join l
+    //T<{r} if[T, l1 >: T1, l2 >: T2, r >: l1 join l2]({T<l1 apply();} t, {T<l2 apply();} f);
+    //
+    //However the above signature is too explicit, we can use a more "implicit" signature if
+    //we have TSub in the language:
+      
+    T<{l} if[l,T<:l]({T<l apply();} t, {T<l apply();} f);
+    
+    //<- if
 }
+```
+
+With the above definition of `Bool` we can encode the `if` control flow instruction.
+Example:
+
+```
+String<H password = ...
+String<L guess = ....
+if(someBoolean)
+  password
+else
+  guess  
+```
+
+to 
+
+```
+String<H password = ...
+String<L guess = ....
+someBoolean
+    .if[H,String](
+        {String<H apply()=> password},
+        {String<L apply()=> guess}
+    )
+```
+
+Let's see the interface for `String`
+
+```
 
 String = {
-    //Security signature of eq method:
+    //--> eq method:
     //In an non-security OO language the signature is what follows:
     //Bool ==(String s); 
     
@@ -165,8 +225,12 @@ String = {
     
     //With the above version a policy StringEq can only abstract the resulting
    //policy, but it can touch the argument. Example:
+   //
    //StringEq1 = { bool<H eq(String<String other);} is a valid policy for String
-   //However, StringEq1 = {bool<bool eq(String<H other);} is not a valid policy
+   //
+   //However, 
+   //
+   //StringEq2 = {bool<bool eq(String<H other);} is not a valid policy
    //because String<H is not subtype of String<String. 
    
    //The above aspect is not satisfactory in general, one could be more relaxed 
@@ -174,13 +238,14 @@ String = {
    
    //For instance we can express that the argument must be as "public" as the
    //self label       
-   //bool<bool eq[l<:this](String<l other);
+   //bool<bool eq[lm<:this](String<lm other);
    
-   //Then StringEq1 is still a valid declassification type for String. Note that
-   //we put crete the security type String<StringEq1, we close the private facet,
+   //Then StringEq1 is still a valid declassification type for String. 
+   //Note that when we create the security type String<StringEq1, we close the private facet,
    //then the method eq has now signature (in the private facet):
    //bool<bool eq(String<StringEq1 other)
-   //note that the eq methods are in the subtyping relation:
+   //
+   //Note that the eq methods are in the subtyping relation:
    //String<String <: String<StringEq1. However String<H as argument of eq in 
    //StringEq1 is not valid.
    //However, no StringEq3 = {bool<bool eq(String<StringEq a2}} is a valid 
@@ -223,6 +288,11 @@ String = {
    //String@l concat[l<:this](String@l a)   
    //<-- Concat   
 }
+```
+
+Let's the interface for `Int
+
+```
 Int = {
     //simple version:
     //Int add(Int a);
@@ -236,6 +306,10 @@ Int = {
     //ObSec parametric version
     Int@l add[l<:this] (Int@l a);
 }
+
+```
+Let's the interface for `List`
+```
 
 List[l,X<:L]{
    Bool<Bool isEmpty();
@@ -271,7 +345,7 @@ Int<Int l = length[String<H](l)
 - From an implementor perspective we define a single type (not a faceted type)
  (for instance String, Int, PasswordChecker)
 - From a client perspective, he consumes a security type. So it never uses 
- directly on the facet, but after the creation of a security type. 
+ directly the facet, but after the creation of a security type. 
  The pairing of two types to form a security type has more
  meaning that we anticipate.
 - To remark the above point: THERE IS NO WAY of using an object without a 
@@ -282,8 +356,8 @@ provide concrete declassification interfaces or to left open the specification
 of declassification interfaces to the moment of creating a security type. In the
 former case declassification types are taken from the attached declassification 
 type.
-- We need to name the "method-dependent label", because in many scenarios we
-do not want to know who it is, however we want to constraint it.
+- We need to name the "method-dependent label", because in many scenarios despite 
+we do not know who is, we want to constraint it.
 
 Let us explain how the self label works by examples. Recall the `String` and
 `StringEq` interfaces:
@@ -319,7 +393,7 @@ satisfied by StringEq, which is the case `StringEq <: StringEq`
 - Then we verify that `String' <:StringEq` which is case.
 - After doing all these step we can assert the security type is well-formed.
 
-In some case is not necesary to name the declassification-provided label because
+In some case is not necessary to name the declassification-provided label because
 we do not constraint it. In that case we can use a wildcard label `l*`
 
 There are a few technical considerations with declassification-provided labels
@@ -328,7 +402,13 @@ to instantiate those labels?. For instance what happen to labels of the method
 `concat` in the security type String<StringEq. It is sound to assume the LOW
 label everywhere? For the concat method it works, however, .... maybe a 
 condition would be that the signature must work if change all 
-declassication-provided labels by LOW.
+declassification-provided labels by LOW.
+Yes it sound to assume anything, since the result of using the method `concat`
+or other method that is not in the declassification policy will be HIGH. Then
+it will be protected by HIGH. In fact the rule should be:
+- HIGH for all inputs
+- LOW for all outputs.
+Since que want to be flexible in this case regarding the HIGH-observers.
  
 - I have to think about non-satisfiable constraints. 
 

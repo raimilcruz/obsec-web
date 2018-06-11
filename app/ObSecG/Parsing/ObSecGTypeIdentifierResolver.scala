@@ -4,75 +4,121 @@ import Common.{NestedScope, Scope}
 import ObSecG.Ast._
 
 class ObSecGTypeIdentifierResolver {
+
+  /**
+    * This method performs the following tasks:
+    * 1. Resolves all TypeIdentifier node to:
+    *  a)LabelVar is the type variable references a label variable definition
+    *  b)TypeVar is the type variable references a self variable or a type alias
+    *
+    * 2. Returns the ast model, compating several surface expression
+    * 3. Checks trivial conditions:
+    *   a)Repeated methods
+    * @param expression The ast model
+    * @return
+    */
   def resolve(expression: ObSecGAstExprNode):ObSecGExpr =
-    resolve(new Scope,expression)
+    resolve(new Scope,new Scope,expression)
+
+
 
   private def resolve(typeIdentifierScope: Scope[TypeIdentifierDeclarationPoint],
+                      valueIdentifier: Scope[Boolean],
                       expression: ObSecGAstExprNode):ObSecGExpr =expression match{
-    case VariableNode(n) => Var(n)
+    case VariableNode(n) =>
+      if(valueIdentifier.contains(n))
+        Var(n)
+      else
+        throw new Error(s"Variable $n is not defined")
     case ObjectDefinitionNode(self,typeAnnotation,methods) =>
-      Obj(self,
-        resolveAnnotatedFacetedType(typeIdentifierScope,typeAnnotation),
-        methods.map(meth => {
-          val methodDefinitionScope = new NestedScope(typeIdentifierScope)
-          addMethodLabelVariable(typeIdentifierScope,meth.name,typeAnnotation.left)
-          resolveMethodDefinition(methodDefinitionScope,meth)})
-      )
+      if (methods.map(x => x.name).distinct.lengthCompare(methods.size) != 0) {
+        var objectScope = new NestedScope(valueIdentifier)
+        objectScope.add(self,true)
+        Obj(self,
+          resolveAnnotatedFacetedType(typeIdentifierScope, typeAnnotation),
+          methods.map(meth => {
+            val methodLabelDefinitionScope = new NestedScope(typeIdentifierScope)
+            var methodValueVariableScope = new NestedScope(objectScope)
+
+            addMethodLabelVariable(methodLabelDefinitionScope , meth.name, typeAnnotation.left)
+            //add method to scope
+            meth.args.foreach(x=> methodValueVariableScope.add(x,true))
+
+            resolveMethodDefinition(methodLabelDefinitionScope ,methodValueVariableScope, meth)
+          })
+        )
+      }
+      else
+        throw new Error("An object can not have repeated method names")
     case MethodInvocationNode(e1,actualTypes,actualArguments,name)=>
       MethodInv(
-        resolve(typeIdentifierScope,e1),
+        resolve(typeIdentifierScope,valueIdentifier,e1),
         actualTypes.map(at=> resolveType(typeIdentifierScope,at,labelPosisition = true)),
-        actualArguments.map(aa => resolve(typeIdentifierScope,aa)),
+        actualArguments.map(aa => resolve(typeIdentifierScope,valueIdentifier,aa)),
         name
       )
     case BooleanLiteral(b) => BooleanExpr(b)
     case IntLiteral(n) => IntExpr(n)
     case StringLiteral(s) => StringExpr(s)
     case IfExpressionNode(c,e1,e2)=>
-      IfExpr(resolve(typeIdentifierScope,c),
-        resolve(typeIdentifierScope,e1),
-        resolve(typeIdentifierScope,e2))
+      IfExpr(resolve(typeIdentifierScope,valueIdentifier,c),
+        resolve(typeIdentifierScope,valueIdentifier,e1),
+        resolve(typeIdentifierScope,valueIdentifier,e2))
     case ListLiteral(elems)=>
-      ListConstructorExpr(elems.map(e=>resolve(typeIdentifierScope,e)))
+      ListConstructorExpr(elems.map(e=>resolve(typeIdentifierScope,valueIdentifier,e)))
     case ConsListOperatorNode(e1,e2)=>
-      ConsListExpr(resolve(typeIdentifierScope,e1),
-        resolve(typeIdentifierScope,e2))
+      ConsListExpr(resolve(typeIdentifierScope,valueIdentifier,e1),
+        resolve(typeIdentifierScope,valueIdentifier,e2))
     case LetStarExpressionNode(declarations,body)=>
-        LetStarExpr(declarations.map(d => resolveDeclaration(typeIdentifierScope,d)),
-          resolve(typeIdentifierScope,body))
-
+      val letTypeScope = new NestedScope(typeIdentifierScope)
+      val letValueIdentifierScope = new NestedScope(valueIdentifier)
+      LetStarExpr(declarations.map(d => {
+        d match {
+          case node: LocalDeclarationNode => letValueIdentifierScope.add(node.variable, true)
+          case node: TypeAliasDeclarationNode => letTypeScope.add(node.aliasName, AnythingElse)
+          case node: DefTypeNode => letTypeScope.add(node.name, AnythingElse)
+        }
+        resolveDeclaration(typeIdentifierScope,valueIdentifier,d)
+      }),
+        resolve(letTypeScope,letValueIdentifierScope,body))
     case _ => throw new NotImplementedError()
   }
 
   def resolveDeclaration(typeIdentifierScope: Scope[TypeIdentifierDeclarationPoint],
+                         valueIdentifier: Scope[Boolean],
                          declaration: DeclarationNode): Declaration= declaration match{
     case DefTypeNode(typeName,methods)=>
       TypeDefinition(typeName,methods.map(m=> resolveMethodDeclaration(typeIdentifierScope,m)))
     case TypeAliasDeclarationNode(typeAlias,objType)=>
       TypeAlias(typeAlias,resolveType(typeIdentifierScope,objType,labelPosisition = false).asInstanceOf[ObjectType])
     case LocalDeclarationNode(name,expr)=>
-      LocalDeclaration(name,resolve(typeIdentifierScope,expr))
+      LocalDeclaration(name,resolve(typeIdentifierScope,valueIdentifier,expr))
   }
+
 
   private def addMethodLabelVariable(typeIdentifierScope: Scope[TypeIdentifierDeclarationPoint],
                                      name: String,
                                      containerType : TypeAnnotation): Unit = containerType match {
     case ObjectTypeNode(self,methods) =>
-      val possibleMethods = methods.filter(m => m.name == name)
-      if(possibleMethods.size ==1){
-        val methodDeclarationG =  possibleMethods.head
-        methodDeclarationG.mType.typeVars.foreach(labelVar =>
-          typeIdentifierScope.add(labelVar.name,LabelDeclarationPoint)
-        )
-        Unit
+      if (methods.map(x => x.name).distinct.lengthCompare(methods.size) != 0) {
+        val possibleMethods = methods.filter(m => m.name == name)
+        if (possibleMethods.size == 1) {
+          val methodDeclarationG = possibleMethods.head
+          methodDeclarationG.mType.typeVars.foreach(labelVar =>
+            typeIdentifierScope.add(labelVar.name, LabelDeclarationPoint)
+          )
+          Unit
+        }
       }
+      else
+        throw new Error("An object type can not have repeated method names")
     case _ => Unit
   }
 
   private def resolveMethodDefinition(typeIdentifierScope: Scope[TypeIdentifierDeclarationPoint],
+                                      valueIdentifier: Scope[Boolean],
                                       md: MethodDefinitionNode):MethodDef ={
-
-    MethodDef(md.name,md.args,resolve(typeIdentifierScope,md.mBody))
+    MethodDef(md.name,md.args,resolve(typeIdentifierScope,valueIdentifier,md.mBody))
   }
 
   private def resolveType(typeIdentifierScope: Scope[TypeIdentifierDeclarationPoint],
@@ -106,17 +152,25 @@ class ObSecGTypeIdentifierResolver {
 
   private def resolveMethodDeclaration(typeIdentifierScope: Scope[TypeIdentifierDeclarationPoint],
                                        methodDeclaration: MethodDeclarationNode):MethodDeclarationG = {
-    //TODO: Add new defined labels to scope
+    val methodLabelScope = new NestedScope(typeIdentifierScope)
+    //process each parameter, add to the scope and the process the otherone
+    val resolvedLabelVars =  methodDeclaration.mType.typeVars.map(labelVar => {
+      if(methodLabelScope.contains(labelVar.name))
+        throw new Error(s"The variable ${labelVar.name} is already defined in its scope")
+      else
+        methodLabelScope.add(labelVar.name,LabelDeclarationPoint)
+        resolveLabelVariableDeclaration(methodLabelScope,labelVar)
+    })
     MethodDeclarationG(methodDeclaration.name,
       MTypeG(
-        methodDeclaration.mType.typeVars.map(v=>resolveLabelVariableDeclaration(typeIdentifierScope,v)),
-        methodDeclaration.mType.domain.map(st=>resolveAnnotatedFacetedType(typeIdentifierScope,st)),
-        resolveAnnotatedFacetedType(typeIdentifierScope,methodDeclaration.mType.codomain)
+        resolvedLabelVars,
+        methodDeclaration.mType.domain.map(st=>resolveAnnotatedFacetedType(methodLabelScope,st)),
+        resolveAnnotatedFacetedType(methodLabelScope,methodDeclaration.mType.codomain)
       ))
   }
   private def multiExtend(typeIdentifierScope: Scope[TypeIdentifierDeclarationPoint],
                           strings: List[String],
-                          declarationPoint: TypeIdentifierDeclarationPoint) : Scope[TypeIdentifierDeclarationPoint ={
+                          declarationPoint: TypeIdentifierDeclarationPoint) : Scope[TypeIdentifierDeclarationPoint] ={
     val newScope = new NestedScope(typeIdentifierScope)
     strings.foreach(x=> newScope.add(x,declarationPoint))
     newScope
