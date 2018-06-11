@@ -53,7 +53,7 @@ class TypeChecker(judgements: GObSecJudgmentsExtensions,
       //facet analysis
       //get the upper bound of both types
       val privateFacet = auxiliaryFunctions.tUpperBound(genVarEnv, s1.privateType)
-      println("typeCheck:" + s"private facet:$privateFacet")
+      //println("typeCheck:" + s"private facet:$privateFacet")
       if (privateFacet.containsMethod(m)) {
         var mType = privateFacet.methSig(m)
         //println(s"Method type : ${mType}")
@@ -63,33 +63,26 @@ class TypeChecker(judgements: GObSecJudgmentsExtensions,
         }
 
         //check subtyping for method constraints
+        print(s"mType.typeVars.size != types.size. typevars: ${mType.typeVars}   types: $types")
         if (mType.typeVars.size != types.size)
-          throw TypeError(s"Method '$m' : Actual types amount must" +
-            s" match the formal type variable amount")
+          throw TypeErrorG.actualTypeParametersMustMatchFormalTypeParameterAmount(expr.astNode,m)
 
         var extendedGenVarEnv = auxiliaryFunctions.multiExtend(genVarEnv, mType.typeVars)
         for (pair <- mType.typeVars.zip(types)) {
           pair._1 match {
-            case TypeVarSub(x, ubound) =>
+            case BoundedLabelVar(x, lowerBound,ubound) =>
               if (!judgements.<::(
                 genVarEnv,
                 pair._2,
-                auxiliaryFunctions.tUpperBound(extendedGenVarEnv, pair._1.lowerBound)))
-                throw TypeError(s"Invocation of $m : Actual type for generic" +
-                  s" type variable ${pair._1.typeVar} does not satisfy subtyping" +
-                  s" constraint")
-            case TypeVarSuper(x, lowerBound) =>
+                auxiliaryFunctions.tUpperBound(extendedGenVarEnv, pair._1.upperBound)))
+                throw TypeErrorG.badActualLabelArgument(e1.astNode,m,pair._1.typeVar)
               if (!judgements.<::(
                 genVarEnv,
-                pair._1.upperBound,
+                pair._1.lowerBound,
                 pair._2))
-                throw TypeError(s"Invocation of $m : Actual type for generic" +
-                  s" type variable ${pair._1.typeVar} does not satisfy subtyping" +
-                  s" constraint")
+                throw TypeErrorG.badActualLabelArgument(e1.astNode,m,pair._1.typeVar)
           }
         }
-
-        //println(s"Checking subtyping between: ${args} and ${mType.domain}")
         //check the argument count
         if (mType.domain.size != args.size)
           throw TypeError(s"Method '${m}' : Actual arguments amount must" +
@@ -100,9 +93,7 @@ class TypeChecker(judgements: GObSecJudgmentsExtensions,
             mType.typeVars.map(x => x.typeVar).zip(types))
           if (!judgements.<::(extendedGenVarEnv,
             pair._1, subtitutedType)) {
-            throw TypeError(
-              s"""Invocation of ${m}: Type ${pair._1}
-             (of actual argument) is not subtyping of ${subtitutedType}""")
+            throw TypeErrorG.subTypingError(expr.astNode, m,pair._1,subtitutedType)
           }
         }
 
@@ -110,12 +101,12 @@ class TypeChecker(judgements: GObSecJudgmentsExtensions,
           closeGenType(mType.codomain,
             publicFacet.methSig(m).typeVars.map(x => x.typeVar).zip(types))
         else
-          closeGenType(STypeG(mType.codomain.privateType, ObjectType.top),
+          closeGenType(STypeG(mType.codomain.privateType, UnionLabel(mType.codomain.publicType,publicFacet)),
             privateFacet.methSig(m).typeVars.map(x => x.typeVar).zip(types))
 
       }
       else
-        throw TypeError(s"Method ${m} not in ${s1.privateType}")
+        throw TypeErrorG.methodNotFound(expr.astNode,m)
     }
     case Obj(self, selfType, methods) =>
       val stype = closeAliases(aliasScope, selfType)
@@ -154,20 +145,19 @@ class TypeChecker(judgements: GObSecJudgmentsExtensions,
 
         var methodGenVarEnv = auxiliaryFunctions.multiExtend(genVarEnv, mType.typeVars)
         var s = typeCheck(methodGenVarEnv, methodScope, aliasScope, m.mBody)
+        print(s"$s <:: ${mType.codomain}")
         if (!judgements.<::(methodGenVarEnv, s, mType.codomain))
-          throw TypeError(s"Definition of method '${m.name}': " +
-            s"the return type in the implementation ($s) is not subtype of " +
-            s"the return type in the signature (${mType.codomain})")
+          throw TypeErrorG.returnTypeError(m.mBody.astNode,m.name,s.toString,mType.codomain.toString)
       }
       stype
     case IfExpr(cond, e1, e2) =>
       val sCond = typeCheck(genVarEnv, scope, aliasScope, cond)
       if (sCond.privateType != BooleanType)
-        throw TypeError("Condition of if expression must be boolean")
+        throw TypeErrorG.ifConditionExpectABoolean(cond.astNode)
       val sE1 = typeCheck(genVarEnv, scope, aliasScope, e1)
       val sE2 = typeCheck(genVarEnv, scope, aliasScope, e2)
       if (sE1 != sE2)
-        throw TypeError("Both branches of an if expression must have the same type")
+        throw TypeErrorG.sameTypeForIfBranches(expr.astNode)
       //depending on the type of the condiction we should lift the public type of the resulting type
       //TODO: Implement this properly: I should check for the empty object type
       if (sCond.publicType != BooleanType)

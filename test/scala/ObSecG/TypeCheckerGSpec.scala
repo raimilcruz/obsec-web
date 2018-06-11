@@ -2,7 +2,7 @@ package scala.ObSecG
 
 import Common.TypeError
 import ObSecG.Ast._
-import ObSecG.Parsing.{ObSecGParser, ObSecGTypeIdentifierResolver}
+import ObSecG.Parsing.{ObSecGParser, ObSecGIdentifierResolver}
 import ObSecG.Static._
 import org.scalatest.{FlatSpec, Matchers}
 
@@ -11,10 +11,10 @@ import org.scalatest.{FlatSpec, Matchers}
   */
 class TypeCheckerGSpec extends FlatSpec with Matchers with ElementServiceBaseSpec{
 
-  "Type checker with : {z : [Obj(a){m<T super Int> : Int<T -> Int<T}] => def m(x)= x}" should "work" in{
+  "Type checker with : {z : [Obj(a){m[T super Int] : Int<T -> Int<T}] => def m(x)= x}" should "work" in{
     val methodType =
       MTypeG(
-        List(TypeVarSuper(ObjectType.top,"T")),
+        List(BoundedLabelVar("T",IntType,ObjectType.top)),
         List(
           ST(IntType,GV("T"))),
         ST(IntType,GV("T")))
@@ -129,10 +129,29 @@ class TypeCheckerGSpec extends FlatSpec with Matchers with ElementServiceBaseSpe
          List(MethodDef("m",List("p"),innerObj)))
        assert(TypeCheckerG(expr) == st)
    }*/
-  "Method invocation with type parameters" should "work" in {
-    var program = "{z : {ot X {m[T extends Int,T1 extends T ] : T<Int -> T1<Int}}<L => \n def m p  = p.+(1) \n }.m[Int,Int](1)"
+  "Invocation of add over int " must "work" in {
+    var program = "1.+[Int](1)"
     ObSecGParser(program) match{
-      case Right(ast)=> assert(TypeCheckerG(ObSecGTypeIdentifierResolver(ast)) == ST(IntType,IntType))
+      case Right(ast)=> assert(TypeCheckerG(ObSecGIdentifierResolver(ast)) == ST(IntType,IntType))
+    }
+  }
+  "Invocation of minus over int " must "work" in {
+    var program = "1.-[Int](1)"
+    ObSecGParser(program) match{
+      case Right(ast)=> assert(TypeCheckerG(ObSecGIdentifierResolver(ast)) == ST(IntType,IntType))
+    }
+  }
+  "Invocation of eq over int " must "work" in {
+    var program = "1.==[Int](1)"
+    ObSecGParser(program) match{
+      case Right(ast)=> assert(TypeCheckerG(ObSecGIdentifierResolver(ast)) == ST(BooleanType,BooleanType))
+    }
+  }
+
+  "Method invocation with type parameters" should "work" in {
+    var program = "{z : {ot X {m[T super Int, T1 : T .. Top ] : Int<T -> Int<T1}}<L => \n def m p  = p.+(1) \n }.m[Int,Int](1)"
+    ObSecGParser(program) match{
+      case Right(ast)=> assert(TypeCheckerG(ObSecGIdentifierResolver(ast)) == ST(IntType,IntType))
     }
   }
   "Type substitution for generic variable " should "work" in {
@@ -140,7 +159,7 @@ class TypeCheckerGSpec extends FlatSpec with Matchers with ElementServiceBaseSpe
     ObSecGParser(program) match{
       case Right(ast)=>
         intercept[TypeError] {
-          var expr = ObSecGTypeIdentifierResolver(ast)
+          var expr = ObSecGIdentifierResolver(ast)
           TypeCheckerG(expr)
         }
     }

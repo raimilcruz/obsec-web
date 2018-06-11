@@ -1,10 +1,12 @@
 package ObSecG.Ast
 
+import scala.util.parsing.input.Positional
+
 /**
   * Node:: = Ob
   */
 
-trait ObSecGAstNode{
+trait ObSecGAstNode extends Positional{
   def children: List[ObSecGAstNode]
 }
 sealed trait ObSecGAstExprNode extends ObSecGAstNode
@@ -133,6 +135,12 @@ case class MethodTypeNode(typeVars: List[LabelVariableDeclarationNode],
 
 trait LabelVariableDeclarationNode extends ObSecGAstNode{
   def name:String
+
+  var isAster : Boolean = false
+  def toAster :this.type = {
+    isAster = true
+    this
+  }
 }
 
 /**
@@ -161,4 +169,8 @@ case class SubLabelVariableDeclaration(name:String,upper:TypeAnnotation)
 case class SuperLabelVariableDeclaration(name:String,upper:TypeAnnotation)
   extends LabelVariableDeclarationNode {
   override def children: List[ObSecGAstNode] = List(upper)
+}
+
+object NoGObSecNode extends ObSecGAstNode {
+  override def children: List[ObSecGAstNode] = List()
 }

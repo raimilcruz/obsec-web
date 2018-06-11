@@ -8,13 +8,21 @@ import org.scalatest.{FlatSpec, Matchers}
   * Created by racruz on 24-08-2017.
   */
 class ParserGSpec extends FlatSpec with Matchers with BaseSpec {
+  "Method without label parameters" must "be recognized" in {
+    val program = "{ot X {m : Int -> Int}}"
+    val res = ObSecGParser.parseType(program)
+    res match{
+      case Left(x)=> fail(s"Parser should recognize it!. Error: $x")
+      case Right(y)=> assert(true)
+    }
+  }
   "parser with " should "work with {self : {ot x }<{ot x} => }" in {
     val res = ObSecGParser("{self : {ot x }<{ot x} => }")
     assert(res == Right(
       ObjectDefinitionNode("self",
-        AnnotatedFacetedType(
-          ObjectTypeNode("x", List()),
-          ObjectTypeNode("x", List())), List())))
+        stA(
+          OT("x", List()),
+          OT("x", List())), List())))
   }
  "parser" should "work with: " +
     "{z : [{m[T : Int .. Top] : Int<T -> Int<T}]<L " +
@@ -39,7 +47,7 @@ class ParserGSpec extends FlatSpec with Matchers with BaseSpec {
       ObjectDefinitionNode("z",st,
         //def m(p)=> p.add(1)
         List(MethodDefinitionNode("m",List("p"),
-          MethodInvocationNode(
+          MI(
             VariableNode("p"),
             List(),
             List(IntLiteral(1)),
@@ -60,7 +68,7 @@ class ParserGSpec extends FlatSpec with Matchers with BaseSpec {
       MethodTypeNode(
         //T<: {eq:Int->Bool}
         List(
-          SuperLabelVariableDeclaration("T",tI("Int"))),
+          superL("T",tI("Int"))),
         //:T->Bool
         List(
           stA(tI("Int"),tI("T"))),
@@ -74,7 +82,7 @@ class ParserGSpec extends FlatSpec with Matchers with BaseSpec {
         List(
           MethodDefinitionNode("m",
             List("p"),
-            MethodInvocationNode(
+            MI(
               VariableNode("p"),
               List(),
               List(IntLiteral(1)),
@@ -82,7 +90,7 @@ class ParserGSpec extends FlatSpec with Matchers with BaseSpec {
             )))
       )
 
-    var topLevelExpr = MethodInvocationNode(expr,List(tI("Int")),List(IntLiteral(2)),"m")
+    var topLevelExpr = MI(expr,List(tI("Int")),List(IntLiteral(2)),"m")
     assert(res == Right(topLevelExpr))
   }
 
@@ -95,69 +103,94 @@ class ParserGSpec extends FlatSpec with Matchers with BaseSpec {
                 "{tail : -> X}]} " +
           "]"
     assert(ObSecGParser.parseType(program) ==
-      Right(NoRecursiveObjectTypeNode(
+      Right(NoRecOT(
         List(
-          MethodDeclarationNode("nil",
+          MD("nil",
             MethodTypeNode(
               List(SubLabelVariableDeclaration("T",
-                NoRecursiveObjectTypeNode(List()))),
+                NoRecOT(List()))),
               List(),
-              AnnotatedFacetedType(
-                ObjectTypeNode("X",
+              stA(
+                OT("X",
                   List(
-                    MethodDeclarationNode(
+                    MD(
                       "isEmpty",
                       MethodTypeNode(
                         List(),
                         List(),
-                        AnnotatedFacetedType(
-                          TypeIdentifier("Bool"),
-                          TypeIdentifier("Bool")))),
-                    MethodDeclarationNode(
+                        stA(
+                          tI("Bool"),
+                          tI("Bool")))),
+                    MD(
                       "head",
                       MethodTypeNode(
                         List(),
                         List(),
-                        AnnotatedFacetedType(
-                          TypeIdentifier("T"),
-                          TypeIdentifier("T")))),
-                    MethodDeclarationNode(
+                        stA(
+                          tI("T"),
+                          tI("T")))),
+                    MD(
                       "tail",
                       MethodTypeNode(
                         List(),
                         List(),
-                        AnnotatedFacetedType(
-                          TypeIdentifier("X"),
-                          TypeIdentifier("X")))))),
-                ObjectTypeNode("X",
+                        stA(
+                          tI("X"),
+                          tI("X")))))),
+                OT("X",
                   List(
-                    MethodDeclarationNode(
+                    MD(
                       "isEmpty",
                       MethodTypeNode(
                         List(),
                         List(),
-                        AnnotatedFacetedType(
-                          TypeIdentifier("Bool"),
-                          TypeIdentifier("Bool")))),
-                    MethodDeclarationNode(
+                        stA(
+                          tI("Bool"),
+                          tI("Bool")))),
+                    MD(
                       "head",
                       MethodTypeNode(
                         List(),
                         List(),
-                        AnnotatedFacetedType(
-                          TypeIdentifier("T"),
-                          TypeIdentifier("T")))),
-                    MethodDeclarationNode(
+                        stA(
+                          tI("T"),
+                          tI("T")))),
+                    MD(
                       "tail",
                       MethodTypeNode(
                         List(),
                         List(),
-                        AnnotatedFacetedType(
-                          TypeIdentifier("X"),
-                          TypeIdentifier("X")))))))))))))
+                        stA(
+                          tI("X"),
+                          tI("X")))))))))))))
   }
   "parser" should "recognize self label" in {
     var program = "{z : {ot X {hash : -> X<this}}<L => \n def m  = z.m()\n}"
     val res = ObSecGParser(program)
+  }
+  "Method invocation over a method with multiples labels" must "work" in {
+    var program = "{z : {ot X {m[T super Int, T1 : T .. Top ] : Int<T -> Int<T1}}<L => \n def m p  = p.+[T](1) \n }.m[Int,Int](1)"
+    val res = ObSecGParser(program)
+    val expected = Right(
+      MI(
+        ObjectDefinitionNode("z",
+          stA(
+            OT(
+              "X",
+              List(
+                MD("m",
+                  MT(
+                    List(
+                      superL(
+                        "T",
+                        tI("Int")),
+                      bL("T1",tI("T"),tI("Top"))),
+                    List(stA(tI("Int"),tI("T"))),stA(tI("Int"),tI("T1")))))),tI("L")),
+          List(
+            MethodDefinitionNode(
+              "m",
+              List("p"),
+              MI("p",List(tI("T")),List(IntLiteral(1)),"+")))),List(tI("Int"), tI("Int")),List(IntLiteral(1)),"m"))
+    assert(res == expected)
   }
 }

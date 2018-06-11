@@ -1,6 +1,6 @@
 package ObSecG.Static
 
-import ObSecG.Ast.{BoundedTypeVar, LabelG, LabelVar}
+import ObSecG.Ast.{BoundedLabelVar, LabelG, LabelVar}
 
 /**
   * We create this trait to group all the auxiliary definition of the model
@@ -18,7 +18,7 @@ trait IAuxiliaryFunctions extends Environments {
   def tUpperBound(labelVarEnvironment: LabelVarEnvironment, theType: LabelG): LabelG
 
   def multiExtend(labelVarEnvironment: LabelVarEnvironment,
-                  vars: List[BoundedTypeVar]): LabelVarEnvironment =
+                  vars: List[BoundedLabelVar]): LabelVarEnvironment =
 
     vars.foldLeft(labelVarEnvironment)((acc, c) => acc.extend(c.typeVar, c.bounds))
 }

@@ -3,7 +3,7 @@ package ObSecG.Parsing
 import Common.{NestedScope, Scope}
 import ObSecG.Ast._
 
-class ObSecGTypeIdentifierResolver {
+class ObSecGIdentifierResolver {
 
   /**
     * This method performs the following tasks:
@@ -21,17 +21,21 @@ class ObSecGTypeIdentifierResolver {
     resolve(new Scope,new Scope,expression)
 
 
-
   private def resolve(typeIdentifierScope: Scope[TypeIdentifierDeclarationPoint],
+                      valueIdentifier: Scope[Boolean],
+                      expression: ObSecGAstExprNode):ObSecGExpr =
+    resolveInternal(typeIdentifierScope,valueIdentifier,expression).setAstNode(expression)
+
+  private def resolveInternal(typeIdentifierScope: Scope[TypeIdentifierDeclarationPoint],
                       valueIdentifier: Scope[Boolean],
                       expression: ObSecGAstExprNode):ObSecGExpr =expression match{
     case VariableNode(n) =>
       if(valueIdentifier.contains(n))
         Var(n)
       else
-        throw new Error(s"Variable $n is not defined")
+        throw ResolverError.variableNotDefined(expression,n)
     case ObjectDefinitionNode(self,typeAnnotation,methods) =>
-      if (methods.map(x => x.name).distinct.lengthCompare(methods.size) != 0) {
+      if (methods.map(x => x.name).distinct.lengthCompare(methods.size) == 0) {
         var objectScope = new NestedScope(valueIdentifier)
         objectScope.add(self,true)
         Obj(self,
@@ -48,8 +52,10 @@ class ObSecGTypeIdentifierResolver {
           })
         )
       }
-      else
-        throw new Error("An object can not have repeated method names")
+      else{
+        print(methods)
+        throw ResolverError.duplicatedMethodInObject(expression)
+      }
     case MethodInvocationNode(e1,actualTypes,actualArguments,name)=>
       MethodInv(
         resolve(typeIdentifierScope,valueIdentifier,e1),
@@ -100,18 +106,18 @@ class ObSecGTypeIdentifierResolver {
                                      name: String,
                                      containerType : TypeAnnotation): Unit = containerType match {
     case ObjectTypeNode(self,methods) =>
-      if (methods.map(x => x.name).distinct.lengthCompare(methods.size) != 0) {
+      if (methods.map(x => x.name).distinct.lengthCompare(methods.size) == 0) {
         val possibleMethods = methods.filter(m => m.name == name)
         if (possibleMethods.size == 1) {
           val methodDeclarationG = possibleMethods.head
           methodDeclarationG.mType.typeVars.foreach(labelVar =>
-            typeIdentifierScope.add(labelVar.name, LabelDeclarationPoint)
+            typeIdentifierScope.add(labelVar.name,if(labelVar.isAster) LowLabelDeclarationPoint else LabelDeclarationPoint)
           )
           Unit
         }
       }
       else
-        throw new Error("An object type can not have repeated method names")
+        throw ResolverError.duplicatedMethodInObjectType(containerType)
     case _ => Unit
   }
 
@@ -138,12 +144,13 @@ class ObSecGTypeIdentifierResolver {
             val definitionPoint = typeIdentifierScope.lookup(n)
             definitionPoint match{
               case SelfDeclarationPoint => TypeVar(n)
-              case LabelDeclarationPoint => LabelVarImpl(n)
+                //TODO: To have a way to identify low variables
+              case LabelDeclarationPoint => LabelVar(n)
               case _ => TypeVar(n)
             }
           }
           else
-            throw new Error(s"Type $n is not defined")
+            throw ResolverError.typeIsNotDefined(typeAnnotation,n)
       }
     case _ => throw new NotImplementedError()
   }
@@ -156,9 +163,9 @@ class ObSecGTypeIdentifierResolver {
     //process each parameter, add to the scope and the process the otherone
     val resolvedLabelVars =  methodDeclaration.mType.typeVars.map(labelVar => {
       if(methodLabelScope.contains(labelVar.name))
-        throw new Error(s"The variable ${labelVar.name} is already defined in its scope")
+        throw ResolverError.variableAlreadyDefined(labelVar,labelVar.name)
       else
-        methodLabelScope.add(labelVar.name,LabelDeclarationPoint)
+        methodLabelScope.add(labelVar.name,if(labelVar.isAster) LowLabelDeclarationPoint else LabelDeclarationPoint)
         resolveLabelVariableDeclaration(methodLabelScope,labelVar)
     })
     MethodDeclarationG(methodDeclaration.name,
@@ -183,30 +190,30 @@ class ObSecGTypeIdentifierResolver {
       case g: TypeG =>
         STypeG(g,
           resolveType(typeIdentifierScope, annotatedFacetedType.right,labelPosisition = true))
-      case _ => throw new Error("Invalid type in private facet. Private facet type just support: object types, self type variables and builtin types")
+      case _ => throw ResolverError.invalidTypeForPrivateFacet(annotatedFacetedType)
     }
   }
   private def resolveLabelVariableDeclaration(typeIdentifierScope: Scope[TypeIdentifierDeclarationPoint],
-                                              labelVariableDeclarationNode: LabelVariableDeclarationNode): BoundedTypeVar
-  = labelVariableDeclarationNode match{
+                                              labelVariableDeclarationNode: LabelVariableDeclarationNode): BoundedLabelVar
+  = (labelVariableDeclarationNode match{
     case SimpleLabelVariableDeclarationNode(s)=>
-      BoundedTypeVarImpl(s,Bottom,ObjectType.top)
+      BoundedLabelVar(s,Bottom,ObjectType.top)
     case BoundedLabelVariableDeclaration(s,lower,upper)=>
-      BoundedTypeVarImpl(s,
+      BoundedLabelVar(s,
         resolveType(typeIdentifierScope,lower,labelPosisition = true),
         resolveType(typeIdentifierScope,upper,labelPosisition = true)
       )
     case SubLabelVariableDeclaration(s,upper)=>
-      BoundedTypeVarImpl(s,
+      BoundedLabelVar(s,
         Bottom,
         resolveType(typeIdentifierScope,upper,labelPosisition = true)
       )
     case SuperLabelVariableDeclaration(s,lower)=>
-      BoundedTypeVarImpl(s,
+      BoundedLabelVar(s,
         resolveType(typeIdentifierScope,lower,labelPosisition = true)
         ,ObjectType.top
-      )
-  }
+      )}).setAstNode(labelVariableDeclarationNode).setAster(labelVariableDeclarationNode.isAster)
+
   private def resolveBuiltinNamedTypes(typeName:String): Either[LabelG,String]={
     if(typeName == "Int")
       Left(IntType)
@@ -225,13 +232,16 @@ class ObSecGTypeIdentifierResolver {
     else Right(typeName)
   }
 }
-object ObSecGTypeIdentifierResolver{
+object ObSecGIdentifierResolver{
   def apply(expression: ObSecGAstExprNode):ObSecGExpr=
-    new ObSecGTypeIdentifierResolver().resolve(expression)
+    new ObSecGIdentifierResolver().resolve(expression)
 }
 
 
 sealed trait TypeIdentifierDeclarationPoint
 case object SelfDeclarationPoint extends TypeIdentifierDeclarationPoint
 case object LabelDeclarationPoint extends TypeIdentifierDeclarationPoint
+case object LowLabelDeclarationPoint extends TypeIdentifierDeclarationPoint
 case object AnythingElse extends TypeIdentifierDeclarationPoint
+
+

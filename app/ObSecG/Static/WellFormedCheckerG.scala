@@ -24,62 +24,64 @@ class WellFormedCheckerG(judgements: GObSecJudgements, errorCollector: ErrorColl
 
   def isWellFormed(genVarEnv: LabelVarEnvironment,
                    stype: STypeG): Boolean =
-    //isWellFormed(genVarEnv, stype.privateType) &&
-     // isWellFormed(genVarEnv, stype.publicType)
-    throw new NotImplementedError()
-
-
+    isWellFormed(genVarEnv, stype.privateType) &&
+     isWellFormed(genVarEnv, stype.publicType)
 
   def isWellFormed(labelVariableEnv: LabelVarEnvironment, t: LabelG): Boolean =
-    //isWellFormed(labelVariableEnv, Set[String](), Environment.empty[ObjectType](), t)
-  throw new NotImplementedError()
+    isWellFormed(labelVariableEnv, Environment.empty[ObjectType](), t)
 
 
-  /* def isWellFormed(t: LabelG): Boolean =
-    isWellFormed(
-      Environment.empty(),
-      Set[String](),
-      Environment.empty[ObjectType]()
-      , t)
+  def isWellFormed(t: LabelG): Boolean =
+    isWellFormed(Environment.empty[TypeVarBounds](),Environment.empty[ObjectType](), t)
 
-
-
-    */
+  private def isWellFormed(genVarEnv: LabelVarEnvironment,
+                           objectEnv: SelfDefinitionEnvironment,
+                           s: STypeG): Boolean =
+    isWellFormed(genVarEnv,objectEnv,s.privateType) &&
+      isWellFormed(genVarEnv,objectEnv,s.publicType)
 
    private def isWellFormed(genVarEnv: LabelVarEnvironment,
                              objectEnv: SelfDefinitionEnvironment,
-                             t: Label): Boolean = t match {
+                             t: LabelG): Boolean = t match {
       case p: PrimType => true
+      case Bottom => true
       case TypeVar(x) => true
-      case LabelVarImpl(x) => true
+      case x:LabelVar => true
+      case LowLabel => true
+      case HighLabel => true
       case obj@ObjectType(x, methods) =>
         val newEnv = Environment.extend(objectEnv, x, obj)
           methods
-            .forall(m =>
-              constraintsAreWellFormed(genVarEnv,delta,env,m.mType.typeVars) &&
+            .forall(m => {
+              val methodLabelEnvironment = judgements.
+                auxiliaryDefinitions.
+                multiExtend(genVarEnv, m.mType.typeVars)
+              labelVariableWellFormed(genVarEnv,objectEnv,m.mType.typeVars) &&
               m.mType
                 .domain
                 .forall(s =>
-                  isWellFormed(
-                    Helper.multiExtend(genVarEnv, m.mType.typeVars),
-                    delta, newEnv, s)) &&
+                  isWellFormed(methodLabelEnvironment,newEnv,s)) &&
                 isWellFormed(
-                  Helper.multiExtend(genVarEnv, m.mType.typeVars),
-                  delta, newEnv, m.mType.codomain))
+                  methodLabelEnvironment,newEnv, m.mType.codomain)
+            })
     }
 
-  private def typeVariableWellFormed(genVarEnv: LabelVarEnvironment,
+  private def labelVariableWellFormed(genVarEnv: LabelVarEnvironment,
                                      objectEnv: SelfDefinitionEnvironment,
-                                     typeVars: List[TypeVarBounds]):Boolean= typeVars match{
+                                     typeVars: List[BoundedLabelVar]):Boolean= typeVars match{
     case List() => true
     case h::tail =>
-      if(!isWellFormed(genVarEnv,objectEnv,h.lower)){
+      if(!isWellFormed(genVarEnv,objectEnv,h.upperBound)){
         errorCollector.report("Type bound is not well-formed")
         return false
       }
-      typeVariableWellFormed(
-        Environment.extend(genVarEnv,h.typeVar,h.typeBound)
-        ,delta,env,tail)
+      if(!isWellFormed(genVarEnv,objectEnv,h.lowerBound)){
+        errorCollector.report("Type bound is not well-formed")
+        return false
+      }
+      labelVariableWellFormed(
+        Environment.extend(genVarEnv,h.typeVar,h.bounds)
+        ,objectEnv,tail)
   }
   /*
      def closeType(env: Environment[ObjectType], t: TypeG): TypeG =
@@ -104,32 +106,5 @@ class WellFormedCheckerG(judgements: GObSecJudgements, errorCollector: ErrorColl
            false
          })
 
-     def isClosed(s: STypeG): Boolean = isSClosed(Environment.empty[Boolean](), s)
-
-     private def isSClosed(environment: Environment[Boolean], s: STypeG): Boolean = {
-       isClosed(environment, s.privateType) && isClosed(environment, s.publicType)
-     }
-
-     private def isClosed(env: Environment[Boolean], t: TypeG): Boolean = t match {
-       case pt: PrimType => true
-       case TypeVar(x) =>
-         executeSuccesfully(() => env.lookup(x)) || {
-           errorCollector.report(s"Free type variable ${x}")
-           false
-         }
-       case ObjectType(x, methods) =>
-         if (executeSuccesfully(() => env.lookup(x))) false
-         val newEnv = Environment.extend(env, x, true)
-         methods.forall(m => isSClosed(newEnv, m.mType.codomain) && m.mType.domain.forall(x => isSClosed(newEnv, x)))
-     }
-
-     private def executeSuccesfully[T](m: () => T): Boolean = {
-       try {
-         m()
-         true
-       }
-       catch {
-         case _: Throwable => false
-       }
-     }*/
+    */
 }

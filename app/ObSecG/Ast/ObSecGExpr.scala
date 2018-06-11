@@ -1,5 +1,14 @@
 package ObSecG.Ast
 
+trait GObSecElement{
+  var astNode: ObSecGAstNode = NoGObSecNode
+
+  def setAstNode(node:ObSecGAstNode):this.type ={
+    if(astNode eq NoGObSecNode) astNode = node
+  this
+  }
+}
+
 /**
     * <Expr> ::= <Var> | <Obj> | <MethodInv> | <PrimitiveLiteral>
   *   (| <SurfaceExpr> )
@@ -8,7 +17,7 @@ package ObSecG.Ast
   /**
     * Top Algebraic Data Type for expression in ObSec
     */
-  sealed trait ObSecGExpr{
+  sealed trait ObSecGExpr extends GObSecElement{
 
   }
 

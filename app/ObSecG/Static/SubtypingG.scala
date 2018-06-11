@@ -64,11 +64,13 @@ class AmadioCardelliSubtypingG(
                            alreadySeen: SubtypingAssumptions,
                            t1: LabelG,
                            t2: LabelG): SubtypingAssumptions= {
-    /*println(s"Generic var constraint : $genVarEnv")
+    println("**********************")
+    println(s"Generic var constraint : $alreadySeen")
     println(s"Already seen: $alreadySeen")
+    println(s"Already seen: $labelVariableEnv")
     println(s"st goal: $t1 and $t2")
     println("*********************")
-    */
+
     if (alreadySeen.exists((x) => TypeEquivalenceG.alphaEq(x._1, t1) &&
       TypeEquivalenceG.alphaEq(x._2, t2)))
       alreadySeen
@@ -79,24 +81,42 @@ class AmadioCardelliSubtypingG(
         case (_, t) if TypeEquivalenceG.alphaEq(t, ObjectType.top) => newSet
         //little optimization
         //case (_,_) if TypeEquivalence.alphaEq(t1,t2) =>true
+        case (gv1: LabelVar,gv2:LabelVar) =>
+          //little optimization
+          if(gv1 == gv2)
+            newSet
+          else {
+            val bounds1 = labelVariableEnv.lookup(gv1.name)
+            val bounds2 = labelVariableEnv.lookup(gv2.name)
+            val set = innerSubType(
+              labelVariableEnv,
+              newSet,
+              bounds2.lower,
+              bounds1.lower)
+            innerSubType(
+              labelVariableEnv,
+              set,
+              bounds1.upper,
+              bounds2.upper)
+          }
         case (gv1: LabelVar,t) =>
           val upperBound = labelVariableEnv.lookup(gv1.name).upper
           if(upperBound == t)
-            alreadySeen
+            newSet
           else
             innerSubType(
               labelVariableEnv,
-              alreadySeen,
+              newSet,
               upperBound,
               t)
         case (t,gv2:LabelVar) =>
           val lowerBound = labelVariableEnv.lookup(gv2.name).lower
           if(lowerBound == t)
-            alreadySeen
+            newSet
           else
             innerSubType(
               labelVariableEnv,
-              alreadySeen,
+              newSet,
               t,
               lowerBound)
         case (RecordTypeG(methodsR1), RecordTypeG(methodsR2)) =>
@@ -107,11 +127,10 @@ class AmadioCardelliSubtypingG(
               case None => throw SubtypingError("Method not in object")
               case Some(m11) =>
                 /*
-                Gamma , X<:U1 |- S2 <: T2
+                Gamma , X:L2..U2 |- T1 <: T2
                 ----------------------------------
-                Gamma |- forall X<:U1.S2 <: forall X<:U1.T2
+                Gamma |- [X:L1..U1]. T1 <: [X:L2..U2].T2
                 * */
-                //TODO: Take into account constraint of the form X>:T
                 val newSet:Set[(LabelG,LabelG)] =
                   m11
                     .mType
@@ -130,12 +149,12 @@ class AmadioCardelliSubtypingG(
         case (ot1@ObjectType(_, _), _) =>
           innerSubType(labelVariableEnv,newSet, unfold(ot1), t2)
         case (_, ot2@ObjectType(_, _)) =>
+          if(ot2.isPrimitive)
+            throw SubtypingError("Not!")
           innerSubType(labelVariableEnv,newSet, t1, unfold(ot2))
         case (p1: PrimType, p2: PrimType) =>
           if(p1 == p2) newSet
           else innerSubType(labelVariableEnv,newSet, p1.toObjType, p2.toObjType)
-        case (_, p2: PrimType) =>
-          innerSubType(labelVariableEnv,newSet, t1, p2.toObjType)
         case (p1: PrimType, _) =>
           innerSubType(labelVariableEnv,newSet, p1.toObjType, t2)
         case _ => throw SubtypingError("Not!")

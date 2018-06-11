@@ -39,7 +39,7 @@ trait TypeG extends LabelG {
 
   def unUsedTypeVar: String = "unused"
 
-  def UnUsedTypeVars: List[TypeVarSub] = List(TypeVarSub("x", ObjectType.top))
+  def UnUsedTypeVars: List[BoundedLabelVar] = List(BoundedLabelVar("x",Bottom, ObjectType.top))
 }
 
 /*/*
@@ -50,25 +50,24 @@ of the form Int<X to Int and usages of the form String<X to String.
  */
 object Asterisk extends TypeOrAsterisk*/
 
-trait LabelVar extends  LabelG{
-  def name : String
-  override def methSig(x: String): MTypeG =
-    throw new Error("It is an error to ask methSig to a label var")
-
-  override def containsMethod(x: String): Boolean = false
-}
 
 /**
   * T ::= ... X ...
   * @param name the variable name
   */
-case class LabelVarImpl(name: String) extends LabelVar
+case class LabelVar(name: String) extends LabelG{
+  override def methSig(x: String): MTypeG =
+    throw new Error("It is an error to ask methSig to a label var")
 
-/**
-  * T ::= ... X* ...
-  * @param name the variable name
-  */
-case class LabelVarAster(name : String) extends LabelVar
+  override def containsMethod(x: String): Boolean = false
+
+  var isAster:Boolean = false
+  def setAster(b:Boolean): this.type = {
+    isAster = b
+    this
+  }
+}
+
 
 object Bottom extends LabelG {
   override def methSig(x: String): MTypeG =  throw new Error("methSig over bottom")
@@ -82,14 +81,24 @@ case class UnionLabel(left: LabelG,right: LabelG) extends LabelG {
   override def containsMethod(x: String): Boolean = throw new Error("notimplemented: UnionLabel.containsMethod")
 }
 
-trait ObjectTypeInterface extends TypeG{
-  def selfVar: String
-  def methods:List[MethodDeclarationG]
+
+case class ObjectType(selfVar: String, methods: List[MethodDeclarationG]) extends TypeG {
+  var isPrimitive = false
+  def setIsPrimitive(b:Boolean):ObjectType={
+    isPrimitive = b
+    this
+  }
+
   override def methSig(x: String): MTypeG = {
     //we must close the type
     val mD = methods.find(m => m.name == x).get
     MTypeG(
-      mD.mType.typeVars,
+      mD.mType.typeVars.map(tv=>{
+        BoundedLabelVar(tv.typeVar,
+          TypeSubstG.substRecVar(tv.lowerBound,selfVar,this),
+          TypeSubstG.substRecVar(tv.upperBound,selfVar,this)
+        ).setAster(tv.isAster)
+      }),
       mD.mType.domain.map(s =>
         STypeG(
           TypeSubstG.substRecVar(s.privateType, selfVar, this).asInstanceOf[TypeG],
@@ -101,15 +110,10 @@ trait ObjectTypeInterface extends TypeG{
   }
 
   override def containsMethod(m: String): Boolean = methods.exists(x => x.name == m)
-}
-case class ObjectType(selfVar: String, methods: List[MethodDeclarationG]) extends ObjectTypeInterface {
+
   override def toString: String = s"OT($selfVar,$methods)"
 }
 
-case class PrimObjectType(selfVar: String, methods:List[MethodDeclarationG])
-  extends ObjectTypeInterface {
-  override def toString: String = s"PT($selfVar,$methods)"
-}
 
 object ObjectType {
   val top = ObjectType("x", List())
@@ -146,19 +150,28 @@ case class TypeVar(name: String) extends TypeG {
 }*/
 
 object UnUsedTypeVars {
-  def apply: List[TypeVarSub] = List(TypeVarSub("unused", ObjectType.top))
+  def apply: List[BoundedLabelVar] = List(BoundedLabelVar("unused",Bottom, ObjectType.top))
 }
 
 trait PrimType {
-  def toObjType: PrimObjectType
+  def toObjType: ObjectType
 }
 
 case object IntType extends TypeG with PrimType {
 
   override def methSig(x: String): MTypeG = x match {
-    case "+" => MTypeG(List(), List(STypeG(IntType, IntType)), STypeG(IntType, IntType))
-    case "-" => MTypeG(List(), List(STypeG(IntType, IntType)), STypeG(IntType, IntType))
-    case "==" => MTypeG(List(), List(STypeG(IntType, IntType)), STypeG(BooleanType, BooleanType))
+    case "+" => MTypeG(
+      List(BoundedLabelVar("l",IntType,ObjectType.top)),
+      List(STypeG(IntType, LabelVar("l"))),
+      STypeG(IntType, LabelVar("l")))
+    case "-" => MTypeG(
+      List(BoundedLabelVar("l",IntType,ObjectType.top)),
+      List(STypeG(IntType, LabelVar("l"))),
+      STypeG(IntType, LabelVar("l")))
+    case "==" => MTypeG(
+      List(BoundedLabelVar("l",IntType,ObjectType.top).setAster(true)),
+      List(STypeG(IntType, LabelVar("l"))),
+      STypeG(BooleanType, UnionLabel(BooleanType,LabelVar("l").setAster(true))))
     case _ => throw new Error("Message not understood")
   }
 
@@ -169,25 +182,25 @@ case object IntType extends TypeG with PrimType {
 
   override def toString: String = "Int"
 
-  override def toObjType: PrimObjectType =
-    PrimObjectType("x",
+  override def toObjType: ObjectType =
+    ObjectType("x",
       List(
         MethodDeclarationG("+",
           MTypeG(
-            List(),
-            List(STypeG(TypeVar("x"), TypeVar("x"))),
-            STypeG(TypeVar("x"), TypeVar("x")))),
+            List(BoundedLabelVar("l",TypeVar("x"),ObjectType.top)),
+            List(STypeG(TypeVar("x"), LabelVar("l"))),
+            STypeG(TypeVar("x"), LabelVar("l")))),
         MethodDeclarationG("-",
           MTypeG(
-            List(),
-            List(STypeG(TypeVar("x"), TypeVar("x"))),
-            STypeG(TypeVar("x"), TypeVar("x")))),
+            List(BoundedLabelVar("l",TypeVar("x"),ObjectType.top)),
+            List(STypeG(TypeVar("x"), LabelVar("l"))),
+            STypeG(TypeVar("x"), LabelVar("l")))),
         MethodDeclarationG("==",
           MTypeG(
-            List(),
-            List(STypeG(TypeVar("x"), TypeVar("x"))),
-            STypeG(BooleanType, BooleanType)))
-      ))
+            List(BoundedLabelVar("l",TypeVar("x"),ObjectType.top).setAster(true)),
+            List(STypeG(TypeVar("x"), LabelVar("l").setAster(true))),
+            STypeG(BooleanType, UnionLabel(BooleanType,LabelVar("l").setAster(true)))))
+      )).setIsPrimitive(true)
 }
 
 /**
@@ -220,8 +233,11 @@ case object IntType extends TypeG with PrimType {
   */
 case object StringType extends TypeG with PrimType {
   override def methSig(method: String): MTypeG = method match {
-    case "==" => MTypeG(List(),
-      List(STypeG(StringType, StringType)), STypeG(BooleanType, BooleanType)
+    case "==" =>
+      MTypeG(
+        List(BoundedLabelVar("l",StringType,ObjectType.top).setAster(true)),
+        List(STypeG(StringType, LabelVar("l").setAster(true))),
+        STypeG(BooleanType, UnionLabel(BooleanType,LabelVar("l").setAster(true)))
     )
     case "length" => MTypeG(List(), List(), STypeG(IntType, IntType))
     case "hash" => MTypeG(List(), List(), STypeG(IntType, IntType))
@@ -235,17 +251,20 @@ case object StringType extends TypeG with PrimType {
 
   override def toString: String = "String"
 
-  override def toObjType: PrimObjectType = PrimObjectType(
+  override def toObjType: ObjectType = ObjectType(
     "x",
     List(
-      MethodDeclarationG("==", MTypeG(List(),
-        List(STypeG(TypeVar("x"), TypeVar("x"))), STypeG(BooleanType, BooleanType))),
+      MethodDeclarationG("==",
+        MTypeG(
+          List(BoundedLabelVar("l",TypeVar("x"),ObjectType.top).setAster(true)),
+          List(STypeG(TypeVar("x"), LabelVar("l").setAster(true))),
+          STypeG(BooleanType, UnionLabel(BooleanType,LabelVar("l").setAster(true))))),
       MethodDeclarationG("length", MTypeG(List(),
         List(), STypeG(IntType, IntType))),
       MethodDeclarationG("hash", MTypeG(List(),
         List(), STypeG(IntType, IntType)))
     )
-  )
+  ).setIsPrimitive(true)
 }
 
 case object BooleanType extends TypeG with PrimType {
@@ -255,9 +274,9 @@ case object BooleanType extends TypeG with PrimType {
 
   override def toString: String = "Bool"
 
-  override def toObjType: PrimObjectType =
-    PrimObjectType("x", List(MethodDeclarationG("$notarealmethod$",
-      MTypeG(List(), List(), STypeG(TypeVar("x"), TypeVar("x"))))))
+  override def toObjType: ObjectType =
+    ObjectType("x", List(MethodDeclarationG("$notarealmethod$",
+      MTypeG(List(), List(), STypeG(TypeVar("x"), TypeVar("x")))))).setIsPrimitive(true)
 
 }
 
@@ -274,11 +293,11 @@ case object StringListType extends TypeG with PrimType {
     case _ => false
   }
 
-  override def toObjType: PrimObjectType = PrimObjectType("x",
+  override def toObjType: ObjectType = ObjectType("x",
     List(MethodDeclarationG("isEmpty", MTypeG(List(), List(), STypeG(BooleanType, BooleanType))),
       MethodDeclarationG("head", MTypeG(List(), List(), STypeG(StringType, StringType))),
       MethodDeclarationG("tail", MTypeG(List(), List(), STypeG(TypeVar("x"), TypeVar("x"))))
-    ))
+    )).setIsPrimitive(true)
 
   override def toString: String = "StrList"
 }
@@ -299,11 +318,11 @@ case class StringGListType(elemPolicy: TypeG) extends TypeG with PrimType {
     case _ => false
   }
 
-  override def toObjType: PrimObjectType = PrimObjectType("x",
+  override def toObjType: ObjectType = ObjectType("x",
     List(MethodDeclarationG("isEmpty", MTypeG(UnUsedTypeVars, List(), STypeG(BooleanType, BooleanType))),
       MethodDeclarationG("head", MTypeG(UnUsedTypeVars, List(), STypeG(StringType, elemPolicy))),
       MethodDeclarationG("tail", MTypeG(UnUsedTypeVars, List(), STypeG(TypeVar("x"), TypeVar("x"))))
-    ))
+    )).setIsPrimitive(true)
 
   override def toString: String = s"StrList[$elemPolicy]"
 }
@@ -356,34 +375,24 @@ case class MethodDeclarationG(name: String, mType: MTypeG) {
   * @param domain   The domain type
   * @param codomain The codomain type
   */
-case class MTypeG(typeVars: List[BoundedTypeVar], domain: List[STypeG], codomain: STypeG) {
+case class MTypeG(typeVars: List[BoundedLabelVar], domain: List[STypeG], codomain: STypeG) {
   def map(f: STypeG => STypeG): MTypeG =
     MTypeG(typeVars, domain.map(f), f(codomain))
 }
 
-trait BoundedTypeVar {
-  def typeVar: String
-
-  def bounds: TypeVarBounds = TypeVarBounds(lowerBound,upperBound)
-  def lowerBound : LabelG
-  def upperBound: LabelG
-}
-
-case class TypeVarSub(typeVar: String,upperBound: LabelG) extends BoundedTypeVar {
-  override def toString: String = s"$typeVar<:$upperBound"
-
-  override def lowerBound: LabelG = Bottom
-}
-
-case class TypeVarSuper(lowerBound: LabelG, typeVar: String) extends BoundedTypeVar {
-  override def toString: String = s"$lowerBound<:$typeVar"
-
-  override def upperBound: LabelG = ObjectType.top
-}
-case class BoundedTypeVarImpl( typeVar: String
-                               ,lowerBound: LabelG
-                               ,upperBound: LabelG) extends BoundedTypeVar {
+case class BoundedLabelVar(typeVar: String
+                               , lowerBound: LabelG
+                               , upperBound: LabelG) extends GObSecElement {
   override def toString: String = s"$typeVar :$lowerBound..$upperBound"
+  def bounds: TypeVarBounds = TypeVarBounds(lowerBound,upperBound)
+
+
+  var isAster :Boolean = false
+  def setAster(b:Boolean):BoundedLabelVar = {
+    isAster = b
+    this
+  }
 }
+
 
 case class TypeVarBounds(lower:LabelG,upper:LabelG)

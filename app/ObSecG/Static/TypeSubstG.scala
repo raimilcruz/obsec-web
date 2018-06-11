@@ -18,7 +18,7 @@ object TypeSubstG {
   def substRecVar(t: LabelG, x: String, t2: LabelG): LabelG = t match {
     case p:PrimType => p
     case TypeVar(y: String) => if (x == y) t2 else t
-    //case gv:GenericTypeVar => gv
+    case gv:LabelVar => gv
     case RecordTypeG(methods) =>
       RecordTypeG(methods.map(m =>
         MethodDeclarationG(m.name,
@@ -32,7 +32,7 @@ object TypeSubstG {
               substRecVar(m.mType.codomain.privateType, x, t2).asInstanceOf[TypeG],
               substRecVar(m.mType.codomain.publicType, x, t2)
           )))))
-    case ObjectType(y, methods) =>
+    case ot@ObjectType(y, methods) =>
       if (y == x) t
       else {
         var newVar = getFreshSelfVarNotIn(x, List(y, x) ++ freeSelfVars(t) ++ freeSelfVars(t2))
@@ -42,7 +42,13 @@ object TypeSubstG {
             MethodDeclarationG(
               m.name,
               MTypeG(
-                m.mType.typeVars,
+                m.mType.typeVars.map(st=>
+                  BoundedLabelVar(
+                    st.typeVar,
+                    substRecVar(st.lowerBound,y,TypeVar(newVar)),
+                    substRecVar(st.upperBound,y,TypeVar(newVar))
+                  ).setAster(st.isAster)
+                ),
                 m.mType.domain.map(stype => STypeG(
                   substRecVar(substRecVar(stype.privateType, y, TypeVar(newVar)),
                   x, t2).asInstanceOf[TypeG],
@@ -53,7 +59,7 @@ object TypeSubstG {
                   x, t2).asInstanceOf[TypeG],
                 substRecVar(substRecVar(m.mType.codomain.publicType, y, TypeVar(newVar)),
                   x, t2))
-            ))))
+            )))).setIsPrimitive(ot.isPrimitive)
       }
   }
 
@@ -61,7 +67,7 @@ object TypeSubstG {
   def substLabelVar(t: LabelG, x: String, t2: LabelG): LabelG = t match {
     case p:PrimType => p
     case TypeVar(y: String) => t
-    //case GenericTypeVar(y) => if(x==y) t2 else t
+    case LabelVar(y) => if(x==y) t2 else t
     case RecordTypeG(methods) =>
       RecordTypeG(methods.map(m =>
         MethodDeclarationG(m.name,
