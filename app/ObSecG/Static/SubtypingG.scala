@@ -157,6 +157,17 @@ class AmadioCardelliSubtypingG(
           else innerSubType(labelVariableEnv,newSet, p1.toObjType, p2.toObjType)
         case (p1: PrimType, _) =>
           innerSubType(labelVariableEnv,newSet, p1.toObjType, t2)
+        case (union@UnionLabel(t11,t12),_)=>
+          val set = innerSubType(labelVariableEnv,newSet,t11,t2)
+          innerSubType(labelVariableEnv,set,t12,t2)
+        case (_,union@UnionLabel(t21,t22))=>
+          //it should be one or the other one
+          try {
+            innerSubType(labelVariableEnv, newSet, t1, t21)
+          }
+          catch {
+            case x: SubtypingError => innerSubType(labelVariableEnv,newSet,t1,t22)
+          }
         case _ => throw SubtypingError("Not!")
       }
     }

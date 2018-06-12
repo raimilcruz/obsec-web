@@ -45,7 +45,7 @@ class TypeChecker(judgements: GObSecJudgmentsExtensions,
     case IntExpr(_) => STypeG(IntType, IntType)
     case BooleanExpr(_) => STypeG(BooleanType, BooleanType)
     case StringExpr(_) => STypeG(StringType, StringType)
-    case MethodInv(e1, types, args, m) => {
+    case methInv@MethodInv(e1, types, args, m) => {
       val s1 = typeCheck(genVarEnv, scope, aliasScope, e1)
       val argTypes = args.map(param =>
         typeCheck(genVarEnv, scope, aliasScope, param))
@@ -85,12 +85,13 @@ class TypeChecker(judgements: GObSecJudgmentsExtensions,
         }
         //check the argument count
         if (mType.domain.size != args.size)
-          throw TypeError(s"Method '${m}' : Actual arguments amount must" +
-            s" match the formal arguments amount")
+          throw TypeErrorG.actualArgumentsSizeError(methInv)
         //check subtyping between $mType.domain and s2
         for (pair <- argTypes.zip(mType.domain)) {
-          val subtitutedType = closeGenType(pair._2,
-            mType.typeVars.map(x => x.typeVar).zip(types))
+          val subtitutedType =
+            closeGenType(
+              pair._2,
+              mType.typeVars.zip(types))
           if (!judgements.<::(extendedGenVarEnv,
             pair._1, subtitutedType)) {
             throw TypeErrorG.subTypingError(expr.astNode, m,pair._1,subtitutedType)
@@ -99,10 +100,10 @@ class TypeChecker(judgements: GObSecJudgmentsExtensions,
 
         if (publicFacet.containsMethod(m))
           closeGenType(mType.codomain,
-            publicFacet.methSig(m).typeVars.map(x => x.typeVar).zip(types))
+            publicFacet.methSig(m).typeVars.zip(types))
         else
           closeGenType(STypeG(mType.codomain.privateType, UnionLabel(mType.codomain.publicType,publicFacet)),
-            privateFacet.methSig(m).typeVars.map(x => x.typeVar).zip(types))
+            privateFacet.methSig(m).typeVars.zip(types))
 
       }
       else
@@ -115,12 +116,13 @@ class TypeChecker(judgements: GObSecJudgmentsExtensions,
         throw CommonTypeError.secTypeIsNotWellFormed(stype.toString,
           s" ${errorCollector.errors}")
       //the private type must be an object type
+      //TODO: check this in the ResolverIdentifier
       if (!stype.privateType.isInstanceOf[ObjectType])
         throw TypeError("The private facet must be an object type")
-      //an object can not have repeated method definitions
-      if (methods.map(x => x.name).distinct.size != methods.size)
-        throw TypeError("An object can not have repeated method names")
+      //1. An object can not have repeated method definitions. We check for repeated method
+      // in the ResolverIdentifier
       //both methods list: in type and in definition must have the same elements
+      //TODO: Check this in the ResolverIdentifier
       val privateMethodNames = stype.privateType.asInstanceOf[ObjectType].methods.map(x => x.name)
       val methodDefNames = methods.map(x => x.name)
       val methsNoDef = privateMethodNames.filter(x => !methodDefNames.contains(x))
@@ -129,6 +131,7 @@ class TypeChecker(judgements: GObSecJudgmentsExtensions,
           s" method signature. Missing method definition" +
           s" for: ${methodDefNames.foldLeft("")((acc, m) => acc + " " + m)}.")
       }
+      //TODO: Check this in the ResolverIdentifier
       val methsNoSignature = methodDefNames.filter(x => !privateMethodNames.contains(x))
       if (methsNoSignature.nonEmpty) {
         throw TypeError(s"There must exist a method signature for each method definition. Missing method signature for: ${methsNoSignature.foldLeft("")((acc, m) => acc + " " + m)}.")
@@ -136,6 +139,7 @@ class TypeChecker(judgements: GObSecJudgmentsExtensions,
       //each method must be well-typed with respect the object type
       for (m <- methods) {
         val mType = stype.privateType.methSig(m.name)
+        //TODO: Check this in the ResolverIdentifier
         if (mType.domain.size != m.args.size)
           throw TypeError(s"Method '${m.name}': Mismatch in amount of arguments between definition and signature")
 
@@ -177,14 +181,14 @@ class TypeChecker(judgements: GObSecJudgmentsExtensions,
             //println(newTypeAliasScope.toList())
             if (!judgements.isWellFormed(Environment.empty():LabelVarEnvironment, closedType))
               throw TypeError(s"Type declaration '${deftype.name}' declaration " +
-                s"is not well-formed: ${closedType}")
+                s"is not well-formed: $closedType")
             newTypeAliasScope.add(deftype.name, closedType.asInstanceOf[TypeG])
           case ta: TypeAlias =>
             val closedType = closeAliases(newTypeAliasScope.toList, ta.objType)
             //println(newTypeAliasScope.toList())
             if (!judgements.isWellFormed(Environment.empty():LabelVarEnvironment, closedType))
               throw TypeError(s"Type in the type alias '${ta.aliasName}' " +
-                s"declaration is not well-formed: ${closedType}")
+                s"declaration is not well-formed: $closedType")
             newTypeAliasScope.add(ta.aliasName, closedType.asInstanceOf[TypeG])
         }
       }
@@ -227,13 +231,13 @@ class TypeChecker(judgements: GObSecJudgmentsExtensions,
   }
 
   private def closeGenType(g: STypeG,
-                           substitutions: List[(String, LabelG)]
+                           substitutions: List[(BoundedLabelVar, LabelG)]
                           ): STypeG = substitutions match {
     case List() => g
-    case h :: t => closeGenType(
+    case (tv,actualLabel) :: t => closeGenType(
       STypeG(
-        TypeSubstG.substLabelVar(g.privateType, h._1, h._2).asInstanceOf[TypeG],
-        TypeSubstG.substLabelVar(g.publicType, h._1, h._2)
+        TypeSubstG.substLabel(g.privateType, tv, actualLabel).asInstanceOf[TypeG],
+        TypeSubstG.substLabel(g.publicType, tv, actualLabel)
       ), t)
 
   }

@@ -9,7 +9,7 @@ import ObSecG.Static.{TypeEquivalenceG, TypeSubstG}
   * @param privateType The private facet
   * @param publicType  The public facet
   */
-case class STypeG(privateType: TypeG, publicType: LabelG) {
+case class STypeG(privateType: TypeG, publicType: LabelG) extends GObSecElement {
   def map(f: TypeG => TypeG, g: LabelG => LabelG): STypeG =
     STypeG(f(privateType), g(publicType))
 
@@ -328,19 +328,6 @@ case class StringGListType(elemPolicy: TypeG) extends TypeG with PrimType {
 }
 
 
-sealed trait ExtremeLabelG extends LabelG {
-  override def methSig(x: String): MTypeG = throw new Error("It does not sense")
-
-  override def containsMethod(x: String): Boolean = throw new Error("It does not sense")
-}
-
-case object LowLabel extends ExtremeLabelG {
-  override def toString: String = "L"
-}
-
-case object HighLabel extends ExtremeLabelG {
-  override def toString: String = "H"
-}
 
 /**
   * Represent a method signature

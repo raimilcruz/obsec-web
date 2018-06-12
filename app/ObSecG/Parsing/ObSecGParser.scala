@@ -183,8 +183,8 @@ object ObSecGParser extends StandardTokenParsers with PackratParsers with Implic
 
 
 
-  lazy val lowLabel : PackratParser[TypeAnnotation]= LOW ^^ {_ => TypeIdentifier(LOW)}
-  lazy val highLabel : PackratParser[TypeAnnotation]= HIGH ^^ {_ => TypeIdentifier(HIGH)}
+  lazy val lowLabel : PackratParser[TypeAnnotation]= LOW ^^ {_ => LowLabelNode}
+  lazy val highLabel : PackratParser[TypeAnnotation]= HIGH ^^ {_ => HighLabelNode}
 
   lazy val primVal :  Parser[ObSecGAstExprNode] = stringLiteralExpr | integerExpr | boolExpr
 

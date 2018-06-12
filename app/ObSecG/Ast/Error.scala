@@ -74,6 +74,7 @@ object MethodNotFound extends ErrorCodesEnum
 object SubTypingError extends ErrorCodesEnum
 object BadActualLabelArgument extends ErrorCodesEnum
 object ActualTypeParametersMustMatchFormalTypeParameterAmount extends ErrorCodesEnum
+object ActualArgumentsSizeError extends ErrorCodesEnum
 
 object TypeCheckerErrorCodes{
   def sameTypeForIfBranches: ErrorCodeG =
@@ -108,10 +109,18 @@ object TypeCheckerErrorCodes{
     ErrorCodeG(ActualTypeParametersMustMatchFormalTypeParameterAmount,
       "Method '%s' : Actual types amount must" +
         s" match the formal type variable amount")
+
+  def actualArgumentsSizeError: ErrorCodeG =
+    ErrorCodeG(ActualArgumentsSizeError,
+      "Method '%s' : Actual arguments amount must" +
+        s" match the formal arguments amount")
 }
 
 case class TypeErrorG(analysisError: AnalysisError) extends Error
 object TypeErrorG{
+  def actualArgumentsSizeError(expr: MethodInv): TypeErrorG =
+    typeError(expr.astNode,TypeCheckerErrorCodes.actualArgumentsSizeError,List(expr.method))
+
   def sameTypeForIfBranches(node: ObSecGAstNode): TypeErrorG =
     typeError(node,TypeCheckerErrorCodes.sameTypeForIfBranches)
 

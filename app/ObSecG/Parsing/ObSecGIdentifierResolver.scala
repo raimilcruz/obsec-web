@@ -128,7 +128,8 @@ class ObSecGIdentifierResolver {
   }
 
   private def resolveType(typeIdentifierScope: Scope[TypeIdentifierDeclarationPoint],
-                            typeAnnotation: TypeAnnotation, labelPosisition: Boolean):LabelG = typeAnnotation match{
+                          typeAnnotation: TypeAnnotation,
+                          labelPosisition: Boolean):LabelG = typeAnnotation match{
 
     case ObjectTypeNode(selfVar,methods) =>
       var objectTypeScope = new NestedScope(typeIdentifierScope)
@@ -136,7 +137,7 @@ class ObSecGIdentifierResolver {
       ObjectType(selfVar,methods.map(m=> resolveMethodDeclaration(typeIdentifierScope,m)))
     case NoRecursiveObjectTypeNode(methods)=> resolveType(typeIdentifierScope,ObjectTypeNode("gen",methods),labelPosisition)
     case TypeIdentifier(n) =>
-      val namedType = resolveBuiltinNamedTypes(n)
+      val namedType = resolveBuiltinNamedTypes(n,labelPosisition)
       namedType match{
         case Left(t)=>t
         case Right(_) =>
@@ -188,8 +189,12 @@ class ObSecGIdentifierResolver {
     val privateType = resolveType(typeIdentifierScope,annotatedFacetedType.left,labelPosisition = false)
     privateType match {
       case g: TypeG =>
-        STypeG(g,
-          resolveType(typeIdentifierScope, annotatedFacetedType.right,labelPosisition = true))
+        annotatedFacetedType.right match{
+          case LowLabelNode => STypeG(g,g).setAstNode(annotatedFacetedType)
+          case HighLabelNode => STypeG(g,ObjectType.top).setAstNode(annotatedFacetedType)
+          case _ => STypeG(g,
+            resolveType(typeIdentifierScope, annotatedFacetedType.right,labelPosisition = true))
+        }
       case _ => throw ResolverError.invalidTypeForPrivateFacet(annotatedFacetedType)
     }
   }
@@ -214,7 +219,7 @@ class ObSecGIdentifierResolver {
         ,ObjectType.top
       )}).setAstNode(labelVariableDeclarationNode).setAster(labelVariableDeclarationNode.isAster)
 
-  private def resolveBuiltinNamedTypes(typeName:String): Either[LabelG,String]={
+  private def resolveBuiltinNamedTypes(typeName:String,labelPosition:Boolean): Either[LabelG,String]={
     if(typeName == "Int")
       Left(IntType)
     else if(typeName=="String")
@@ -225,10 +230,6 @@ class ObSecGIdentifierResolver {
       Left(StringListType)
     else if(typeName == "Top")
       Left(ObjectType.top)
-    else if(typeName == "L")
-      Left(LowLabel)
-    else if(typeName == "H")
-      Left(HighLabel)
     else Right(typeName)
   }
 }

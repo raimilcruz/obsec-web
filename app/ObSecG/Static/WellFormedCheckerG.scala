@@ -47,8 +47,6 @@ class WellFormedCheckerG(judgements: GObSecJudgements, errorCollector: ErrorColl
       case Bottom => true
       case TypeVar(x) => true
       case x:LabelVar => true
-      case LowLabel => true
-      case HighLabel => true
       case obj@ObjectType(x, methods) =>
         val newEnv = Environment.extend(objectEnv, x, obj)
           methods

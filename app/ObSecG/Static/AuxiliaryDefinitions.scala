@@ -1,6 +1,6 @@
 package ObSecG.Static
 
-import ObSecG.Ast.{BoundedLabelVar, LabelG, LabelVar}
+import ObSecG.Ast._
 
 /**
   * We create this trait to group all the auxiliary definition of the model
@@ -21,6 +21,8 @@ trait IAuxiliaryFunctions extends Environments {
                   vars: List[BoundedLabelVar]): LabelVarEnvironment =
 
     vars.foldLeft(labelVarEnvironment)((acc, c) => acc.extend(c.typeVar, c.bounds))
+
+  def normalizeUnion(unionLabel: UnionLabel):LabelG
 }
 
 class AuxiliaryFunctions extends IAuxiliaryFunctions {
@@ -36,5 +38,30 @@ class AuxiliaryFunctions extends IAuxiliaryFunctions {
                            theType: LabelG): LabelG = theType match {
     case labelVar: LabelVar => tUpperBound(labelVarEnvironment, labelVarEnvironment.lookup(labelVar.name).upper)
     case _ => theType
+  }
+
+  override def normalizeUnion(unionLabel: UnionLabel): LabelG = ???
+  
+  private def normalize(label:LabelG):LabelG = label match{
+    case l:LabelVar=>l
+    case UnionLabel(l1,l2)=>
+      val ln1 = normalize(l1)
+      val ln2 = normalize(l2)
+      if(!ln1.isInstanceOf[LabelVar] && !ln2.isInstanceOf[LabelVar])
+        ObjectType.top
+      else UnionLabel(l1,l2)
+    case tv:TypeVar=> throw new Error("We should get here! We need to close the type")
+    case ObjectType(selfVar,methods) =>
+      ObjectType(
+        selfVar,
+        methods.map(m=>
+          MethodDeclarationG(
+            m.name,
+            MTypeG(
+              m.mType.typeVars,
+              m.mType.domain.map(s=> STypeG(s.privateType,s.publicType)),
+              STypeG(m.mType.codomain.privateType,m.mType.codomain.publicType)
+            ))))
+      //TODO: finish this.
   }
 }

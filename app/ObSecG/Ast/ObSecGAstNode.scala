@@ -92,6 +92,19 @@ case class AnnotatedFacetedType(left:TypeAnnotation,right: TypeAnnotation) exten
 case class TypeIdentifier(identifier: String) extends TypeAnnotation {
   override def children: List[ObSecGAstNode] = List()
 }
+case object LowLabelNode extends TypeAnnotation {
+  override def toString: String = "L"
+
+  override def children: List[ObSecGAstNode] = List()
+}
+
+case object HighLabelNode extends TypeAnnotation {
+  override def toString: String = "H"
+
+  override def children: List[ObSecGAstNode] = List()
+}
+
+
 sealed trait ObjectTypeAnnotation extends TypeAnnotation{
   def methods: List[MethodDeclarationNode]
 }
