@@ -7,6 +7,8 @@ case class RecordTypeG(methods: List[MethodDeclarationG]) extends TypeG {
   override def toString: String =  s"{${methods.map(x => x.toString).fold("")((x: String, y: String) => x + y).toString}}"
   override def methSig(x: String): MTypeG = throw new NotImplementedError("Not important")
   override def containsMethod(x: String): Boolean = throw new NotImplementedError("Not important")
+
+  override def prettyPrint(): String = toString
 }
 
 abstract class ISubtypingGObSec(
@@ -31,7 +33,11 @@ class AmadioCardelliSubtypingG(
 
   def <::(labelVariableEnv:LabelVarEnvironment,t1: LabelG, t2: LabelG): Boolean =
     try {
-      val res = innerSubType(labelVariableEnv,Set(), t1, t2)
+      val subtypingAssumptions = labelVariableEnv.toList.foldLeft(Set[(LabelG, LabelG)]())(
+        (prevSet,tv)=> {
+          prevSet + Tuple2(LabelVar(tv._1),tv._2.upper) + Tuple2(tv._2.lower,LabelVar(tv._1))
+      })
+      val res = innerSubType(labelVariableEnv,subtypingAssumptions, t1, t2,0)
       true
     } catch {
       case x: SubtypingError => false
@@ -45,8 +51,8 @@ class AmadioCardelliSubtypingG(
                   alreadySeen: SubtypingAssumptions,
                   s1: STypeG,
                   s2: STypeG): SubtypingAssumptions = {
-    val set = innerSubType(labelVariableEnv,alreadySeen, s1.publicType, s2.publicType)
-    innerSubType(labelVariableEnv,set, s1.privateType, s2.privateType)
+    val set = innerSubType(labelVariableEnv,alreadySeen, s1.publicType, s2.publicType,0)
+    innerSubType(labelVariableEnv,set, s1.privateType, s2.privateType,0)
   }
 
   private def equivalentTypeVariablesAndConstraints(m11: MethodDeclarationG,
@@ -63,12 +69,14 @@ class AmadioCardelliSubtypingG(
   private def innerSubType(labelVariableEnv: Environment[TypeVarBounds],
                            alreadySeen: SubtypingAssumptions,
                            t1: LabelG,
-                           t2: LabelG): SubtypingAssumptions= {
+                           t2: LabelG,deep:Int): SubtypingAssumptions= {
+
     println("**********************")
-    println(s"Generic var constraint : $alreadySeen")
+    println(deep)
+    println(s"label env: ${labelVariableEnv.prettyPrint}")
     println(s"Already seen: $alreadySeen")
-    println(s"Already seen: $labelVariableEnv")
-    println(s"st goal: $t1 and $t2")
+
+    println(s"st goal: ${t1.prettyPrint()} and ${t2.prettyPrint()}")
     println("*********************")
 
     if (alreadySeen.exists((x) => TypeEquivalenceG.alphaEq(x._1, t1) &&
@@ -78,47 +86,59 @@ class AmadioCardelliSubtypingG(
       val newSet = alreadySeen + Tuple2(t1, t2)
       //println("In subtyping rules")
       (t1, t2) match {
+        // T <: Top
         case (_, t) if TypeEquivalenceG.alphaEq(t, ObjectType.top) => newSet
         //little optimization
         //case (_,_) if TypeEquivalence.alphaEq(t1,t2) =>true
-        case (gv1: LabelVar,gv2:LabelVar) =>
+        case (union@UnionLabel(t11,t12),_)=>
+          val set = innerSubType(labelVariableEnv,newSet,t11,t2,deep+1)
+          innerSubType(labelVariableEnv,set,t12,t2,deep+1)
+        case (_,union@UnionLabel(t21,t22))=>
+          //it should be one or the other one
+          try {
+            innerSubType(labelVariableEnv, newSet, t1, t21,deep+1)
+          }
+          catch {
+            case x: SubtypingError => innerSubType(labelVariableEnv,newSet,t1,t22,deep+1)
+          }
+        case (gl1:LabelVar,gl2:LabelVar) =>
           //little optimization
-          if(gv1 == gv2)
+          if(gl1 == gl1)
             newSet
-          else {
-            val bounds1 = labelVariableEnv.lookup(gv1.name)
-            val bounds2 = labelVariableEnv.lookup(gv2.name)
+          else{
+            val bounds1 = labelVariableEnv.lookup(gl1.name)
+            val bounds2 = labelVariableEnv.lookup(gl2.name)
             val set = innerSubType(
               labelVariableEnv,
               newSet,
               bounds2.lower,
-              bounds1.lower)
+              bounds1.lower, deep + 1)
             innerSubType(
               labelVariableEnv,
               set,
               bounds1.upper,
-              bounds2.upper)
+              bounds2.upper, deep + 1)
           }
-        case (gv1: LabelVar,t) =>
-          val upperBound = labelVariableEnv.lookup(gv1.name).upper
-          if(upperBound == t)
+        case (gl1: LabelVar, t) =>
+          val upperBound = labelVariableEnv.lookup(gl1.name).upper
+          if (upperBound == t)
             newSet
           else
             innerSubType(
               labelVariableEnv,
               newSet,
               upperBound,
-              t)
-        case (t,gv2:LabelVar) =>
+              t, deep + 1)
+        case (t, gv2: LabelVar) =>
           val lowerBound = labelVariableEnv.lookup(gv2.name).lower
-          if(lowerBound == t)
+          if (lowerBound == t)
             newSet
           else
             innerSubType(
               labelVariableEnv,
               newSet,
               t,
-              lowerBound)
+              lowerBound, deep + 1)
         case (RecordTypeG(methodsR1), RecordTypeG(methodsR2)) =>
           var set = newSet
           for (m2 <- methodsR2) {
@@ -147,27 +167,16 @@ class AmadioCardelliSubtypingG(
           }
           set
         case (ot1@ObjectType(_, _), _) =>
-          innerSubType(labelVariableEnv,newSet, unfold(ot1), t2)
+          innerSubType(labelVariableEnv,newSet, unfold(ot1), t2,deep+1)
         case (_, ot2@ObjectType(_, _)) =>
           if(ot2.isPrimitive)
             throw SubtypingError("Not!")
-          innerSubType(labelVariableEnv,newSet, t1, unfold(ot2))
+          innerSubType(labelVariableEnv,newSet, t1, unfold(ot2),deep+1)
         case (p1: PrimType, p2: PrimType) =>
           if(p1 == p2) newSet
-          else innerSubType(labelVariableEnv,newSet, p1.toObjType, p2.toObjType)
+          else innerSubType(labelVariableEnv,newSet, p1.toObjType, p2.toObjType,deep+1)
         case (p1: PrimType, _) =>
-          innerSubType(labelVariableEnv,newSet, p1.toObjType, t2)
-        case (union@UnionLabel(t11,t12),_)=>
-          val set = innerSubType(labelVariableEnv,newSet,t11,t2)
-          innerSubType(labelVariableEnv,set,t12,t2)
-        case (_,union@UnionLabel(t21,t22))=>
-          //it should be one or the other one
-          try {
-            innerSubType(labelVariableEnv, newSet, t1, t21)
-          }
-          catch {
-            case x: SubtypingError => innerSubType(labelVariableEnv,newSet,t1,t22)
-          }
+          innerSubType(labelVariableEnv,newSet, p1.toObjType, t2,deep+1)
         case _ => throw SubtypingError("Not!")
       }
     }

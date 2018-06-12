@@ -11,12 +11,12 @@ trait ITypeSubsG{
     * @return
     */
   def substRecVar(t: LabelG, x: String, t2: LabelG): LabelG
-  def substLabelVar(t: LabelG, x: String, t2: LabelG): LabelG
+  def substLabel(t: LabelG, labelVar: BoundedLabelVar, t2: LabelG): LabelG
 }
 /**
   * Implements avoiding capture substitution for ObSecG.
   */
-object TypeSubstG {
+class TypeSubstG(auxiliaryFunctions: IAuxiliaryFunctions) extends ITypeSubsG {
   /**
     * Substitutes the type variable [x] by the type [t2] in the type
     * [t].
@@ -75,15 +75,15 @@ object TypeSubstG {
   }
   def substLabel(containerType: LabelG, labelVar: BoundedLabelVar, actualType: LabelG): LabelG = {
     if (labelVar.isAster && TypeEquivalenceG.alphaEq(labelVar.lowerBound,actualType)) {
-      substLabelVar(containerType,labelVar.typeVar,actualType,isLowerSubst = true)
+      auxiliaryFunctions.normalize(containerType,labelVar)
     }
     else {
-      substLabelVar(containerType,labelVar.typeVar,actualType,isLowerSubst = false)
+      substLabelVar(containerType,labelVar.typeVar,actualType)
     }
   }
 
     //let assume that t2 is closed (it does not contains free type vars)
-  def substLabelVar(t: LabelG, x: String, t2: LabelG,isLowerSubst:Boolean): LabelG = t match {
+  private def substLabelVar(t: LabelG, x: String, t2: LabelG): LabelG = t match {
     case p:PrimType => p
     case TypeVar(y: String) => t
     case lv@LabelVar(y) => if(x==y) t2 else t
@@ -94,11 +94,11 @@ object TypeSubstG {
             m.mType.typeVars,
             m.mType.domain.map(stype =>
               STypeG(
-                substLabelVar(stype.privateType, x, t2,isLowerSubst).asInstanceOf[TypeG],
-                substLabelVar(stype.publicType, x, t2,isLowerSubst))),
+                substLabelVar(stype.privateType, x, t2).asInstanceOf[TypeG],
+                substLabelVar(stype.publicType, x, t2))),
             STypeG(
-              substLabelVar(m.mType.codomain.privateType, x, t2,isLowerSubst).asInstanceOf[TypeG],
-              substLabelVar(m.mType.codomain.publicType, x, t2,isLowerSubst)
+              substLabelVar(m.mType.codomain.privateType, x, t2).asInstanceOf[TypeG],
+              substLabelVar(m.mType.codomain.publicType, x, t2)
             )))))
     case ObjectType(y, methods) =>
       ObjectType(
@@ -112,21 +112,14 @@ object TypeSubstG {
               MTypeG(
                 m.mType.typeVars,
                 m.mType.domain.map(stype => STypeG(
-                  substLabelVar(stype.privateType,x, t2,isLowerSubst).asInstanceOf[TypeG],
-                  substLabelVar(stype.publicType,x, t2,isLowerSubst))),
+                  substLabelVar(stype.privateType,x, t2).asInstanceOf[TypeG],
+                  substLabelVar(stype.publicType,x, t2))),
                 STypeG(
-                  substLabelVar(m.mType.codomain.privateType, x, t2,isLowerSubst).asInstanceOf[TypeG],
-                  substLabelVar(m.mType.codomain.publicType, x, t2,isLowerSubst))
+                  substLabelVar(m.mType.codomain.privateType, x, t2).asInstanceOf[TypeG],
+                  substLabelVar(m.mType.codomain.publicType, x, t2))
               ))))
     case UnionLabel(left,right)=>
-      if(isLowerSubst){
-        (left,right) match {
-          case (labelVar: LabelVar,_) if labelVar.isAster => right
-          case (_, labelVar: LabelVar) if labelVar.isAster => left
-          case _ =>
-        }
-      }
-      UnionLabel(substLabelVar(left, x, t2,isLowerSubst),substLabelVar(right, x, t2,isLowerSubst))
+      UnionLabel(substLabelVar(left, x, t2),substLabelVar(right, x, t2))
       //TODO: Implement normarlization of UnionLabel after substituting X*s
 
   }
@@ -184,4 +177,15 @@ object TypeSubstG {
   }
 
   private def freeSelfVars(t: LabelG): List[String] = freeSelfVars(Set(), t)
+}
+object TypeSubstG{
+  def substLabel(containerType: LabelG, tv: BoundedLabelVar, actualLabel: LabelG):LabelG = {
+    val instance = new TypeSubstG(new AuxiliaryFunctions)
+    instance.substLabel(containerType,tv,actualLabel)
+  }
+
+  def substRecVar(t: LabelG, x: String, t2: LabelG): LabelG = {
+    val instance = new TypeSubstG(new AuxiliaryFunctions)
+    instance.substRecVar(t,x,t2)
+  }
 }

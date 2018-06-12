@@ -1,5 +1,6 @@
 package ObSecG.Ast
 
+import Common.PrettyPrint
 import ObSec.Ast.SType
 import ObSecG.Static.{TypeEquivalenceG, TypeSubstG}
 
@@ -9,7 +10,7 @@ import ObSecG.Static.{TypeEquivalenceG, TypeSubstG}
   * @param privateType The private facet
   * @param publicType  The public facet
   */
-case class STypeG(privateType: TypeG, publicType: LabelG) extends GObSecElement {
+case class STypeG(privateType: TypeG, publicType: LabelG) extends GObSecElement with PrettyPrint {
   def map(f: TypeG => TypeG, g: LabelG => LabelG): STypeG =
     STypeG(f(privateType), g(publicType))
 
@@ -21,6 +22,8 @@ case class STypeG(privateType: TypeG, publicType: LabelG) extends GObSecElement 
      s"$privateType<$pString"
    }*/
   override def toString: String = s"ST($privateType,$publicType)"
+
+  override def prettyPrint(): String = s"ST(${privateType.prettyPrint()},${publicType.prettyPrint()})"
 }
 
 
@@ -28,7 +31,9 @@ trait IObject{
   def methSig(x: String): MTypeG
   def containsMethod(x: String): Boolean
 }
-trait LabelG extends IObject
+trait LabelG extends IObject with PrettyPrint
+
+
 
 /**
   * Represents an abstract type in ObSec
@@ -66,6 +71,8 @@ case class LabelVar(name: String) extends LabelG{
     isAster = b
     this
   }
+
+  override def prettyPrint(): String = s"lab($name)"
 }
 
 
@@ -73,12 +80,16 @@ object Bottom extends LabelG {
   override def methSig(x: String): MTypeG =  throw new Error("methSig over bottom")
 
   override def containsMethod(x: String): Boolean = false
+
+  override def prettyPrint(): String = "bot"
 }
 
 case class UnionLabel(left: LabelG,right: LabelG) extends LabelG {
   override def methSig(x: String): MTypeG = throw new Error("notimplemented: UnionLabel.methsig")
 
   override def containsMethod(x: String): Boolean = throw new Error("notimplemented: UnionLabel.containsMethod")
+
+  override def prettyPrint(): String = s"${left.prettyPrint()} v ${right.prettyPrint()}"
 }
 
 
@@ -112,6 +123,8 @@ case class ObjectType(selfVar: String, methods: List[MethodDeclarationG]) extend
   override def containsMethod(m: String): Boolean = methods.exists(x => x.name == m)
 
   override def toString: String = s"OT($selfVar,$methods)"
+
+  override def prettyPrint(): String = s"OT($selfVar,$methods)"
 }
 
 
@@ -131,6 +144,8 @@ case class TypeVar(name: String) extends TypeG {
   override def containsMethod(x: String): Boolean = throw new Error("Type var does not have methods")
 
   override def toString: String = name
+
+  override def prettyPrint(): String = s"tvar($name)"
 }
 
 /*case class GenericTypeVar(name: String) extends TypeG {
@@ -155,6 +170,7 @@ object UnUsedTypeVars {
 
 trait PrimType {
   def toObjType: ObjectType
+  def prettyPrint():String = toString
 }
 
 case object IntType extends TypeG with PrimType {
@@ -382,4 +398,6 @@ case class BoundedLabelVar(typeVar: String
 }
 
 
-case class TypeVarBounds(lower:LabelG,upper:LabelG)
+case class TypeVarBounds(lower:LabelG,upper:LabelG) extends PrettyPrint {
+  override def prettyPrint(): String = s"${lower.prettyPrint()}..${upper.prettyPrint()}"
+}

@@ -1,5 +1,6 @@
 package ObSec.Ast
 
+import Common.PrettyPrint
 import ObSec.Static.{TypeEquivalence, TypeSubst}
 
 /**
@@ -26,10 +27,12 @@ case class SType(privateType: Type, publicType: Type) {
   * Represents an abstract type in ObSec
   * T ::= Obj(X)[mtype ...] | X
   */
-trait Type {
+trait Type extends PrettyPrint{
   def methSig(x: String): MType
 
   def containsMethod(x: String): Boolean
+
+  override def prettyPrint(): String = toString
 }
 
 /**

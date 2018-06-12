@@ -16,6 +16,16 @@ abstract class Environment[T] {
   def toList:List[(String,T)]
   //not a pure OO method but it is convenient
   def extend(x:String,v:T):Environment[T] = new ExtEnvironment(this,x,v)
+
+  def prettyPrint: String =
+    toList.foldLeft("")(
+      (acc,x)=>
+        acc + s"(${x._1}:${
+          x._2 match {
+            case pp: PrettyPrint => pp.prettyPrint()
+            case _ => x._2.toString
+          }
+        })")
 }
 private class EmptyEnvironment[T] extends Environment[T]{
   override def lookup(x: String): T = throw new Error("Empty environment")

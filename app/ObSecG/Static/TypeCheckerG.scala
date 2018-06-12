@@ -67,21 +67,14 @@ class TypeChecker(judgements: GObSecJudgmentsExtensions,
         if (mType.typeVars.size != types.size)
           throw TypeErrorG.actualTypeParametersMustMatchFormalTypeParameterAmount(expr.astNode,m)
 
-        var extendedGenVarEnv = auxiliaryFunctions.multiExtend(genVarEnv, mType.typeVars)
+        //actual type arguments are good for formal type arguments
+        var extendedGenVarEnv = genVarEnv
         for (pair <- mType.typeVars.zip(types)) {
-          pair._1 match {
-            case BoundedLabelVar(x, lowerBound,ubound) =>
-              if (!judgements.<::(
-                genVarEnv,
-                pair._2,
-                auxiliaryFunctions.tUpperBound(extendedGenVarEnv, pair._1.upperBound)))
-                throw TypeErrorG.badActualLabelArgument(e1.astNode,m,pair._1.typeVar)
-              if (!judgements.<::(
-                genVarEnv,
-                pair._1.lowerBound,
-                pair._2))
-                throw TypeErrorG.badActualLabelArgument(e1.astNode,m,pair._1.typeVar)
-          }
+          //TODO: finish
+          extendedGenVarEnv = genVarEnv.extend(pair._1.typeVar,TypeVarBounds(pair._1.lowerBound,pair._1.upperBound))
+          if(!typeInBound(extendedGenVarEnv,pair._2,pair._1))
+            throw TypeErrorG.badActualLabelArgument(e1.astNode, m, pair._1.typeVar)
+
         }
         //check the argument count
         if (mType.domain.size != args.size)
@@ -102,7 +95,7 @@ class TypeChecker(judgements: GObSecJudgmentsExtensions,
           closeGenType(mType.codomain,
             publicFacet.methSig(m).typeVars.zip(types))
         else
-          closeGenType(STypeG(mType.codomain.privateType, UnionLabel(mType.codomain.publicType,publicFacet)),
+          closeGenType(STypeG(mType.codomain.privateType, UnionLabel(mType.codomain.publicType, s1.publicType)),
             privateFacet.methSig(m).typeVars.zip(types))
 
       }
@@ -214,6 +207,13 @@ class TypeChecker(judgements: GObSecJudgmentsExtensions,
       val tList = typeCheck(genVarEnv, scope, aliasScope, list)
       val tElem = typeCheck(genVarEnv, scope, aliasScope, elem)
       throw new NotImplementedError()
+  }
+
+  private def typeInBound(genVarEnv: LabelVarEnvironment,
+                          actualType:LabelG,
+                          formalTypeArgument: BoundedLabelVar):Boolean = {
+     judgements.<::(genVarEnv, actualType, formalTypeArgument.upperBound) &&
+       judgements.<::(genVarEnv, formalTypeArgument.lowerBound, actualType)
   }
 
   def closeAliases(aliasScope: TypeAliasScope, sType: STypeG): STypeG = {

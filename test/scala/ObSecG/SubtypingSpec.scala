@@ -7,12 +7,31 @@ import org.scalatest.{FlatSpec, Matchers}
 
 class SubtypingSpec extends FlatSpec with Matchers with ElementServiceBaseSpec {
 
-  "Type [Obj(a){m<T> : T -> T}]" must "be well formed" in{
+  "Subtyping between union type and label variable" must "work" in{
 
-    val env = Environment.empty[TypeVarBounds]()
-              .extend("T",TypeVarBounds(Bottom,ObjectType.top))
+    val left  =  UnionLabel(IntType,LabelVar("T"))
+    val rigth  =  LabelVar("T1")
+
+    val env = Environment.empty[TypeVarBounds]().
+      extend("T",TypeVarBounds(IntType,OT("X2",List()))).
+      extend("T1",TypeVarBounds(LabelVar("T"),OT("X2",List())))
+
     var judgements = new GObSecGJudgmentImpl(new ErrorCollector)
     var subtypingChecker = new AmadioCardelliSubtypingG(judgements,judgements.errorCollector)
-    assert(subtypingChecker.<::(env,GV("T"),GV("T")))
+    //T: Int .. Top, T1: T ..Top
+    assert(subtypingChecker.<::(env,left,rigth))
+  }
+  "Subtyping between Int and type variable bound" must "work" in{
+
+    val left  =  IntType
+    val env = Environment.empty[TypeVarBounds]().
+      extend("T",TypeVarBounds(IntType,OT("X2",List()))).
+      extend("T1",TypeVarBounds(LabelVar("T"),OT("X2",List())))
+
+    var judgements = new GObSecGJudgmentImpl(new ErrorCollector)
+    var subtypingChecker = new AmadioCardelliSubtypingG(judgements,judgements.errorCollector)
+    //T: Int .. Top, T1: T ..Top
+    //assert(subtypingChecker.<::(env,left,ObjectType.top))
+    assert(subtypingChecker.<::(env,LabelVar("T"),IntType))
   }
 }

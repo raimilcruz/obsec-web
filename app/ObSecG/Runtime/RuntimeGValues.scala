@@ -2,13 +2,15 @@ package ObSecG.Runtime
 
 package ObSec.Runtime {
 
-  import Common.{Environment, StuckError}
+  import Common.{Environment, PrettyPrint, StuckError}
   import ObSecG.Ast._
 
-  abstract class RuntimeGValue {
+  abstract class RuntimeGValue extends PrettyPrint {
     type Evaluator = (Environment[RuntimeGValue], ObSecGExpr) => RuntimeGValue
 
     def invoke(m: String, args: List[RuntimeGValue], eval: Evaluator): RuntimeGValue
+
+    override def prettyPrint(): String = toString
   }
 
   /**

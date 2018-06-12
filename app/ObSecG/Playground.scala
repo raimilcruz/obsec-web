@@ -1,5 +1,11 @@
 package ObSecG
 
+object Playground{
+  def main(args:Array[String]):Unit={
+    print(foo[Int,Int](1))
+  }
+  def foo[T >: Int, T1 >: T](x:T):T1 = x
+}
 /*class Playground {
   def usage1():Unit={
     val a: SecType[SecString,StringConcat]
