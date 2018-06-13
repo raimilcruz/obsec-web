@@ -30,6 +30,8 @@ class TypeSubstG(auxiliaryFunctions: IAuxiliaryFunctions) extends ITypeSubsG {
     case p:PrimType => p
     case TypeVar(y: String) => if (x == y) t2 else t
     case gv:LabelVar => gv
+    case UnionLabel(l1,l2)=>
+      UnionLabel(substRecVar(l1,x,t2),substRecVar(l2,x,t2))
     case RecordTypeG(methods) =>
       RecordTypeG(methods.map(m =>
         MethodDeclarationG(m.name,

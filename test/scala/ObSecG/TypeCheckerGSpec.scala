@@ -11,7 +11,7 @@ import org.scalatest.{FlatSpec, Matchers}
   */
 class TypeCheckerGSpec extends FlatSpec with Matchers with ElementServiceBaseSpec{
 
-  "Type checker with : {z : [Obj(a){m[T super Int] : Int<T -> Int<T}] => def m(x)= x}" should "work" in{
+  "Type checker with : {z : [ot a {m[T super Int] : Int<T -> Int<T}] => def m(x)= x}" should "work" in{
     val methodType =
       MTypeG(
         List(BoundedLabelVar("T",IntType,ObjectType.top)),
@@ -80,55 +80,20 @@ class TypeCheckerGSpec extends FlatSpec with Matchers with ElementServiceBaseSpe
 
      assert(TypeCheckerG(expr) == st)
    }
+   */
 
    "Type parameter " should "be in scope for method definition" in{
-      /*"{z : [Obj(a)[m<T <: Int> : T<Int -> [{m2<T1<: T> : T<Int -> T<T}]<L ]] " +
+      val program = "{z : " +
+        "{ot a {m[T super Int] : Int<T -> [{m2[T1 super T] : Int<T -> Int<T}]<L }} " +
        "=> " +
-       "def m(p)= {z1 : [{m2<T1<: T> : T<Int -> T<T}]
-                         =>
-                         def m2(p2} = p2.add(1)}"
-       */
-      val innerOt =
-        OT("b",
-          List(
-            MD("m2",
-              MTypeG(
-                List(TypeVarSub("T1",GV("T"))),
-                List(ST(GV("T"),IntType)),
-                ST(GV("T"),GV("T"))
-              ))
-          ))
-      var innerSt =
-        ST(
-          innerOt,innerOt)
-       val methodType =
-         MTypeG(
-           //T<: {eq:Int->Bool}
-           List(
-             TypeVarSub("T",IntType)),
-           //:T->Bool
-           List(ST(GV("T"),IntType)),
-           innerSt
-          )
-       val objType = OT("a",List(MD("m",methodType)))
-       val st = ST(objType,objType)
-       val innerObj =
-       Obj("z1",innerSt,
-         //def m(p)=> p.add(1)
-         List(MethodDef("m2",List("p2"),
-           MethodInv(
-             Var("p2"),
-             List(),
-             List(IntExpr(1)),
-             "+"
-           ))))
-
-       val expr =
-         Obj("z",st,
-         //def m(p)=> {z1 : ...}
-         List(MethodDef("m",List("p"),innerObj)))
-       assert(TypeCheckerG(expr) == st)
-   }*/
+       "def m p  = {z1 : " +
+        "[{m2[T1 super T] : Int<T -> Int<T}] " +
+        "=> def m2 p2 = p2.+[Int](1)}}"
+     ObSecGParser(program) match{
+       case Right(ast)=>
+         assert(TypeCheckerG(ObSecGIdentifierResolver(ast)) == ST(IntType,IntType))
+     }
+   }
   "Invocation of add over int " must "work" in {
     var program = "1.+[Int](1)"
     ObSecGParser(program) match{
@@ -154,12 +119,23 @@ class TypeCheckerGSpec extends FlatSpec with Matchers with ElementServiceBaseSpe
       case Right(ast)=> assert(TypeCheckerG(ObSecGIdentifierResolver(ast)) == ST(IntType,IntType))
     }
   }
-  "Type substitution for generic variable " should "work" in {
-    var program = "{z : {ot X {m[T super Int] : Int<T -> Int<T}}<L => \n def m p  = p \n }.m[String](1)"
+  "Method invocation with wrong actual type parameters" should "work" in {
+    var program = "{z : {ot X {m[T super Int] : Int<T -> Int<T}}<L => \n def m p  = p \n }.m[String](\"a\")"
     ObSecGParser(program) match{
       case Right(ast)=>
         val expr = ObSecGIdentifierResolver(ast)
-        TypeCheckerG(expr)
+        val exp = intercept[TypeErrorG] {
+          TypeCheckerG(expr)
+        }
+        assert(exp.analysisError.errorCode == TypeCheckerErrorCodes.badActualLabelArgument)
+    }
+  }
+
+  "Invocation of generic method with wrong actual argument" should "work" in {
+    var program = "{z : {ot X {m[T super Int] : Int<T -> Int<T}}<L => \n def m p  = p \n }.m[Int](\"a\")"
+    ObSecGParser(program) match{
+      case Right(ast)=>
+        val expr = ObSecGIdentifierResolver(ast)
         val exp = intercept[TypeErrorG] {
           TypeCheckerG(expr)
         }

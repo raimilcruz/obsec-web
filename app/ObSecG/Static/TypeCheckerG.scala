@@ -69,12 +69,17 @@ class TypeChecker(judgements: GObSecJudgmentsExtensions,
 
         //actual type arguments are good for formal type arguments
         var extendedGenVarEnv = genVarEnv
+        var substitutions = List[(BoundedLabelVar,LabelG)]()
         for (pair <- mType.typeVars.zip(types)) {
           //TODO: finish
-          extendedGenVarEnv = genVarEnv.extend(pair._1.typeVar,TypeVarBounds(pair._1.lowerBound,pair._1.upperBound))
-          if(!typeInBound(extendedGenVarEnv,pair._2,pair._1))
+          val closedLowerBound =closeGenType(pair._1.lowerBound,substitutions)
+          val closeUpperBound = closeGenType(pair._1.upperBound,substitutions)
+          extendedGenVarEnv = genVarEnv.extend(
+            pair._1.typeVar,
+            TypeVarBounds(closedLowerBound,closedLowerBound))
+          if(!typeInBound(extendedGenVarEnv,pair._2,closedLowerBound,closeUpperBound))
             throw TypeErrorG.badActualLabelArgument(e1.astNode, m, pair._1.typeVar)
-
+          substitutions = substitutions ++ List((pair._1,pair._2))
         }
         //check the argument count
         if (mType.domain.size != args.size)
@@ -211,9 +216,9 @@ class TypeChecker(judgements: GObSecJudgmentsExtensions,
 
   private def typeInBound(genVarEnv: LabelVarEnvironment,
                           actualType:LabelG,
-                          formalTypeArgument: BoundedLabelVar):Boolean = {
-     judgements.<::(genVarEnv, actualType, formalTypeArgument.upperBound) &&
-       judgements.<::(genVarEnv, formalTypeArgument.lowerBound, actualType)
+                          lower: LabelG, upper:LabelG):Boolean = {
+     judgements.<::(genVarEnv, actualType, upper) &&
+       judgements.<::(genVarEnv, lower, actualType)
   }
 
   def closeAliases(aliasScope: TypeAliasScope, sType: STypeG): STypeG = {
@@ -241,8 +246,14 @@ class TypeChecker(judgements: GObSecJudgmentsExtensions,
       ), t)
 
   }
+  private def closeGenType(openType: LabelG,
+                           substitutions: List[(BoundedLabelVar, LabelG)]
+                          ): LabelG = substitutions match {
+    case List() => openType
+    case (tv,actualLabel) :: t =>
+      closeGenType(TypeSubstG.substLabel(openType, tv, actualLabel), t)
 
-
+  }
 }
 
 object TypeCheckerG {
