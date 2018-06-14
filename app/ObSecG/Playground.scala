@@ -2,7 +2,11 @@ package ObSecG
 
 object Playground{
   def main(args:Array[String]):Unit={
-    print(foo[Int,Int](1))
+    var s =
+      "type variable %s does %s not satisfy subtyping" +
+      " constraint "
+
+    println(s.format(List("1","2"):_*))
   }
   def foo[T >: Int, T1 >: T](x:T):T1 = x
 }

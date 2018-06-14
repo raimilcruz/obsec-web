@@ -25,7 +25,7 @@ class NestedScope[T](parent: Scope[T]) extends Scope[T] {
 
   override def add(x: String, v: T): Unit = {
     if (bindings.contains(x))
-      throw new Error("Variable is already in this scope")
+      throw CommonError.variableAlreadyDefined(x)
     bindings(x) = v
   }
 

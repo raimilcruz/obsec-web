@@ -1,6 +1,8 @@
 package ObSecG.Ast
 
-sealed trait ErrorCodesEnum
+import Common.{AnalysisError, ErrorCode, ErrorCodesEnum, ThrowableAnalysisError}
+
+
 object DuplicatedMethodInObjectType extends ErrorCodesEnum
 object DuplicatedMethodInObject extends ErrorCodesEnum
 object InvalidTypeForPrivateFacet extends  ErrorCodesEnum
@@ -34,13 +36,10 @@ object ResolverErrorCodes{
       "Variable %s is not defined")
 }
 
-case class ErrorCodeG(code: ErrorCodesEnum, message: String)
+case class ErrorCodeG(code: ErrorCodesEnum, message: String) extends ErrorCode
 
-class AnalysisError(val node: ObSecGAstNode, val errorCode: ErrorCodeG,val parameters: List[String] = List()){
-  override def toString: String = errorCode.message.format(parameters)
-}
 
-case class ResolverError(analysisError: AnalysisError) extends Error
+case class ResolverError(analysisError: AnalysisError) extends ThrowableAnalysisError
 object ResolverError{
   def variableNotDefined(expression: ObSecGAstExprNode,variableName:String): ResolverError =
     resolverError(expression,ResolverErrorCodes.variableIsNotDefined,List(variableName))
@@ -62,7 +61,7 @@ object ResolverError{
     resolverError(node,ResolverErrorCodes.duplicatedMethodInObjectType)
   }
 
-  def duplicatedMethodInObject(expression: ObSecGAstExprNode): ResolverError =
+  def duplicatedMethodInObject(expression: ObSecGAstNode): ResolverError =
     resolverError(expression,ResolverErrorCodes.duplicatedMethodInObject)
 }
 
@@ -93,7 +92,7 @@ object TypeCheckerErrorCodes{
 
   def methodNotFound: ErrorCodeG =
     ErrorCodeG(MethodNotFound,
-      "Method %s not found")
+      "Method '%s' not found")
 
   def subTypingError: ErrorCodeG =
     ErrorCodeG(SubTypingError,
@@ -105,7 +104,7 @@ object TypeCheckerErrorCodes{
         s" type variable %s does not satisfy subtyping" +
         s" constraint")
 
-  def actualTypeParametersMustMatchFormalTypeParameterAmount: ErrorCodeG =
+  def actualTypeParametersSizeError: ErrorCodeG =
     ErrorCodeG(ActualTypeParametersMustMatchFormalTypeParameterAmount,
       "Method '%s' : Actual types amount must" +
         s" match the formal type variable amount")
@@ -116,10 +115,10 @@ object TypeCheckerErrorCodes{
         s" match the formal arguments amount")
 }
 
-case class TypeErrorG(analysisError: AnalysisError) extends Error
+case class TypeErrorG(analysisError: AnalysisError) extends ThrowableAnalysisError
 object TypeErrorG{
-  def actualArgumentsSizeError(expr: MethodInv): TypeErrorG =
-    typeError(expr.astNode,TypeCheckerErrorCodes.actualArgumentsSizeError,List(expr.method))
+  def actualArgumentsSizeError(expr: GObSecElement,method:String): TypeErrorG =
+    typeError(expr.astNode,TypeCheckerErrorCodes.actualArgumentsSizeError,List(method))
 
   def sameTypeForIfBranches(node: ObSecGAstNode): TypeErrorG =
     typeError(node,TypeCheckerErrorCodes.sameTypeForIfBranches)
@@ -139,8 +138,8 @@ object TypeErrorG{
   def badActualLabelArgument(node:ObSecGAstNode, method: String, typeVar: String): TypeErrorG =
     typeError(node,TypeCheckerErrorCodes.badActualLabelArgument,List(method,typeVar))
 
-  def actualTypeParametersMustMatchFormalTypeParameterAmount(node:ObSecGAstNode, method: String): TypeErrorG =
-    typeError(node,TypeCheckerErrorCodes.actualTypeParametersMustMatchFormalTypeParameterAmount,List(method))
+  def actualTypeParametersSizeError(node:ObSecGAstNode, method: String): TypeErrorG =
+    typeError(node,TypeCheckerErrorCodes.actualTypeParametersSizeError,List(method))
 
   private def typeError(node: ObSecGAstNode, errorCode: ErrorCodeG, parameters:List[String]=List())=
     TypeErrorG(new AnalysisError(node,errorCode,parameters))

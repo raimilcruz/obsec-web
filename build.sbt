@@ -3,6 +3,7 @@ name := """obsec-web"""
 version := "0.0.2"
 
 lazy val root = (project in file(".")).enablePlugins(PlayScala)
+//lazy val languageservice = project
 
 scalaVersion := "2.11.8"
 

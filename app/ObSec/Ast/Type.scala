@@ -32,7 +32,7 @@ trait Type extends PrettyPrint{
 
   def containsMethod(x: String): Boolean
 
-  override def prettyPrint(): String = toString
+  override def prettyPrint(builder:StringBuilder): Unit = builder.append(toString)
 }
 
 /**

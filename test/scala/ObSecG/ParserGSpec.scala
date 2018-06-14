@@ -41,12 +41,12 @@ class ParserGSpec extends FlatSpec with Matchers with BaseSpec {
         //:T->Bool
         List(stA(tI("Int"),tI("T"))),stA(tI("Int"),tI("T")))
     val objType = OT("X",List(MD("m",methodType)))
-    val st = stA(objType,tI("L"))
+    val st = stA(objType,LowLabelNode)
 
     val expr =
       ObjectDefinitionNode("z",st,
         //def m(p)=> p.add(1)
-        List(MethodDefinitionNode("m",List("p"),
+        List(MDef("m",List("p"),
           MI(
             VariableNode("p"),
             List(),
@@ -74,13 +74,13 @@ class ParserGSpec extends FlatSpec with Matchers with BaseSpec {
           stA(tI("Int"),tI("T"))),
         stA(tI("Int"),tI("T")))
     val objType = OT("X",List(MD("m",methodType)))
-    val st = stA(objType,tI("L"))
+    val st = stA(objType,LowLabelNode)
 
     val expr =
       ObjectDefinitionNode("z",st,
         //def m(p)=> p.add(1)
         List(
-          MethodDefinitionNode("m",
+          MDef("m",
             List("p"),
             MI(
               VariableNode("p"),
@@ -185,9 +185,9 @@ class ParserGSpec extends FlatSpec with Matchers with BaseSpec {
                         "T",
                         tI("Int")),
                       bL("T1",tI("T"),tI("Top"))),
-                    List(stA(tI("Int"),tI("T"))),stA(tI("Int"),tI("T1")))))),tI("L")),
+                    List(stA(tI("Int"),tI("T"))),stA(tI("Int"),tI("T1")))))),LL),
           List(
-            MethodDefinitionNode(
+            MDef(
               "m",
               List("p"),
               MI("p",List(tI("T")),List(IntLiteral(1)),"+")))),List(tI("Int"), tI("Int")),List(IntLiteral(1)),"m"))

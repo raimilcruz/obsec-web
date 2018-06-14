@@ -8,7 +8,8 @@ case class RecordTypeG(methods: List[MethodDeclarationG]) extends TypeG {
   override def methSig(x: String): MTypeG = throw new NotImplementedError("Not important")
   override def containsMethod(x: String): Boolean = throw new NotImplementedError("Not important")
 
-  override def prettyPrint(): String = toString
+  override def prettyPrint(builder: StringBuilder): Unit =
+    builder.append(toString)
 }
 
 abstract class ISubtypingGObSec(
@@ -76,7 +77,7 @@ class AmadioCardelliSubtypingG(
     println(s"label env: ${labelVariableEnv.prettyPrint}")
     println(s"Already seen: $alreadySeen")
 
-    println(s"st goal: ${t1.prettyPrint()} and ${t2.prettyPrint()}")
+    //println(s"st goal: ${t1.prettyPrint()} and ${t2.prettyPrint()}")
     println("*********************")
 
     if (alreadySeen.exists((x) => TypeEquivalenceG.alphaEq(x._1, t1) &&

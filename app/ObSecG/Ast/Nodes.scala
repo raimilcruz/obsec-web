@@ -1,15 +1,18 @@
 package ObSecG.Ast
-
-import scala.util.parsing.input.Positional
+import Common.AstNode
 
 /**
   * Node:: = Ob
   */
 
-trait ObSecGAstNode extends Positional{
+trait ObSecGAstNode extends AstNode{
   def children: List[ObSecGAstNode]
 }
 sealed trait ObSecGAstExprNode extends ObSecGAstNode
+
+case class SimpleIdentifier(name:String) extends ObSecGAstNode {
+  override def children: List[ObSecGAstNode] = List()
+}
 
 case class VariableNode(name:String) extends ObSecGAstExprNode {
   override def children: List[ObSecGAstNode] = List()
@@ -22,17 +25,25 @@ case class ObjectDefinitionNode(selfName: String,
 }
 
 case class MethodInvocationNode(e1: ObSecGAstExprNode,
-                     types:List[TypeAnnotation],
-                     args: List[ObSecGAstExprNode],
-                     method: String) extends ObSecGAstExprNode {
-  override def children: List[ObSecGAstNode] = args
+                     types:AstNodeList[TypeAnnotation],
+                     args: AstNodeList[ObSecGAstExprNode],
+                     method: SimpleIdentifier) extends ObSecGAstExprNode {
+  override def children: List[ObSecGAstNode] = List(e1) ++ args.elems ++ types.elems ++ List(method)
 }
 
+case class AstNodeList[+T <: ObSecGAstNode](elems: List[T]) extends ObSecGAstNode {
+  if(elems.nonEmpty){
+   setPos(elems.head.pos)
+    setEndPos(elems.last.endPos)
+  }
+  override def children: List[ObSecGAstNode] = elems
+}
 
-case class MethodDefinitionNode(name: String, args: List[String], mBody: ObSecGAstExprNode)
+case class MethodDefinitionNode(methodName: SimpleIdentifier, args: AstNodeList[SimpleIdentifier], mBody: ObSecGAstExprNode)
   extends ObSecGAstNode{
   //override def toString: String = s"{$name : ${args.foldLeft("")((acc,x)=> acc + " " +x)} = $mBody}"
   override def children: List[ObSecGAstNode] = List(mBody)
+  def name:String = methodName.name
 }
 
 case class IfExpressionNode(cond:ObSecGAstExprNode,
@@ -119,7 +130,7 @@ case class NoRecursiveObjectTypeNode(methods: List[MethodDeclarationNode])
   //override def toString: String = s"OT($methods)"
   override def children: List[ObSecGAstNode] = methods
 }
-case class MethodDeclarationNode(name: String, mType: MethodTypeNode)  extends  ObSecGAstNode {
+case class MethodDeclarationNode(name: SimpleIdentifier, mType: MethodTypeNode)  extends  ObSecGAstNode {
  /* override def toString: String = {
     val typeParams =
       mType

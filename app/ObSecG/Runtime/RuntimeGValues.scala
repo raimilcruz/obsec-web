@@ -10,7 +10,8 @@ package ObSec.Runtime {
 
     def invoke(m: String, args: List[RuntimeGValue], eval: Evaluator): RuntimeGValue
 
-    override def prettyPrint(): String = toString
+    override def prettyPrint(builder: StringBuilder): Unit =
+      builder.append(toString)
   }
 
   /**

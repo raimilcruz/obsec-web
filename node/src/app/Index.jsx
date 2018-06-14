@@ -27,27 +27,8 @@ import 'brace/mode/java';
 import 'brace/theme/github';
 
 var Highlight = require('react-highlight');
+import AnalysisIssue from './components/AnalysisIssue';
 
-class MyTextField extends React.Component {
-    oldIdx = 0
-    oldLength = 0
-    componentWillUpdate = (nextProps, nextState) => {
-        const node = $('textarea[name=formula]')[0]
-        this.oldLength = node.value.length;
-        this.oldIdx = node.selectionStart;
-    }
-    componentDidUpdate = (prevProps) => {
-        //var node = ReactDOM.findDOMNode(this);
-        const node = $('textarea[name=formula]')[0]
-        node.value = this.props.value;
-        var newIdx = Math.max(0, node.value.length - this.oldLength + this.oldIdx);
-        node.selectionStart = node.selectionEnd = newIdx;
-    }
-
-    render() {
-        return (<TextField {...this.props} />);
-    }
-}
 const HelpIcon = (props) => (
     <SvgIcon {...props}>
         <path d="M0 0h24v24H0z" fill="none"/>
@@ -122,6 +103,7 @@ export default class Main extends React.Component {
         program: this.findProgramByValue(1).program, //"if true_H::Bool_?  then ref 10_L else ref 20_L",//"(λx: Ref Int.\n    (λy: Unit. !x) (x := 10)\n) (ref 4)",
         desc: this.findProgramByValue(1).desc,
         error: "",
+        analysisIssue:null,
         executionState: 0,
         executionResult: "",
         typingState: 0,
@@ -129,7 +111,8 @@ export default class Main extends React.Component {
         expressionType: "",
         syntaxOpen: false,
         typeDefinitionsOpen:null,
-        anchorEl:null
+        anchorEl:null,
+        markers:[]
     }
 
     componentDidMount() {
@@ -153,7 +136,8 @@ export default class Main extends React.Component {
         //this.guessPlusSymbol(v);
         this.setState({
             program: v,//v.replace("\\", "λ").replace("&", "∧").replace("|", "∨"),
-            typingState: 0
+            typingState: 0,
+            markers:[]
         })
     }
 
@@ -163,7 +147,7 @@ export default class Main extends React.Component {
 
     changeDefaultProgram = (event, index, defaultProgram) => {
         let p = this.findProgramByValue(defaultProgram);
-        this.setState({defaultProgram, program: p.program, desc: p.desc,typingState:0})
+        this.setState({defaultProgram, program: p.program, desc: p.desc,typingState:0,markers:[]})
     };
 
     typecheck = () => {
@@ -183,8 +167,17 @@ export default class Main extends React.Component {
                                 //TODO: Do extra things here if needed
                             })
                         }
+
+                        else if(res.body.status == "AnalysisKO"){
+                            this.setState({
+                                error: res.body.issue.message,
+                                analysisIssue: res.body.issue,
+                                typingState: -1
+                            }, () => {
+                            })
+                        }
                         else {
-                            this.setState({error: res.body.error, typingState: -1});
+                            this.setState({error: res.body.error, typingState: -2});
                         }
                     }
                 });
@@ -209,7 +202,8 @@ export default class Main extends React.Component {
                                 //TODO: extra things here
 
                             })
-                        } else {
+                        }
+                        else  {
                             alert('Oh no! error ' + res.body.error);
                         }
                     }
@@ -244,6 +238,13 @@ export default class Main extends React.Component {
     handleRequestClose = () => {
         this.setState({
             typeDefinitionsOpen: null,
+        });
+    };
+    handleIssueClick = (issue) => {
+        let position = issue.position;
+        this.setState({
+            markers: [{ startRow: position.line, startCol: position.columnStart,
+                endRow: position.lineEnd, endCol: position.columnEnd, className: 'errorHighlight', type: 'text' }]
         });
     };
 
@@ -452,6 +453,7 @@ export default class Main extends React.Component {
                             maxLines={30}
                             onKeyDown={this.onKeyDown}
                             editorProps={{$blockScrolling: true}}
+                            markers={this.state.markers}
                         />
 
                         <IconButton tooltip="See syntax" onClick={this.syntaxHandleOpen}>
@@ -468,7 +470,7 @@ export default class Main extends React.Component {
                                 this.state.typingState === 1 ?
                                     <div>
                                         <Subheader>Expression Type</Subheader>
-                                        <div> {this.state.expressionType}</div>
+                                        <div className='p_wrap'> {this.state.expressionType}</div>
                                         <div style={{marginTop: '16px'}}>
                                             <RaisedButton label="Execute!" primary={true} onClick={this.reduce}/>
                                         </div>
@@ -490,13 +492,21 @@ export default class Main extends React.Component {
                                                 </div> : null
                                         }
                                     </div>
-                                    :
+                                    : (this.state.typingState === -1 ?
                                     <div>
-                                        <Subheader>Type checking error</Subheader>
-                                        <div  style={errorStyle}>{this.state.error.split('\n').map((item, key) => {
-                                            return <span key={key}>{item}<br/></span>
-                                        })}</div>
-                                    </div>
+                                        <div className="analysisResultTitle">Analysis Error</div>
+                                        <div className="analysisResultBody">
+                                            <AnalysisIssue
+                                                key = {1}
+                                                issue={this.state.analysisIssue}
+                                                handleClick={this.handleIssueClick}
+                                            />
+                                        </div>
+                                    </div> :
+                                    (this.state.typingState === -2 ?
+                                            <div>Error blah blah</div>
+                                            : <div>Invalid application state</div>
+                                    ))
                             }
                         </div> : null
                 }

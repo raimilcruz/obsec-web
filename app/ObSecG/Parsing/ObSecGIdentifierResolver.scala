@@ -1,6 +1,6 @@
 package ObSecG.Parsing
 
-import Common.{NestedScope, Scope}
+import Common.{AstNode, NestedScope, Scope, ThrowableAnalysisError}
 import ObSecG.Ast._
 
 class ObSecGIdentifierResolver {
@@ -26,9 +26,11 @@ class ObSecGIdentifierResolver {
                       expression: ObSecGAstExprNode):ObSecGExpr =
     resolveInternal(typeIdentifierScope,valueIdentifier,expression).setAstNode(expression)
 
+
+
   private def resolveInternal(typeIdentifierScope: Scope[TypeIdentifierDeclarationPoint],
-                      valueIdentifier: Scope[Boolean],
-                      expression: ObSecGAstExprNode):ObSecGExpr =expression match{
+                              valueIdentifier: Scope[Boolean],
+                              expression: ObSecGAstExprNode):ObSecGExpr =expression match{
     case VariableNode(n) =>
       if(valueIdentifier.contains(n))
         Var(n)
@@ -46,7 +48,7 @@ class ObSecGIdentifierResolver {
 
             addMethodLabelVariable(methodLabelDefinitionScope , meth.name, typeAnnotation.left)
             //add method to scope
-            meth.args.foreach(x=> methodValueVariableScope.add(x,true))
+            meth.args.elems.foreach(x=> liftError(methodValueVariableScope.add(x.name,true),x))
 
             resolveMethodDefinition(methodLabelDefinitionScope ,methodValueVariableScope, meth)
           })
@@ -54,15 +56,15 @@ class ObSecGIdentifierResolver {
       }
       else{
         print(methods)
-        throw ResolverError.duplicatedMethodInObject(expression)
+        throw ResolverError.duplicatedMethodInObject(methods.reverse.groupBy(identity).collect({case (x,List(_,_,_*)) => x}).head)
       }
     case MethodInvocationNode(e1,actualTypes,actualArguments,name)=>
       MethodInv(
         resolve(typeIdentifierScope,valueIdentifier,e1),
-        actualTypes.map(at=> resolveType(typeIdentifierScope,at,labelPosisition = true)),
-        actualArguments.map(aa => resolve(typeIdentifierScope,valueIdentifier,aa)),
-        name
-      )
+        NodeList(actualTypes.elems.map(at=> resolveType(typeIdentifierScope,at,labelPosisition = true))).setAstNode(actualTypes),
+        NodeList(actualArguments.elems.map(aa => resolve(typeIdentifierScope,valueIdentifier,aa))).setAstNode(actualArguments),
+        name.name
+      ).setMethodNameNode(name)
     case BooleanLiteral(b) => BooleanExpr(b)
     case IntLiteral(n) => IntExpr(n)
     case StringLiteral(s) => StringExpr(s)
@@ -90,6 +92,18 @@ class ObSecGIdentifierResolver {
     case _ => throw new NotImplementedError()
   }
 
+  def liftError(action: => Unit, node: AstNode): Unit = {
+    try{
+      action
+    }
+    catch{
+      case te: ThrowableAnalysisError =>
+        te.analysisError.setNode(node)
+        throw te
+      case e:Throwable => throw e
+    }
+  }
+
   def resolveDeclaration(typeIdentifierScope: Scope[TypeIdentifierDeclarationPoint],
                          valueIdentifier: Scope[Boolean],
                          declaration: DeclarationNode): Declaration= declaration match{
@@ -107,7 +121,7 @@ class ObSecGIdentifierResolver {
                                      containerType : TypeAnnotation): Unit = containerType match {
     case ObjectTypeNode(self,methods) =>
       if (methods.map(x => x.name).distinct.lengthCompare(methods.size) == 0) {
-        val possibleMethods = methods.filter(m => m.name == name)
+        val possibleMethods = methods.filter(m => m.name.name == name)
         if (possibleMethods.size == 1) {
           val methodDeclarationG = possibleMethods.head
           methodDeclarationG.mType.typeVars.foreach(labelVar =>
@@ -117,19 +131,19 @@ class ObSecGIdentifierResolver {
         }
       }
       else
-        throw ResolverError.duplicatedMethodInObjectType(containerType)
+        throw ResolverError.duplicatedMethodInObjectType(methods.reverse.groupBy(identity).collect({case (x,List(_,_,_*)) => x}).head)
     case _ => Unit
   }
 
   private def resolveMethodDefinition(typeIdentifierScope: Scope[TypeIdentifierDeclarationPoint],
                                       valueIdentifier: Scope[Boolean],
                                       md: MethodDefinitionNode):MethodDef ={
-    MethodDef(md.name,md.args,resolve(typeIdentifierScope,valueIdentifier,md.mBody))
+    MethodDef(md.name,md.args.elems.map(x=>x.name),resolve(typeIdentifierScope,valueIdentifier,md.mBody)).setAstNode(md)
   }
 
   private def resolveType(typeIdentifierScope: Scope[TypeIdentifierDeclarationPoint],
                           typeAnnotation: TypeAnnotation,
-                          labelPosisition: Boolean):LabelG = typeAnnotation match{
+                          labelPosisition: Boolean):LabelG = (typeAnnotation match{
 
     case ObjectTypeNode(selfVar,methods) =>
       var objectTypeScope = new NestedScope(typeIdentifierScope)
@@ -154,7 +168,7 @@ class ObSecGIdentifierResolver {
             throw ResolverError.typeIsNotDefined(typeAnnotation,n)
       }
     case _ => throw new NotImplementedError()
-  }
+  }).setAstNode(typeAnnotation)
 
 
 
@@ -169,12 +183,12 @@ class ObSecGIdentifierResolver {
         methodLabelScope.add(labelVar.name,if(labelVar.isAster) LowLabelDeclarationPoint else LabelDeclarationPoint)
         resolveLabelVariableDeclaration(methodLabelScope,labelVar)
     })
-    MethodDeclarationG(methodDeclaration.name,
+    MethodDeclarationG(methodDeclaration.name.name,
       MTypeG(
         resolvedLabelVars,
         methodDeclaration.mType.domain.map(st=>resolveAnnotatedFacetedType(methodLabelScope,st)),
         resolveAnnotatedFacetedType(methodLabelScope,methodDeclaration.mType.codomain)
-      ))
+      )).setMethodNameNode(methodDeclaration.name)
   }
   private def multiExtend(typeIdentifierScope: Scope[TypeIdentifierDeclarationPoint],
                           strings: List[String],

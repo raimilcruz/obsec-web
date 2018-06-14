@@ -27,7 +27,7 @@ class InterpreterG {
         //e.m(e)
         case MethodInv(e1,tArgs, args, m) => {
           val r1 = internalEval(env, e1, steps - 1)
-          var argValues = args.map(x => internalEval(env, x, steps - 1))
+          var argValues = args.elems.map(x => internalEval(env, x, steps - 1))
 
           r1.invoke(m, argValues, (e, b) => internalEval(e, b, steps - 1))
         }

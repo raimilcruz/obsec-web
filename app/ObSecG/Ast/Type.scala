@@ -23,7 +23,11 @@ case class STypeG(privateType: TypeG, publicType: LabelG) extends GObSecElement 
    }*/
   override def toString: String = s"ST($privateType,$publicType)"
 
-  override def prettyPrint(): String = s"ST(${privateType.prettyPrint()},${publicType.prettyPrint()})"
+  override def prettyPrint(buffer:StringBuilder): Unit = {
+    privateType.prettyPrint(buffer)
+    buffer.append("<")
+    publicType.prettyPrint(buffer)
+  }
 }
 
 
@@ -31,7 +35,7 @@ trait IObject{
   def methSig(x: String): MTypeG
   def containsMethod(x: String): Boolean
 }
-trait LabelG extends IObject with PrettyPrint
+trait LabelG extends IObject with PrettyPrint with GObSecElement
 
 
 
@@ -72,7 +76,8 @@ case class LabelVar(name: String) extends LabelG{
     this
   }
 
-  override def prettyPrint(): String = s"lab($name)"
+  override def prettyPrint(buffer:StringBuilder): Unit =
+    buffer.append(name)
 }
 
 
@@ -81,7 +86,8 @@ object Bottom extends LabelG {
 
   override def containsMethod(x: String): Boolean = false
 
-  override def prettyPrint(): String = "bot"
+  override def prettyPrint(buffer:StringBuilder): Unit=
+    buffer.append("bot")
 }
 
 case class UnionLabel(left: LabelG,right: LabelG) extends LabelG {
@@ -89,7 +95,11 @@ case class UnionLabel(left: LabelG,right: LabelG) extends LabelG {
 
   override def containsMethod(x: String): Boolean = throw new Error("notimplemented: UnionLabel.containsMethod")
 
-  override def prettyPrint(): String = s"${left.prettyPrint()} v ${right.prettyPrint()}"
+  override def prettyPrint(buffer:StringBuilder): Unit = {
+    left.prettyPrint(buffer)
+    buffer.append("v")
+    right.prettyPrint(buffer)
+  }
 }
 
 
@@ -124,7 +134,17 @@ case class ObjectType(selfVar: String, methods: List[MethodDeclarationG]) extend
 
   override def toString: String = s"OT($selfVar,$methods)"
 
-  override def prettyPrint(): String = s"OT($selfVar,$methods)"
+  override def prettyPrint(builder: StringBuilder): Unit =
+    if(methods.isEmpty) builder.append("Top")
+    else {
+      builder.append(s"Obj($selfVar)")
+      builder.append("[")
+      methods.map(e=> {
+        builder.append("\n")
+        e.prettyPrint(builder)
+      })
+      builder.append("]")
+    }
 }
 
 
@@ -145,7 +165,8 @@ case class TypeVar(name: String) extends TypeG {
 
   override def toString: String = name
 
-  override def prettyPrint(): String = s"tvar($name)"
+  override def prettyPrint(builder: StringBuilder): Unit =
+    builder.append(name)
 }
 
 /*case class GenericTypeVar(name: String) extends TypeG {
@@ -170,7 +191,8 @@ object UnUsedTypeVars {
 
 trait PrimType {
   def toObjType: ObjectType
-  def prettyPrint():String = toString
+  def prettyPrint(builder: StringBuilder):Unit=
+    builder.append(toString)
 }
 
 case object IntType extends TypeG with PrimType {
@@ -351,7 +373,13 @@ case class StringGListType(elemPolicy: TypeG) extends TypeG with PrimType {
   * @param name  The method label
   * @param mType The method type
   */
-case class MethodDeclarationG(name: String, mType: MTypeG) {
+case class MethodDeclarationG(name: String, mType: MTypeG)  extends GObSecElement with PrettyPrint {
+  var methodNameNode :ObSecGAstNode = NoGObSecNode
+  def setMethodNameNode(methodName:SimpleIdentifier):MethodDeclarationG={
+    if(methodNameNode eq NoGObSecNode) methodNameNode = methodName
+    this
+  }
+
   override def toString: String = {
     val typeParams =
       mType
@@ -369,6 +397,13 @@ case class MethodDeclarationG(name: String, mType: MTypeG) {
               acc + " " + x)
       } -> ${mType.codomain}}"
   }
+
+  override def prettyPrint(buffer:StringBuilder): Unit =  {
+    buffer.append("{")
+    buffer.append(name)
+    mType.prettyPrint(buffer)
+    buffer.append("}")
+  }
 }
 
 /**
@@ -378,14 +413,30 @@ case class MethodDeclarationG(name: String, mType: MTypeG) {
   * @param domain   The domain type
   * @param codomain The codomain type
   */
-case class MTypeG(typeVars: List[BoundedLabelVar], domain: List[STypeG], codomain: STypeG) {
+case class MTypeG(typeVars: List[BoundedLabelVar], domain: List[STypeG], codomain: STypeG) extends PrettyPrint {
   def map(f: STypeG => STypeG): MTypeG =
     MTypeG(typeVars, domain.map(f), f(codomain))
+
+  override def prettyPrint(buffer: StringBuilder): Unit = {
+    buffer.append("[")
+    typeVars.foreach(tv=> {
+      tv.prettyPrint(buffer)
+      buffer.append(",")
+    })
+    buffer.append("]")
+    domain.foreach(
+      st => {
+        buffer.append(" ")
+        st.prettyPrint(buffer)
+      })
+    buffer.append("->")
+    codomain.prettyPrint(buffer)
+  }
 }
 
 case class BoundedLabelVar(typeVar: String
                                , lowerBound: LabelG
-                               , upperBound: LabelG) extends GObSecElement {
+                               , upperBound: LabelG) extends GObSecElement with PrettyPrint {
   override def toString: String = s"$typeVar :$lowerBound..$upperBound"
   def bounds: TypeVarBounds = TypeVarBounds(lowerBound,upperBound)
 
@@ -395,9 +446,18 @@ case class BoundedLabelVar(typeVar: String
     isAster = b
     this
   }
+
+  override def prettyPrint(buffer:StringBuilder): Unit = {
+    buffer.append(typeVar)
+    buffer.append(": ")
+    lowerBound.prettyPrint(buffer)
+    buffer.append("..")
+    upperBound.prettyPrint(buffer)
+  }
 }
 
 
 case class TypeVarBounds(lower:LabelG,upper:LabelG) extends PrettyPrint {
-  override def prettyPrint(): String = s"${lower.prettyPrint()}..${upper.prettyPrint()}"
+  override def prettyPrint(buffer:StringBuilder): Unit =
+    buffer.append(s"${lower.prettyPrint(buffer)}..${upper.prettyPrint(buffer)}")
 }

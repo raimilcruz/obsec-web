@@ -8,6 +8,10 @@ trait GObSecElement{
   this
   }
 }
+case class NodeList[+T <: GObSecElement](elems : List[T]) extends Iterable[T] with GObSecElement {
+
+  override def iterator: Iterator[T] = elems.iterator
+}
 
 /**
     * <Expr> ::= <Var> | <Obj> | <MethodInv> | <PrimitiveLiteral>
@@ -64,9 +68,15 @@ trait GObSecElement{
     * @param args The actual arguments
     * @param method The method to invoke
     */
-  case class MethodInv(e1: ObSecGExpr, types:List[LabelG], args: List[ObSecGExpr], method: String) extends ObSecGExpr {
+  case class MethodInv(e1: ObSecGExpr, types:NodeList[LabelG], args: NodeList[ObSecGExpr], method: String) extends ObSecGExpr {
+    var methodNameNode :ObSecGAstNode = NoGObSecNode
+    def setMethodNameNode(methodName:SimpleIdentifier):MethodInv={
+      if(methodNameNode eq NoGObSecNode) methodNameNode = methodName
+      this
+    }
+
     def map[T](f: ObSecGExpr => ObSecGExpr) =
-      MethodInv(f(e1), types, args.map(f), method)
+      MethodInv(f(e1), types, NodeList(args.elems.map(f)), method)
 
     //override def toString: String = s"${e1}.$method(${if(args.size==0)"" else args(0) + args.drop(1).foldLeft("")((acc,x)=> acc+","+ x)})"
   }
@@ -78,7 +88,7 @@ trait GObSecElement{
     * @param args   The list of formal arguments
     * @param mBody  The body expression
     */
-  case class MethodDef(name: String, args: List[String], mBody: ObSecGExpr){
+  case class MethodDef(name: String, args: List[String], mBody: ObSecGExpr) extends GObSecElement {
     override def toString: String = s"{$name : ${args.foldLeft("")((acc,x)=> acc + " " +x)} = $mBody}"
   }
 

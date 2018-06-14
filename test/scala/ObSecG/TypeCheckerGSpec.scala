@@ -89,11 +89,35 @@ class TypeCheckerGSpec extends FlatSpec with Matchers with ElementServiceBaseSpe
        "def m p  = {z1 : " +
         "[{m2[T1 super T] : Int<T -> Int<T}] " +
         "=> def m2 p2 = p2.+[Int](1)}}"
+
+     val otInner = OT("gen",
+       List(
+         MD(
+           "m2",
+           MT(
+             List(
+               BL("T1",LabelVar("T"), ObjectType.top)),
+               List(ST(IntType,LabelVar("T"))),
+               ST(IntType,LabelVar("T"))
+             ))))
+     val otOuter =
+       OT(
+         "a",
+         List(
+           MD("m",
+             MT(
+               List(
+                 BL("T",IntType,ObjectType.top)),
+               List(
+                 ST(IntType,LabelVar("T"))),
+               ST(otInner,otInner)))))
+     val expectedType =  ST(otOuter,otOuter)
      ObSecGParser(program) match{
        case Right(ast)=>
-         assert(TypeCheckerG(ObSecGIdentifierResolver(ast)) == ST(IntType,IntType))
+         assert(TypeCheckerG(ObSecGIdentifierResolver(ast)) == expectedType)
      }
    }
+
   "Invocation of add over int " must "work" in {
     var program = "1.+[Int](1)"
     ObSecGParser(program) match{

@@ -180,3 +180,56 @@ body {
 	margin:4px 8px;
 }
 
+.p_wrap {
+    white-space: pre-line;
+}
+
+.issue {
+	background: #444 none repeat scroll 0 0;
+	border-radius: 3px;
+	cursor: pointer;
+	line-height: 20px;
+	margin-right: 4px;
+	margin-bottom: 2px;
+}
+
+.issue .issuelabel {
+	border-radius: 3px;
+	color: #222;
+	display: inline-block;
+	min-width: 53px;
+	padding: 0 5px;
+}
+
+.issue .issuelabel.error {
+	background-color: #f7977a;
+}
+
+.issue .issuelabel.info {
+	background-color: #F5D04C;
+}
+
+.issue .issuelabel.secerror {
+	background-color: red;
+}
+
+.issue .message {
+	color: #eee;
+	padding-left: 5px;
+}
+.errorHighlight {
+	position: absolute;
+	z-index: 20;
+	background-color: #F4B9B7;
+}
+.issuesCount{
+	margin-bottom: 5px;
+}
+.analysisResultTitle{
+	margin: 10px 0;
+}
+.analysisResultBody{
+	margin-left:10px;
+}
+
+

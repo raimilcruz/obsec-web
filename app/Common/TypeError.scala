@@ -1,29 +1,71 @@
 package Common
 
+import scala.util.parsing.input.{NoPosition, Position, Positional}
+
+trait OffsetPositional extends Positional{
+  var offset:Int = -1
+  def setOffSet(n:Int): this.type ={
+    if(offset == -1)offset = n
+    this
+  }
+
+  var endPos:Position = NoPosition
+  def setEndPos(pos:Position):this.type ={
+    if(endPos eq NoPosition) endPos = pos
+    this
+  }
+}
+trait AstNode extends OffsetPositional
+object NoAstNode extends AstNode
+
+trait ErrorCodesEnum
+trait ErrorCode{
+  def code: ErrorCodesEnum
+  def message:String
+}
+
+
+class AnalysisError(var node: AstNode, val errorCode: ErrorCode,val parameters: List[String] = List()){
+  override def toString: String = errorCode.message.format(parameters:_*)
+
+  def setNode(n:AstNode):AnalysisError ={
+    if(node eq NoAstNode) node = n
+    this
+  }
+}
+
+trait ThrowableAnalysisError extends Error{
+  def analysisError: AnalysisError
+}
 
 case class TypeError(str: String) extends Error
 
-abstract class ErrorCode(val errorName:String,val message:String){}
 
-class CommonErrorCode(errorName: String,message:String)
-  extends ErrorCode(errorName,message)
+object SecTypeIsNotWellFormed extends ErrorCodesEnum
+object VariableAlreadyDefinedInScope extends ErrorCodesEnum
 
-object CommonErrorCode{
+case class CommonErrorCode(code: ErrorCodesEnum,message:String) extends ErrorCode
+
+object CommonErrorCodes{
   val secTypeIsNotWellFormed: CommonErrorCode =
-    new CommonErrorCode("secTypeIsNotWellFormed",
+    CommonErrorCode(SecTypeIsNotWellFormed,
       "Security type: %s is not well-formed : %s")
+  val variableAlreadyDefinedInScope: CommonErrorCode =
+    CommonErrorCode(VariableAlreadyDefinedInScope,
+      "Variable %s is already defined in its scope")
 }
 
-class CommonTypeError(errorCode: ErrorCode,
-                           arguments:List[String])
-  extends TypeError(errorCode.message.format(arguments:_*)) {
+case class CommonError(analysisError: AnalysisError) extends ThrowableAnalysisError
 
-  override def toString: String = this.errorCode.message.format(arguments:_*)
-}
+object CommonError{
+  def variableAlreadyDefined(str: String): CommonError =
+    commonError(NoAstNode,CommonErrorCodes.variableAlreadyDefinedInScope,List(str))
 
-object CommonTypeError{
-  def secTypeIsNotWellFormed(theType:String, details:String)=
-    new CommonTypeError(CommonErrorCode.secTypeIsNotWellFormed,List(theType, details))
+  def secTypeIsNotWellFormed(theType:String, details:String): CommonError =
+    commonError(NoAstNode,CommonErrorCodes.secTypeIsNotWellFormed,List(theType, details))
+
+  private def commonError(node:AstNode,errorCode: ErrorCode, parameters: List[String]=List()) =
+    CommonError(new AnalysisError(node,errorCode,parameters))
 }
 
 class StuckError(m: String = "") extends Error {
