@@ -164,10 +164,31 @@ class ParserGSpec extends FlatSpec with Matchers with BaseSpec {
                           tI("X"),
                           tI("X")))))))))))))
   }
-  "parser" should "recognize self label" in {
-    var program = "{z : {ot X {hash : -> X<this}}<L => \n def m  = z.m()\n}"
+
+  "Union label" should "be recognized " in {
+    var program = "{z : {ot X {m: -> X<(X,X)}}<L => \n def m  = z.m() \n}"
     val res = ObSecGParser(program)
+
+    val expected =
+      Right(
+        ObjectDefinitionNode("z",
+          stA(OT("X",
+            List(
+              MD(
+                "m",
+                MT(
+                  List(),
+                  List(),
+                  stA(tI("X"),UL(tI("X"),tI("X"))))))),
+            LL),
+          List(
+            MDef(
+              "m",
+              List(),
+              MI("z",List(),List(),"m")))))
+    assert(res == expected)
   }
+
   "Method invocation over a method with multiples labels" must "work" in {
     var program = "{z : {ot X {m[T super Int, T1 : T .. Top ] : Int<T -> Int<T1}}<L => \n def m p  = p.+[T](1) \n }.m[Int,Int](1)"
     val res = ObSecGParser(program)

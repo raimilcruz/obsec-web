@@ -178,9 +178,13 @@ object ObSecGParser extends StandardTokenParsers with PackratParsers with Implic
 
 
   lazy val labelType : PackratParser[TypeAnnotation] ={
-    myPositioned(objType) | myPositioned(lowLabel) | myPositioned(highLabel) |
+    myPositioned(objType) | myPositioned(unionLabel) | myPositioned(lowLabel) | myPositioned(highLabel) |
       myPositioned(primType)  | myPositioned(varType)
   }
+  lazy val unionLabel :  PackratParser[UnionTypeAnnotation]={
+    ((LEFTPAREN  ~> myPositioned(labelType)) <~ COMMMA) ~ (myPositioned(labelType) <~ RIGHTPAREN) ^^ {case left ~ right=> UnionTypeAnnotation(left,right)}
+  }
+
   lazy val primType : PackratParser[TypeAnnotation] = {
     intType | booleanType | stringListType | stringType
   }

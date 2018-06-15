@@ -7,6 +7,48 @@ import org.scalatest.{FlatSpec, Matchers}
 
 class SubtypingSpec extends FlatSpec with Matchers with ElementServiceBaseSpec {
 
+  "Subtyping T1 <: T1 v T2" must "work" in{
+
+    val env = Environment.empty[TypeVarBounds]()
+    var judgements = new GObSecGJudgmentImpl(new ErrorCollector)
+    var subtypingChecker = new AmadioCardelliSubtypingG(judgements,judgements.errorCollector)
+    //Int <: Int v String
+    assert(subtypingChecker.<::(env,IntType,UnionLabel(IntType,StringType)))
+  }
+  "Subtyping T2 <: T1 v T2" must "work" in{
+
+    val env = Environment.empty[TypeVarBounds]()
+    var judgements = new GObSecGJudgmentImpl(new ErrorCollector)
+    var subtypingChecker = new AmadioCardelliSubtypingG(judgements,judgements.errorCollector)
+
+    assert(subtypingChecker.<::(env,StringType,UnionLabel(IntType,StringType)))
+  }
+
+  "Subtyping T1 v T2 <: T where T1 <: T and T2 <:T" must "work" in{
+
+    val env = Environment.empty[TypeVarBounds]()
+    var judgements = new GObSecGJudgmentImpl(new ErrorCollector)
+    var subtypingChecker = new AmadioCardelliSubtypingG(judgements,judgements.errorCollector)
+
+    assert(subtypingChecker.<::(env,UnionLabel(StringType,StringType),StringType))
+  }
+  "Subtyping T1 v T2 <: T where T1 <: T and T2 </:T" must "not work" in{
+
+    val env = Environment.empty[TypeVarBounds]()
+    var judgements = new GObSecGJudgmentImpl(new ErrorCollector)
+    var subtypingChecker = new AmadioCardelliSubtypingG(judgements,judgements.errorCollector)
+
+    assert(!subtypingChecker.<::(env,UnionLabel(StringType,IntType),StringType))
+  }
+  "Subtyping T1 v T2 <: T where T1 </: T and T2 <:T" must "not work" in{
+
+    val env = Environment.empty[TypeVarBounds]()
+    var judgements = new GObSecGJudgmentImpl(new ErrorCollector)
+    var subtypingChecker = new AmadioCardelliSubtypingG(judgements,judgements.errorCollector)
+
+    assert(!subtypingChecker.<::(env,UnionLabel(IntType,StringType),StringType))
+  }
+
   "Subtyping between union type and label variable" must "work" in{
 
     val left  =  UnionLabel(IntType,LabelVar("T"))

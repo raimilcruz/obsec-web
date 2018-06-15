@@ -24,6 +24,7 @@ trait BaseSpec {
   def superL(x:String,lower:TypeAnnotation)= SuperLabelVariableDeclaration(x,lower)
   def stA(t1:TypeAnnotation,t2:TypeAnnotation)=AnnotatedFacetedType(t1,t2)
   def OT(x:String,methods:List[MethodDeclarationNode]) =ObjectTypeNode(x,methods)
+  def UL(left:TypeAnnotation,right: TypeAnnotation) = UnionTypeAnnotation(left,right)
   def MT(typeVars: List[LabelVariableDeclarationNode],
          domain: List[AnnotatedFacetedType],
          codomain: AnnotatedFacetedType): MethodTypeNode = MethodTypeNode(typeVars,domain,codomain)

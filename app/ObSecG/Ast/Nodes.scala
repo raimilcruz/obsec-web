@@ -115,6 +115,9 @@ case object HighLabelNode extends TypeAnnotation {
   override def children: List[ObSecGAstNode] = List()
 }
 
+case class UnionTypeAnnotation(left:TypeAnnotation,right: TypeAnnotation) extends TypeAnnotation {
+  override def children: List[ObSecGAstNode] = List(left,right)
+}
 
 sealed trait ObjectTypeAnnotation extends TypeAnnotation{
   def methods: List[MethodDeclarationNode]

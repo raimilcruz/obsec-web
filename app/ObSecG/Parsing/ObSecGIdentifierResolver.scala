@@ -86,7 +86,7 @@ class ObSecGIdentifierResolver {
           case node: TypeAliasDeclarationNode => letTypeScope.add(node.aliasName, AnythingElse)
           case node: DefTypeNode => letTypeScope.add(node.name, AnythingElse)
         }
-        resolveDeclaration(typeIdentifierScope,valueIdentifier,d)
+        resolveDeclaration(letTypeScope,valueIdentifier,d)
       }),
         resolve(letTypeScope,letValueIdentifierScope,body))
     case _ => throw new NotImplementedError()
