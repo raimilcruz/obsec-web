@@ -106,8 +106,8 @@ object TypeCheckerErrorCodes{
 
   def actualTypeParametersSizeError: ErrorCodeG =
     ErrorCodeG(ActualTypeParametersMustMatchFormalTypeParameterAmount,
-      "Method '%s' : Actual types amount must" +
-        s" match the formal type variable amount")
+      "Invocation of method '%s' : Actual types amount (%s) must" +
+        s" match the formal type variable amount (%s)")
 
   def actualArgumentsSizeError: ErrorCodeG =
     ErrorCodeG(ActualArgumentsSizeError,
@@ -138,8 +138,12 @@ object TypeErrorG{
   def badActualLabelArgument(node:ObSecGAstNode, method: String, typeVar: String): TypeErrorG =
     typeError(node,TypeCheckerErrorCodes.badActualLabelArgument,List(method,typeVar))
 
-  def actualTypeParametersSizeError(node:ObSecGAstNode, method: String): TypeErrorG =
-    typeError(node,TypeCheckerErrorCodes.actualTypeParametersSizeError,List(method))
+  def actualTypeParametersSizeError(node:ObSecGAstNode, method: String,
+                                    actualTypeCount:Int,
+                                    labelVariableCount:Int
+                                   ): TypeErrorG =
+    typeError(node,TypeCheckerErrorCodes.actualTypeParametersSizeError,
+      List(method,actualTypeCount.toString,labelVariableCount.toString))
 
   private def typeError(node: ObSecGAstNode, errorCode: ErrorCodeG, parameters:List[String]=List())=
     TypeErrorG(new AnalysisError(node,errorCode,parameters))

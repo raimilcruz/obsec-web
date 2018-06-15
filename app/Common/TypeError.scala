@@ -40,7 +40,7 @@ trait ThrowableAnalysisError extends Error{
 
 case class TypeError(str: String) extends Error
 
-
+object ImplementationError extends ErrorCodesEnum
 object SecTypeIsNotWellFormed extends ErrorCodesEnum
 object VariableAlreadyDefinedInScope extends ErrorCodesEnum
 
@@ -50,14 +50,22 @@ object CommonErrorCodes{
   val secTypeIsNotWellFormed: CommonErrorCode =
     CommonErrorCode(SecTypeIsNotWellFormed,
       "Security type: %s is not well-formed : %s")
+
   val variableAlreadyDefinedInScope: CommonErrorCode =
     CommonErrorCode(VariableAlreadyDefinedInScope,
       "Variable %s is already defined in its scope")
+
+  val implementationError: CommonErrorCode =
+    CommonErrorCode(ImplementationError,
+      "Implementation error: %s")
 }
 
 case class CommonError(analysisError: AnalysisError) extends ThrowableAnalysisError
 
 object CommonError{
+  def implementationError(node:AstNode,message:String):CommonError =
+    commonError(node,CommonErrorCodes.implementationError,List(message))
+
   def variableAlreadyDefined(str: String): CommonError =
     commonError(NoAstNode,CommonErrorCodes.variableAlreadyDefinedInScope,List(str))
 

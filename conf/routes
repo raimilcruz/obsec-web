@@ -9,6 +9,7 @@ GET     /:prod                            controllers.ApplicationController.inde
 
 POST    /typecheck                       controllers.ApplicationController.typecheck
 POST    /reduce                           controllers.ApplicationController.reduce
+POST    /examples                           controllers.ApplicationController.examples
 
 #GET     /generic/                       controllers.ObSecGController.index
 #GET     /generic/typecheck               controllers.ObSecGController.typecheck

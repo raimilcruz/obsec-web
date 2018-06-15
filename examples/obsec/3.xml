@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Example>
+  <Title>1.3: Password policy is full secret</Title>
+  <Description>
+    This example differs from the first one in that the first argument of the login method (i.e. the real password) is full secret.
+     In this case, the implementation of the login does not adhere to the policy of password because it is using the == method that is
+     not in the public facet, so the resulting type of the login method body is a secret integer.
+     Hence the method implementation result type is not subtype of the method signature return type, deriving in a type error.
+     Feel free to change the login method signature return type to Int@H and then the program will be well-typed, meaning the result is secret.
+  </Description>
+</Example>

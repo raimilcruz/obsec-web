@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Example>
+  <Title>1.1: Introducing type-based declassification policies: Password policy</Title>
+  <Description>
+    This is the first example of the paper. The login method receives two arguments: the 'secret' password
+    and the user guess. The 'password' argument has a declassification policy that allows to release the result
+    of the == comparison. The body of the 'login' method adheres to that policy, so the resulting integer is public
+  </Description>
+</Example>

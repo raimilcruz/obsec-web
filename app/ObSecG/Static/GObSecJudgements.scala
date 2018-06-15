@@ -1,6 +1,6 @@
 package ObSecG.Static
 
-import Common.{Environment, ErrorCollector, Scope}
+import Common._
 import ObSecG.Ast._
 import ObSecG.Static.TypeEquivalenceG.recAlphaEq
 
@@ -103,6 +103,16 @@ class GObSecGJudgmentImpl(val errorCollector: ErrorCollector) extends GObSecJudg
 
 abstract class IJudgment(judgements: GObSecJudgements,
                          errors: ErrorCollector) extends Environments{
+
+  def wrapError[T](computation: => T,node:AstNode): T ={
+    try{
+      computation
+    }
+    catch {
+      case e  if !e.isInstanceOf[ThrowableAnalysisError] =>
+        throw CommonError.implementationError(node,e.getMessage)
+    }
+  }
 }
 
 

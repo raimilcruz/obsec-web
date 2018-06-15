@@ -1,5 +1,6 @@
 package controllers
 
+import java.nio.file.Paths
 import javax.inject._
 
 import Common.{AnalysisError, ThrowableAnalysisError}
@@ -10,10 +11,11 @@ import play.api.libs.json._
 import ObSecG.Static.TypeCheckerG
 import ObSecG.Parsing._
 import ObSecG.Runtime.InterpreterG
+import models.{Example, ExampleHelper}
 
 
 @Singleton
-class ApplicationController extends Controller {
+class ApplicationController @Inject()(configuration: play.api.Configuration) extends Controller {
 
   case class Program(program: String)
 
@@ -51,10 +53,24 @@ class ApplicationController extends Controller {
 
   implicit val errorPositionFormat = Json.format[UIErrorPosition]
   implicit val analysisErrorFormat = Json.format[UIAnalysisError]
+  implicit val exampleFormat = Json.format[Example]
 
 
   def index(prod: Int) = Action { implicit request =>
     Ok(views.html.index(prod))
+  }
+
+  def examples = Action { implicit request =>
+    val l = getExamples
+    Ok(Json.obj("status" -> "OK", "examples" -> l))
+  }
+
+  private def getExamples = {
+    val currentDirectory = new java.io.File(".").getCanonicalPath
+    val exampleDir = configuration.underlying.getString("languagepad.exampleDirectory")
+    val exampleDirFullPath = Paths.get(currentDirectory, exampleDir)
+    val exampleHelper = new ExampleHelper(exampleDirFullPath.toString,".obsec")
+    exampleHelper.examples()
   }
 
   def typecheck = Action(BodyParsers.parse.json) { implicit request =>

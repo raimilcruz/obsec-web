@@ -40,7 +40,8 @@ class TypeChecker(judgements: GObSecJudgmentsExtensions,
   def typeCheck(genVarEnv: LabelVarEnvironment,
                 scope: TypeEnvironment,
                 aliasScope: TypeAliasScope,
-                expr: ObSecGExpr): STypeG = expr match {
+                expr: ObSecGExpr): STypeG =
+    wrapError[STypeG](expr match {
     case Var(x) => scope.lookup(x)
     case IntExpr(_) => STypeG(IntType, IntType)
     case BooleanExpr(_) => STypeG(BooleanType, BooleanType)
@@ -63,7 +64,9 @@ class TypeChecker(judgements: GObSecJudgmentsExtensions,
         //check subtyping for method constraints
         print(s"mType.typeVars.size != types.size. typevars: ${mType.typeVars}   types: $types")
         if (mType.typeVars.size != types.size)
-          throw TypeErrorG.actualTypeParametersSizeError(types.astNode,m)
+          throw TypeErrorG.actualTypeParametersSizeError(
+            if(types.isEmpty)methInv.methodNameNode else types.astNode,
+            m, types.size, mType.typeVars.size)
 
         //actual type arguments are good for formal type arguments
         var extendedGenVarEnv = genVarEnv
@@ -210,7 +213,7 @@ class TypeChecker(judgements: GObSecJudgmentsExtensions,
       val tList = typeCheck(genVarEnv, scope, aliasScope, list)
       val tElem = typeCheck(genVarEnv, scope, aliasScope, elem)
       throw new NotImplementedError()
-  }
+  },expr.astNode)
 
   private def typeInBound(genVarEnv: LabelVarEnvironment,
                           actualType: LabelG,

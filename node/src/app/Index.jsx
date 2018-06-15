@@ -45,52 +45,6 @@ function replaceCurlyBracket(str){
 }
 
 const examples = [
-    {
-        value: 1,
-        text: "1.1: Introducing type-based declassification policies: Password policy",
-        program:   "let{\n  type StringEq = [{== : String -> Bool}]\n  deftype AuthServer {\n    {login: String<StringEq String -> Int}\n  }\n  val auth =  new {z : AuthServer<L => \n                def login password guess = if password.==(guess) then 1 else 0\n              }\n}\nin \nauth.login(\"qwe123\",\"qwe123\")",
-        desc: "This is the first example of the paper. The login method receives two arguments: the 'secret' password " +
-        "and the user guess. The 'password' argument has a declassification policy that allows to release the result " +
-        "of the == comparison. The body of the 'login' method adheres to that policy, so the resulting integer is public"
-    },
-    {
-        value: 2,
-        text: "1.2: Method implementation does not respect the password policy",
-        program:   "let{\n  type StringEq = [{== : String -> Bool}]\n  deftype AuthServer {\n    {login: String<StringEq String -> Int}\n  }\n  val auth =  new {z : AuthServer<L => \n                def login password guess = if password.hash().==(guess.hash()) then 1 else 0\n              }\n}\nin \nauth.login(\"qwe123\",\"qwe123\")",
-        desc: "Now the 'login' method does not adhere to the password policy and it uses the hash method, which is not the public type. " +
-        "Note that the conditional expression become high, and hence the result of the if expression is also high"
-    },
-    {
-        value: 3,
-        text: "1.3: Password policy is full secret",
-        program:   "let{\n  deftype AuthServer {\n    {login: String<H String -> Int}\n  }\n  val auth =  new {z : AuthServer<L => \n                def login password guess = if password.==(guess) then 1 else 0\n              }\n}\nin \nauth.login(\"qwe123\",\"qwe123\")",
-        desc: "This example differs from the first one in that the first argument of the login method (i.e. the real password) is full secret." +
-        " In this case, the implementation of the login does not adhere to the policy of password because it is using the == method that is" +
-        " not in the public facet, so the resulting type of the login method body is a secret integer." +
-        " Hence the method implementation result type is not subtype of the method signature return type, deriving in a type error." +
-        " Feel free to change the login method signature return type to Int<H and then the program will be well-typed, meaning the result is secret."
-    },
-    {
-        value: 4,
-        text: "2: Password policy with hash and eq",
-        program: "let {\n  type StringHashEq = [{hash : -> Int<[{== : Int -> Bool}]}]\n  type AuthServer = [{login : String<StringHashEq String -> Int<L}]\n  val auth =  new {z : AuthServer<L => \n                def login password guess = if password.hash().==(guess.hash()) then 1 else 0\n              }\n} in\nauth.login(\"qwe123\",\"qwe123\")",
-        desc: "The password policy now indicates that information about the password can be done public by calling 1) the hash method over the password, " +
-        " and then 2) to compare the result with a public integer. The program adheres to the policy, so it is well-typed." +
-        " Any variation to the implementation of the login method that does not respect the policy will be ill-typed. " +
-        "For instance, change the conditional expression to password.hash().+(1).==(guess.hash().+(1))"
-    },
-    {
-        value : 5,
-        text:"3: Recursive declassification over list",
-        program: "let{\n  type StringEq = [{== : String -> Bool}]\n  deftype StrEqList{\n    {isEmpty: -> Bool<L}\n    {head: -> String<StringEq }\n    {tail: -> StrList<StrEqList}\n  }\n  val listHelper =  new {z : [{contains : StrList<StrEqList -> Bool<L}]<L  =>\n                      def contains myList  =\n                        if myList.isEmpty()\n                        then false\n                        else\n                          if myList.head().==(\"a\")\n                          then true\n                          else z.contains(myList.tail())\n                    }\n}\nin\nlistHelper.contains(mklist(\"b\",\"c\",\"a\"))",
-        desc: "Recursive declassification policies are desirable to express interesting declassification of "+
-        "either inductive data structures or object interfaces (whose essence are recursive types). Consider for instance a secret list" +
-        " of strings, for which we want to allow traversal of the "+
-        "structure and comparison of its elements with a given string. " +
-        "Note that the head method returns a String that only has the == operation public." +
-        " Any method invocation over the head of the list (different than ==) renders the program ill-typed. " +
-        "For instance, changing the inner if condition to myList.head().hash().==(“a”.hash()): the type checker reports “Both branches of an if expression must have the same type”. This is because the else branch of the outer if has type Bool<H while the then branch has type Bool<L. "
-    }
 ]
 const examplesItems = examples.map((e) => {
     return <MenuItem key={e.value} value={e.value} primaryText={e.text}/>
@@ -100,23 +54,26 @@ const examplesItems = examples.map((e) => {
 export default class Main extends React.Component {
     state = {
         formula: "bar",
-        program: this.findProgramByValue(1).program, //"if true_H::Bool_?  then ref 10_L else ref 20_L",//"(λx: Ref Int.\n    (λy: Unit. !x) (x := 10)\n) (ref 4)",
-        desc: this.findProgramByValue(1).desc,
+        program: "",
+        desc: "" ,
         error: "",
         analysisIssue:null,
         executionState: 0,
         executionResult: "",
         typingState: 0,
-        defaultProgram: 1,
+        defaultProgram: null,
         expressionType: "",
         syntaxOpen: false,
         typeDefinitionsOpen:null,
         anchorEl:null,
-        markers:[]
+        markers:[],
+        loadingExamples: true,
+        examples: [],
     }
 
     componentDidMount() {
         //this.math = MathJax.Hub.getAllJax("toLatex")[0]
+        this.loadExamples();
     }
 
 
@@ -142,11 +99,45 @@ export default class Main extends React.Component {
     }
 
     findProgramByValue(v) {
-        return examples.filter(e => e.value == v)[0]
+        return this.state.examples.filter(e => e.id == v)[0]
     }
+    loadExamples() {
+        this.setState({loadingExamples: true}, () => {
+            request.post('examples')
+                .send()
+                .set('Accept', 'application/json')
+                .end((err, res) => {
+                    if (err || !res.ok) {
+                        alert('Oh no! Configuration Error');
+                    } else {
+                        if (res.body.status == "OK") {
+                            console.log(res.body.examples);
+
+                            this.setState({
+                                loadingExamples: false,
+                                examples: res.body.examples,
+                                defaultProgram: (res.body.examples.length>0?res.body.examples[0].id:null),
+                                program: (res.body.examples.length>0?res.body.examples[0].program:null),
+                                desc:(res.body.examples.length>0?res.body.examples[0].desc:null)
+                            }, () => {
+                            })
+                        } else {
+                            alert('Oh no! error ' + res.body.error);
+                        }
+                    }
+                });
+        });
+    }
+    examplesItems(){
+        return this.state.examples.map((e) => (
+            <MenuItem key={e.id} value={e.id} primaryText={e.title}/>
+        ));
+    };
 
     changeDefaultProgram = (event, index, defaultProgram) => {
         let p = this.findProgramByValue(defaultProgram);
+        console.log("change default program");
+        console.log(defaultProgram);
         this.setState({defaultProgram, program: p.program, desc: p.desc,typingState:0,markers:[]})
     };
 
@@ -415,10 +406,18 @@ export default class Main extends React.Component {
 
 
                 <div className="form" style={{position: "relative"}}>
-                    <SelectField value={this.state.defaultProgram} onChange={this.changeDefaultProgram}
-                                 floatingLabelText="Preloaded examples" autoWidth={true} fullWidth={true}>
-                        {examplesItems}
-                    </SelectField>
+                    {
+                        this.state.loadingExamples == true ?
+                            <div>Loading programs</div>
+                            :
+                            <SelectField value={this.state.defaultProgram}
+                                         onChange={this.changeDefaultProgram}
+                                         floatingLabelText="Preloaded examples"
+                                         autoWidth={true} fullWidth={true}>
+                                {this.examplesItems()}
+                            </SelectField>
+                    }
+
                     <div style={{color: "rgba(0, 0, 0, 0.541176)"}}>
                         {this.state.desc}
                     </div>
@@ -504,7 +503,13 @@ export default class Main extends React.Component {
                                         </div>
                                     </div> :
                                     (this.state.typingState === -2 ?
-                                            <div>Error blah blah</div>
+                                            <div>
+                                                Implementation error
+                                                <div className='issue' >
+                                                    <span className="issuelabel error">Implementation</span>
+                                                    <span className='message'>{this.state.error}</span>
+                                                </div>
+                                            </div>
                                             : <div>Invalid application state</div>
                                     ))
                             }
