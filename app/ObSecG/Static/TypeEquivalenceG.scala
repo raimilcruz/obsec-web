@@ -69,6 +69,8 @@ object TypeEquivalenceG {
             recAlphaEq(set, m.mType.codomain.privateType, method2.mType.codomain.privateType) &&
             recAlphaEq(set, m.mType.codomain.publicType, method2.mType.codomain.publicType)
         })
+    case (UnionLabel(l1,r1),UnionLabel(l2,r2)) =>
+      recAlphaEq(set,l1,l2) && recAlphaEq(set,r1,r2)
     case (_, _) => t1.equals(t2)
   }
 }

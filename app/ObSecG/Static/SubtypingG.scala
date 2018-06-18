@@ -8,8 +8,14 @@ case class RecordTypeG(methods: List[MethodDeclarationG]) extends TypeG {
   override def methSig(x: String): MTypeG = throw new NotImplementedError("Not important")
   override def containsMethod(x: String): Boolean = throw new NotImplementedError("Not important")
 
-  override def prettyPrint(builder: StringBuilder): Unit =
-    builder.append(toString)
+  override def prettyPrint(builder: StringBuilder): Unit = {
+    builder.append("[")
+    methods.map(e=> {
+      builder.append("\n")
+      e.prettyPrint(builder)
+    })
+    builder.append("]")
+  }
 }
 
 abstract class ISubtypingGObSec(
@@ -51,9 +57,10 @@ class AmadioCardelliSubtypingG(
   private def <::(labelVariableEnv:LabelVarEnvironment,
                   alreadySeen: SubtypingAssumptions,
                   s1: STypeG,
-                  s2: STypeG): SubtypingAssumptions = {
-    val set = innerSubType(labelVariableEnv,alreadySeen, s1.publicType, s2.publicType,0)
-    innerSubType(labelVariableEnv,set, s1.privateType, s2.privateType,0)
+                  s2: STypeG,
+                  deep:Int): SubtypingAssumptions = {
+    val set = innerSubType(labelVariableEnv,alreadySeen, s1.publicType, s2.publicType,deep)
+    innerSubType(labelVariableEnv,set, s1.privateType, s2.privateType,deep)
   }
 
   private def equivalentTypeVariablesAndConstraints(m11: MethodDeclarationG,
@@ -70,15 +77,18 @@ class AmadioCardelliSubtypingG(
   private def innerSubType(labelVariableEnv: Environment[TypeVarBounds],
                            alreadySeen: SubtypingAssumptions,
                            t1: LabelG,
-                           t2: LabelG,deep:Int): SubtypingAssumptions= {
+                           t2: LabelG,
+                           deep:Int): SubtypingAssumptions= {
 
-    println("**********************")
-    println(deep)
-    println(s"label env: ${labelVariableEnv.prettyPrint}")
-    println(s"Already seen: $alreadySeen")
+    val printRules = true
+    val spaces = (1 to deep).foldLeft("")((acc,x)=>acc+" ")
+    println(spaces + " **********************")
+    println(spaces + deep)
+    println(s"$spaces label env: ${labelVariableEnv.prettyPrint}")
+    println(s"$spaces Already seen: $alreadySeen")
 
-    //println(s"st goal: ${t1.prettyPrint()} and ${t2.prettyPrint()}")
-    println("*********************")
+    println(s"$spaces st goal: ${t1.prettyPrint()} and ${t2.prettyPrint()}")
+    println(spaces + " *********************")
 
     if (alreadySeen.exists((x) => TypeEquivalenceG.alphaEq(x._1, t1) &&
       TypeEquivalenceG.alphaEq(x._2, t2)))
@@ -88,13 +98,19 @@ class AmadioCardelliSubtypingG(
       //println("In subtyping rules")
       (t1, t2) match {
         // T <: Top
-        case (_, t) if TypeEquivalenceG.alphaEq(t, ObjectType.top) => newSet
+        case (_, t) if TypeEquivalenceG.alphaEq(t, ObjectType.top) =>
+          if(printRules) println(s"$spaces [TypeEq]")
+          newSet
         //little optimization
-        //case (_,_) if TypeEquivalence.alphaEq(t1,t2) =>true
+        case (_,_) if TypeEquivalenceG.alphaEq(t1,t2) =>newSet
         case (union@UnionLabel(t11,t12),_)=>
+          if(printRules) println(s"$spaces [UnionL]")
+
           val set = innerSubType(labelVariableEnv,newSet,t11,t2,deep+1)
           innerSubType(labelVariableEnv,set,t12,t2,deep+1)
         case (_,union@UnionLabel(t21,t22))=>
+          if(printRules) println(s"$spaces [UnionR]")
+
           //it should be one or the other one
           try {
             innerSubType(labelVariableEnv, newSet, t1, t21,deep+1)
@@ -103,6 +119,7 @@ class AmadioCardelliSubtypingG(
             case x: SubtypingError => innerSubType(labelVariableEnv,newSet,t1,t22,deep+1)
           }
         case (gl1:LabelVar,gl2:LabelVar) =>
+          if(printRules) println(s"$spaces [Label]")
           //little optimization
           if(gl1 == gl1)
             newSet
@@ -121,6 +138,7 @@ class AmadioCardelliSubtypingG(
               bounds2.upper, deep + 1)
           }
         case (gl1: LabelVar, t) =>
+          if(printRules) println(s"$spaces [LabelL]")
           val upperBound = labelVariableEnv.lookup(gl1.name).upper
           if (upperBound == t)
             newSet
@@ -131,6 +149,8 @@ class AmadioCardelliSubtypingG(
               upperBound,
               t, deep + 1)
         case (t, gv2: LabelVar) =>
+          if(printRules) println(s"$spaces [LabelR]")
+
           val lowerBound = labelVariableEnv.lookup(gv2.name).lower
           if (lowerBound == t)
             newSet
@@ -141,6 +161,8 @@ class AmadioCardelliSubtypingG(
               t,
               lowerBound, deep + 1)
         case (RecordTypeG(methodsR1), RecordTypeG(methodsR2)) =>
+          if(printRules) println(s"$spaces [Record]")
+
           var set = newSet
           for (m2 <- methodsR2) {
             val m1 = methodsR1.find(x => x.name == m2.name)
@@ -161,23 +183,30 @@ class AmadioCardelliSubtypingG(
                 set = set.union(newSet)
                 val extendedGenVarEnv = auxiliaryFunctions.multiExtend(labelVariableEnv,m11.mType.typeVars)
                 for (pair <- m2.mType.domain.zip(m11.mType.domain)) {
-                  set = <::(extendedGenVarEnv,set, pair._1, pair._2)
+                  set = <::(extendedGenVarEnv,set, pair._1, pair._2,deep+1)
                 }
-                set = <::(extendedGenVarEnv,set, m11.mType.codomain, m2.mType.codomain)
+                set = <::(extendedGenVarEnv,set, m11.mType.codomain, m2.mType.codomain,deep+1)
             }
           }
           set
-        case (ot1@ObjectType(_, _), _) =>
-          innerSubType(labelVariableEnv,newSet, unfold(ot1), t2,deep+1)
-        case (_, ot2@ObjectType(_, _)) =>
-          if(ot2.isPrimitive)
-            throw SubtypingError("Not!")
-          innerSubType(labelVariableEnv,newSet, t1, unfold(ot2),deep+1)
         case (p1: PrimType, p2: PrimType) =>
+          if(printRules) println(s"$spaces [Prim]")
           if(p1 == p2) newSet
           else innerSubType(labelVariableEnv,newSet, p1.toObjType, p2.toObjType,deep+1)
         case (p1: PrimType, _) =>
+          if(printRules) println(s"$spaces [PrimL]")
           innerSubType(labelVariableEnv,newSet, p1.toObjType, t2,deep+1)
+        case (ot1@ObjectType(_, _), _) =>
+          if(printRules) println(s"$spaces [ObjL]")
+
+          innerSubType(labelVariableEnv,newSet, unfold(ot1), t2,deep+1)
+        case (_, ot2@ObjectType(_, _)) =>
+          if(printRules) println(s"$spaces [ObjR]")
+
+          if(ot2.isPrimitive){
+            throw SubtypingError("Not!")
+          }
+          innerSubType(labelVariableEnv,newSet, t1, unfold(ot2),deep+1)
         case _ => throw SubtypingError("Not!")
       }
     }

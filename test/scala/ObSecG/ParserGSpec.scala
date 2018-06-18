@@ -189,6 +189,19 @@ class ParserGSpec extends FlatSpec with Matchers with BaseSpec {
     assert(res == expected)
   }
 
+  "StringEq policy with union label" should "be recognized " in {
+    var program = "{ot rr {==[T super String]: String<T -> Bool<(Bool,T)}}"
+    val res = ObSecGParser.parseType(program)
+
+    val expected = Right(ObjectTypeNode("rr",
+      List(MD("==",
+        MT(
+          List(superL("T",TypeIdentifier("String"))),
+          List(stA(TypeIdentifier("String"),TypeIdentifier("T"))),
+          stA(TypeIdentifier("Bool"),UnionTypeAnnotation(TypeIdentifier("Bool"),TypeIdentifier("T"))))))))
+    assert(res == expected)
+  }
+
   "Method invocation over a method with multiples labels" must "work" in {
     var program = "{z : {ot X {m[T super Int, T1 : T .. Top ] : Int<T -> Int<T1}}<L => \n def m p  = p.+[T](1) \n }.m[Int,Int](1)"
     val res = ObSecGParser(program)

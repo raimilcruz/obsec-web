@@ -2,6 +2,7 @@ package scala.ObSecG
 
 import Common._
 import ObSecG.Ast._
+import ObSecG.Parsing.{ObSecGIdentifierResolver, ObSecGParser}
 import ObSecG.Static._
 import org.scalatest.{FlatSpec, Matchers}
 
@@ -74,6 +75,43 @@ class SubtypingSpec extends FlatSpec with Matchers with ElementServiceBaseSpec {
     var subtypingChecker = new AmadioCardelliSubtypingG(judgements,judgements.errorCollector)
     //T: Int .. Top, T1: T ..Top
     //assert(subtypingChecker.<::(env,left,ObjectType.top))
-    assert(subtypingChecker.<::(env,LabelVar("T"),IntType))
+    assert(subtypingChecker.<::(env,IntType,LabelVar("T")))
+  }
+
+  "String <: [==: String<L -> String<L]" must "work" in{
+
+    val stringEq  = ObSecGParser.parseType("{ot rr {==[T super String]: String<T -> Bool<(Bool,T)}}")
+    stringEq match{
+      case Right(typ) =>
+        val stringEqType = new ObSecGIdentifierResolver().resolveType(typeAnnotation = typ)
+        var judgements = new GObSecGJudgmentImpl(new ErrorCollector)
+        var subtypingChecker = new AmadioCardelliSubtypingG(judgements,judgements.errorCollector)
+
+        assert(subtypingChecker.<::(Environment.empty[TypeVarBounds](),StringType,stringEqType))
+    }
+  }
+  "String </: Bad StringEq" must "work" in{
+
+    val stringEq  = ObSecGParser.parseType("{ot rr {== : String<String -> Bool<Bool}}")
+    stringEq match{
+      case Right(typ) =>
+        val stringEqType = new ObSecGIdentifierResolver().resolveType(typeAnnotation = typ)
+        var judgements = new GObSecGJudgmentImpl(new ErrorCollector)
+        var subtypingChecker = new AmadioCardelliSubtypingG(judgements,judgements.errorCollector)
+
+        assert(!subtypingChecker.<::(Environment.empty[TypeVarBounds](),StringType,stringEqType))
+    }
+  }
+  "String <: StringEq redudant" must "work" in{
+
+    val stringEq  = ObSecGParser.parseType("{ot rr {==[T : String .. String] : String<T -> Bool<Bool}}")
+    stringEq match{
+      case Right(typ) =>
+        val stringEqType = new ObSecGIdentifierResolver().resolveType(typeAnnotation = typ)
+        var judgements = new GObSecGJudgmentImpl(new ErrorCollector)
+        var subtypingChecker = new AmadioCardelliSubtypingG(judgements,judgements.errorCollector)
+
+        assert(!subtypingChecker.<::(Environment.empty[TypeVarBounds](),StringType,stringEqType))
+    }
   }
 }

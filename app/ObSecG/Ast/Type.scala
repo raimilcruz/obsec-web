@@ -35,7 +35,13 @@ trait IObject{
   def methSig(x: String): MTypeG
   def containsMethod(x: String): Boolean
 }
-trait LabelG extends IObject with PrettyPrint with GObSecElement
+trait LabelG extends IObject with PrettyPrint with GObSecElement {
+  def prettyPrint():String ={
+    val s = new StringBuilder
+    prettyPrint(s)
+    s.toString()
+  }
+}
 
 
 
@@ -96,9 +102,12 @@ case class UnionLabel(left: LabelG,right: LabelG) extends LabelG {
   override def containsMethod(x: String): Boolean = throw new Error("notimplemented: UnionLabel.containsMethod")
 
   override def prettyPrint(buffer:StringBuilder): Unit = {
+    buffer.append("(")
     left.prettyPrint(buffer)
-    buffer.append("v")
+    buffer.append(",")
     right.prettyPrint(buffer)
+    buffer.append(")")
+
   }
 }
 

@@ -20,6 +20,8 @@ class ObSecGIdentifierResolver {
   def resolve(expression: ObSecGAstExprNode):ObSecGExpr =
     resolve(new Scope,new Scope,expression)
 
+  def resolveType(typeAnnotation: TypeAnnotation):LabelG=
+    resolveType(new Scope,typeAnnotation,labelPosisition = true)
 
   private def resolve(typeIdentifierScope: Scope[TypeIdentifierDeclarationPoint],
                       valueIdentifier: Scope[Boolean],
@@ -167,6 +169,9 @@ class ObSecGIdentifierResolver {
           else
             throw ResolverError.typeIsNotDefined(typeAnnotation,n)
       }
+    case UnionTypeAnnotation(left,right)=>
+      UnionLabel(resolveType(typeIdentifierScope,left,labelPosisition = false),
+        resolveType(typeIdentifierScope,right,labelPosisition = false))
     case _ => throw new NotImplementedError()
   }).setAstNode(typeAnnotation)
 
