@@ -1,14 +1,20 @@
 package ObSecG
 
-object Playground{
-  def main(args:Array[String]):Unit={
-    var s =
-      "type variable %s does %s not satisfy subtyping" +
-      " constraint "
+import ObSecG.Ast.{IntType, STypeG}
+import ObSecG.Parsing.{ObSecGIdentifierResolver, ObSecGParser}
+import ObSecG.Static.TypeCheckerG
 
-    println(s.format(List("1","2"):_*))
+object Playground{
+  def main(args:Array[String]):Unit= {
+    val program = "let{\n    deftype AuthServer {\n        {login: String<H String -> Int}\n    }\n    val auth =  new {z : AuthServer<L =>\n        def login password guess = if password.==[Int](guess) then 1 else 0\n    }\n}\nin\n    auth.login(\"qwe123\",\"qwe123\")"
+    ObSecGParser(program) match{
+      case Right(ast)=>
+        val expr = ObSecGIdentifierResolver(ast)
+        val theType =  TypeCheckerG(expr)
+
+        assert(theType == STypeG(IntType,IntType))
+    }
   }
-  def foo[T >: Int, T1 >: T](x:T):T1 = x
 }
 /*class Playground {
   def usage1():Unit={

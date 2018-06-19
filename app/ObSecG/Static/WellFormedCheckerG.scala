@@ -24,8 +24,7 @@ class WellFormedCheckerG(judgements: GObSecJudgements, errorCollector: ErrorColl
 
   def isWellFormed(genVarEnv: LabelVarEnvironment,
                    stype: STypeG): Boolean =
-    isWellFormed(genVarEnv, stype.privateType) &&
-     isWellFormed(genVarEnv, stype.publicType)
+    isWellFormed(genVarEnv,Environment.empty[ObjectType](),stype)
 
   def isWellFormed(labelVariableEnv: LabelVarEnvironment, t: LabelG): Boolean =
     isWellFormed(labelVariableEnv, Environment.empty[ObjectType](), t)
@@ -38,7 +37,13 @@ class WellFormedCheckerG(judgements: GObSecJudgements, errorCollector: ErrorColl
                            objectEnv: SelfDefinitionEnvironment,
                            s: STypeG): Boolean =
     isWellFormed(genVarEnv,objectEnv,s.privateType) &&
-      isWellFormed(genVarEnv,objectEnv,s.publicType)
+      isWellFormed(genVarEnv,objectEnv,s.publicType) &&
+      ( judgements.<::(genVarEnv, closeType(objectEnv,s.privateType),closeType(objectEnv,s.publicType)) == SubtypingSuccess
+        || {
+        errorCollector.report(s"Private facet must be subtype of public facet in security type: ${s.astNode.source}")
+        false
+        }
+      )
 
    private def isWellFormed(genVarEnv: LabelVarEnvironment,
                              objectEnv: SelfDefinitionEnvironment,
@@ -62,6 +67,9 @@ class WellFormedCheckerG(judgements: GObSecJudgements, errorCollector: ErrorColl
                 isWellFormed(
                   methodLabelEnvironment,newEnv, m.mType.codomain)
             })
+      case UnionLabel(left,right)=>
+        isWellFormed(genVarEnv,objectEnv,left) &&
+          isWellFormed(genVarEnv,objectEnv,right)
     }
 
   private def labelVariableWellFormed(genVarEnv: LabelVarEnvironment,
@@ -81,28 +89,11 @@ class WellFormedCheckerG(judgements: GObSecJudgements, errorCollector: ErrorColl
         Environment.extend(genVarEnv,h.typeVar,h.bounds)
         ,objectEnv,tail)
   }
-  /*
-     def closeType(env: Environment[ObjectType], t: TypeG): TypeG =
-       if (env.isEmpty) t
-       else {
-         val head = env.head
-         closeType(env.tail, TypeSubstG.substTypeVar(t, head._1, head._2))
-       }
 
-     private def isWellFormed(genVarEnv: Environment[TypeG],
-                              delta: Delta,
-                              env: Environment[ObjectType],
-                              s: STypeG): Boolean =
-       isWellFormed(genVarEnv, delta, env, s.privateType) &&
-         isWellFormed(genVarEnv, delta, env, s.publicType) &&
-         (sb.<::(
-           genVarEnv,
-           closeType(env, s.privateType),
-           closeType(env, s.publicType)) || {
-           errorCollector.report(s"Private facet must be subtype of " +
-             s"public facet in security type: ${s}")
-           false
-         })
-
-    */
+   private def closeType(env: Environment[ObjectType], t: LabelG): LabelG =
+     if (env.isEmpty) t
+     else {
+       val head = env.head
+       closeType(env.tail, TypeSubstG.substRecVar(t, head._1, head._2))
+     }
 }

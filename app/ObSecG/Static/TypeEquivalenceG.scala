@@ -37,9 +37,12 @@ object TypeEquivalenceG {
         methods1.forall(m => {
           val method2 = methods2.find(m2 => m2.name == m.name).get
 
-          //equal type parameter
-          m.mType.typeVars == method2.mType.typeVars &&
-          //èquivalent arguments
+          //equivalent type parameter
+          m.mType.typeVars.zip(method2.mType.typeVars).forall(pair =>
+            recAlphaEq(newSet,pair._1.lowerBound,pair._2.lowerBound) &&
+              recAlphaEq(newSet,pair._1.upperBound,pair._2.upperBound)
+          ) &&
+          //equivalent arguments
           m.mType.domain.zip(method2.mType.domain).forall(pair =>
             recAlphaEq(
               newSet,
@@ -49,7 +52,7 @@ object TypeEquivalenceG {
               newSet,
               pair._1.publicType,
               pair._2.publicType)) &&
-          //èquivalent return
+          //equivalent return
           recAlphaEq(newSet,
             m.mType.codomain.privateType,
             method2.mType.codomain.privateType) &&

@@ -14,6 +14,12 @@ trait OffsetPositional extends Positional{
     if(endPos eq NoPosition) endPos = pos
     this
   }
+
+  var source : CharSequence = ""
+  def setSource(s :CharSequence): this.type = {
+    if(source eq "") source =s
+    this
+  }
 }
 trait AstNode extends OffsetPositional
 object NoAstNode extends AstNode
@@ -76,5 +82,5 @@ object CommonError{
     CommonError(new AnalysisError(node,errorCode,parameters))
 }
 
-class StuckError(m: String = "") extends Error {
-}
+class StuckError(m: String = "") extends Error
+

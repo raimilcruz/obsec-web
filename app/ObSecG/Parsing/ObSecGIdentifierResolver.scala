@@ -88,7 +88,7 @@ class ObSecGIdentifierResolver {
           case node: TypeAliasDeclarationNode => letTypeScope.add(node.aliasName, AnythingElse)
           case node: DefTypeNode => letTypeScope.add(node.name, AnythingElse)
         }
-        resolveDeclaration(letTypeScope,valueIdentifier,d)
+        resolveDeclaration(letTypeScope,valueIdentifier,d).setAstNode(d)
       }),
         resolve(letTypeScope,letValueIdentifierScope,body))
     case _ => throw new NotImplementedError()
@@ -106,7 +106,7 @@ class ObSecGIdentifierResolver {
     }
   }
 
-  def resolveDeclaration(typeIdentifierScope: Scope[TypeIdentifierDeclarationPoint],
+  private def resolveDeclaration(typeIdentifierScope: Scope[TypeIdentifierDeclarationPoint],
                          valueIdentifier: Scope[Boolean],
                          declaration: DeclarationNode): Declaration= declaration match{
     case DefTypeNode(typeName,methods)=>
@@ -161,8 +161,8 @@ class ObSecGIdentifierResolver {
             val definitionPoint = typeIdentifierScope.lookup(n)
             definitionPoint match{
               case SelfDeclarationPoint => TypeVar(n)
-                //TODO: To have a way to identify low variables
               case LabelDeclarationPoint => LabelVar(n)
+              case LowLabelDeclarationPoint => LabelVar(n).setAster(true)
               case _ => TypeVar(n)
             }
           }
@@ -193,7 +193,7 @@ class ObSecGIdentifierResolver {
         resolvedLabelVars,
         methodDeclaration.mType.domain.map(st=>resolveAnnotatedFacetedType(methodLabelScope,st)),
         resolveAnnotatedFacetedType(methodLabelScope,methodDeclaration.mType.codomain)
-      )).setMethodNameNode(methodDeclaration.name)
+      )).setMethodNameNode(methodDeclaration.name).setAstNode(methodDeclaration)
   }
   private def multiExtend(typeIdentifierScope: Scope[TypeIdentifierDeclarationPoint],
                           strings: List[String],
@@ -208,12 +208,12 @@ class ObSecGIdentifierResolver {
     val privateType = resolveType(typeIdentifierScope,annotatedFacetedType.left,labelPosisition = false)
     privateType match {
       case g: TypeG =>
-        annotatedFacetedType.right match{
-          case LowLabelNode => STypeG(g,g).setAstNode(annotatedFacetedType)
-          case HighLabelNode => STypeG(g,ObjectType.top).setAstNode(annotatedFacetedType)
+        (annotatedFacetedType.right match{
+          case LowLabelNode => STypeG(g,g)
+          case HighLabelNode => STypeG(g,ObjectType.top)
           case _ => STypeG(g,
             resolveType(typeIdentifierScope, annotatedFacetedType.right,labelPosisition = true))
-        }
+        }).setAstNode(annotatedFacetedType)
       case _ => throw ResolverError.invalidTypeForPrivateFacet(annotatedFacetedType)
     }
   }

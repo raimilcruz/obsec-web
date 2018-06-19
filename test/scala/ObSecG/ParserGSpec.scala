@@ -227,4 +227,15 @@ class ParserGSpec extends FlatSpec with Matchers with BaseSpec {
               MI("p",List(tI("T")),List(IntLiteral(1)),"+")))),List(tI("Int"), tI("Int")),List(IntLiteral(1)),"m"))
     assert(res == expected)
   }
+
+  "Low label " must "be recognized" in {
+    val annotatedType = ObSecGParser.parseType("[{==[low T super String] : -> Bool<T}]")
+    val expected = NoRecursiveObjectTypeNode(
+      List(MD("==",
+        MT(
+          List(superL("T",tI("String")).toAster),
+          List(),
+          stA(tI("Bool"),tI("T"))))))
+    assert(annotatedType == Right(expected))
+  }
 }

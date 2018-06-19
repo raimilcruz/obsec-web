@@ -5,7 +5,13 @@ trait GObSecElement{
 
   def setAstNode(node:ObSecGAstNode):this.type ={
     if(astNode eq NoGObSecNode) astNode = node
-  this
+    this
+  }
+
+  var isSynthetic : Boolean = true
+  def setIsSynthetic(b:Boolean): this.type ={
+    isSynthetic = b
+    this
   }
 }
 case class NodeList[+T <: GObSecElement](elems : List[T]) extends Iterable[T] with GObSecElement {
@@ -76,7 +82,7 @@ case class NodeList[+T <: GObSecElement](elems : List[T]) extends Iterable[T] wi
     }
 
     def map[T](f: ObSecGExpr => ObSecGExpr) =
-      MethodInv(f(e1), types, NodeList(args.elems.map(f)), method)
+      MethodInv(f(e1), types, NodeList(args.elems.map(f)), method).setAstNode(astNode)
 
     //override def toString: String = s"${e1}.$method(${if(args.size==0)"" else args(0) + args.drop(1).foldLeft("")((acc,x)=> acc+","+ x)})"
   }
@@ -113,7 +119,7 @@ case class ConsListExpr(elem :ObSecGExpr,list:ObSecGExpr) extends ObSecGExpr
 
 case class LetStarExpr(declarations: List[Declaration],body:ObSecGExpr) extends ObSecGExpr
 
-sealed trait Declaration
+sealed trait Declaration extends GObSecElement
 case class LocalDeclaration(variable:String,rExpr:ObSecGExpr) extends Declaration
 case class TypeAlias(aliasName: String,objType: ObjectType) extends Declaration
 case class TypeDefinition(name:String,methods:List[MethodDeclarationG]) extends Declaration

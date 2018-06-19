@@ -41,7 +41,7 @@ trait GObSecJudgements extends Environments{
   def alphaEq(t1:LabelG,t2:LabelG):Boolean
 
 
-  def <::(labelVariableEnv:LabelVarEnvironment,  t1: LabelG, t2: LabelG):Boolean
+  def <::(labelVariableEnv:LabelVarEnvironment,  t1: LabelG, t2: LabelG):SubtypingResult
 
   def auxiliaryDefinitions: IAuxiliaryFunctions
 
@@ -54,11 +54,9 @@ trait GObSecJudgmentsExtensions extends GObSecJudgements{
      isWellFormed(labelVarEnvironment,stype.publicType)
 
 
-  def <::(labelVariableEnv:LabelVarEnvironment, s1:STypeG,s2:STypeG):Boolean =
+  def <::(labelVariableEnv:LabelVarEnvironment, s1:STypeG,s2:STypeG):SubtypingResult =
     <::(labelVariableEnv,s1.privateType, s2.privateType) &&
-      <::(labelVariableEnv,s1.publicType, s2.publicType)
-
-
+        <::(labelVariableEnv,s1.publicType, s2.publicType)
 }
 
 class GObSecGJudgmentImpl(val errorCollector: ErrorCollector) extends GObSecJudgmentsExtensions {
@@ -93,7 +91,7 @@ class GObSecGJudgmentImpl(val errorCollector: ErrorCollector) extends GObSecJudg
     wellFormedChecker.isWellFormed(labelVarEnvironment,theType)
   }
 
-  override def <::(labelVariableEnv: LabelVarEnvironment, t1: LabelG, t2: LabelG): Boolean = {
+  override def <::(labelVariableEnv: LabelVarEnvironment, t1: LabelG, t2: LabelG): SubtypingResult = {
     var subtyping = new AmadioCardelliSubtypingG(this,errorCollector)
     subtyping.<::(labelVariableEnv,t1,t2)
   }

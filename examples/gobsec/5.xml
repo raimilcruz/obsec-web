@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Example>
+  <Title>2.1: Password policy with hash and eq</Title>
+  <Description>
+    This code differs from example 2 in that the "low" modifier was removed. Note that now the code is not well-typed
+  </Description>
+</Example>

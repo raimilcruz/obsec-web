@@ -12,7 +12,11 @@ import ObSecG.Static.{TypeEquivalenceG, TypeSubstG}
   */
 case class STypeG(privateType: TypeG, publicType: LabelG) extends GObSecElement with PrettyPrint {
   def map(f: TypeG => TypeG, g: LabelG => LabelG): STypeG =
-    STypeG(f(privateType), g(publicType))
+    STypeG(f(privateType), g(publicType)).setAstNode(this.astNode)
+
+  def map(g: LabelG => LabelG): STypeG =
+    STypeG(g(privateType).asInstanceOf[TypeG], g(publicType)).setAstNode(this.astNode)
+
 
   /* override def toString: String ={
      val pString: String =
@@ -27,6 +31,13 @@ case class STypeG(privateType: TypeG, publicType: LabelG) extends GObSecElement 
     privateType.prettyPrint(buffer)
     buffer.append("<")
     publicType.prettyPrint(buffer)
+  }
+  def prettyPrint(): String = {
+    val buffer = new StringBuilder
+    privateType.prettyPrint(buffer)
+    buffer.append("<")
+    publicType.prettyPrint(buffer)
+    buffer.toString()
   }
 }
 
@@ -97,9 +108,12 @@ object Bottom extends LabelG {
 }
 
 case class UnionLabel(left: LabelG,right: LabelG) extends LabelG {
-  override def methSig(x: String): MTypeG = throw new Error("notimplemented: UnionLabel.methsig")
+  override def methSig(x: String): MTypeG =
+    throw new Error("notimplemented: UnionLabel.methsig")
 
-  override def containsMethod(x: String): Boolean = throw new Error("notimplemented: UnionLabel.containsMethod")
+  override def containsMethod(x: String): Boolean =
+    false
+    //throw new Error(s"UnionLabel.containsMethod not implemented. Request method: $x to type ${this}")
 
   override def prettyPrint(buffer:StringBuilder): Unit = {
     buffer.append("(")
@@ -177,22 +191,6 @@ case class TypeVar(name: String) extends TypeG {
   override def prettyPrint(builder: StringBuilder): Unit =
     builder.append(name)
 }
-
-/*case class GenericTypeVar(name: String) extends TypeG {
-  override def methSig(x: String): MTypeG = throw new Error("Generic type var does not have methods")
-
-  override def containsMethod(x: String): Boolean = throw new Error("Generic Type var does not have methods")
-
-  override def toString: String = s"GV($name)"
-}*/
-
-/*case class TypeVarG(name: String) extends TypeG {
-  override def methSig(x: String): MTypeG = throw new Error("Type var does not have methods")
-
-  override def containsMethod(x: String): Boolean = throw new Error("Type var does not have methods")
-
-  override def toString: String = name
-}*/
 
 object UnUsedTypeVars {
   def apply: List[BoundedLabelVar] = List(BoundedLabelVar("unused",Bottom, ObjectType.top))
@@ -446,6 +444,10 @@ case class MTypeG(typeVars: List[BoundedLabelVar], domain: List[STypeG], codomai
 case class BoundedLabelVar(typeVar: String
                                , lowerBound: LabelG
                                , upperBound: LabelG) extends GObSecElement with PrettyPrint {
+  def map(function: LabelG => LabelG): BoundedLabelVar =
+    BoundedLabelVar(typeVar,function(lowerBound),function(upperBound))
+      .setAstNode(this.astNode).setAster(this.isAster)
+
   override def toString: String = s"$typeVar :$lowerBound..$upperBound"
   def bounds: TypeVarBounds = TypeVarBounds(lowerBound,upperBound)
 
@@ -455,6 +457,9 @@ case class BoundedLabelVar(typeVar: String
     isAster = b
     this
   }
+
+  def rename(name:String):BoundedLabelVar =
+    BoundedLabelVar(name,lowerBound,upperBound).setAstNode(astNode).setAster(isAster)
 
   override def prettyPrint(buffer:StringBuilder): Unit = {
     buffer.append(typeVar)
@@ -467,6 +472,9 @@ case class BoundedLabelVar(typeVar: String
 
 
 case class TypeVarBounds(lower:LabelG,upper:LabelG) extends PrettyPrint {
-  override def prettyPrint(buffer:StringBuilder): Unit =
-    buffer.append(s"${lower.prettyPrint(buffer)}..${upper.prettyPrint(buffer)}")
+  override def prettyPrint(buffer:StringBuilder): Unit = {
+    lower.prettyPrint(buffer)
+    buffer.append("..")
+    upper.prettyPrint(buffer)
+  }
 }

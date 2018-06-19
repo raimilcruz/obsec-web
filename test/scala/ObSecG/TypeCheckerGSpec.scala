@@ -166,4 +166,26 @@ class TypeCheckerGSpec extends FlatSpec with Matchers with ElementServiceBaseSpe
         assert(exp.analysisError.errorCode == TypeCheckerErrorCodes.subTypingError)
     }
   }
+
+  "Something" should "work" in {
+    var program = "let{\n    type StringEq = [{==[T super String] : String<T -> Bool<(Bool,T)}]\n}\nin 1"
+    ObSecGParser(program) match{
+      case Right(ast)=>
+        val expr = ObSecGIdentifierResolver(ast)
+        var res = TypeCheckerG(expr)
+        assert(res == STypeG(IntType,IntType))
+    }
+  }
+
+  "Declassify password" should "work" in {
+    var program = "let{\n    type StringEq = [{== [low T : String .. String] : String<T -> Bool<(Bool,T)}]\n    deftype AuthServer {\n        {login: String<StringEq String -> Int}\n    }\n    val auth =  new {z : AuthServer<L =>\n        def login password guess = if password.==[String](guess) then 1 else 0\n        }\n    }\nin\nauth.login(\"qwe123\",\"qwe123\")"
+    ObSecGParser(program) match{
+      case Right(ast)=>
+        val expr = ObSecGIdentifierResolver(ast)
+        val theType =  TypeCheckerG(expr)
+
+        assert(theType == STypeG(IntType,IntType))
+    }
+  }
+
 }

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Example>
+  <Title>1.2: Method implementation does not respect the password policy</Title>
+  <Description>
+    Now the 'login' method does not adhere to the password policy and it uses the hash method, which is not the public type.
+    Note that the conditional expression become high, and hence the result of the if expression is also high
+  </Description>
+</Example>

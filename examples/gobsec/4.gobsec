@@ -1,0 +1,9 @@
+let {
+    type StringHashEq = [{hash : -> Int<[{==[low T super Int] : Int<T -> Bool<(Bool,T)}]}]
+    type AuthServer = [{login : String<StringHashEq String -> Int<L}]
+    val auth =  new {z : AuthServer<L =>
+            def login password guess = if password.hash().==[Int](guess.hash()) then 1 else 0
+    }
+}
+in
+    auth.login("qwe123","qwe123")

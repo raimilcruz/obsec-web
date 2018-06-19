@@ -77,7 +77,12 @@ object ObSecGParser extends StandardTokenParsers with PackratParsers with Implic
 
 
   def myPositioned[T <: OffsetPositional](p: => Parser[T]): Parser[T] = Parser(in => p(in) match {
-    case Success(t, in1) => Success(if (t.pos == NoPosition) ((t setPos in.pos) setOffSet in.offset) setEndPos in1.pos else t, in1)
+    case Success(t, in1) =>
+      Success(
+        if (t.pos == NoPosition)
+          (((t setPos in.pos) setOffSet in.offset)
+            setEndPos in1.pos)
+            setSource in.source.subSequence(in.offset,in1.offset) else t, in1)
     case ns: NoSuccess => ns
   })
 

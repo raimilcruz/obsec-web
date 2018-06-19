@@ -74,6 +74,8 @@ object SubTypingError extends ErrorCodesEnum
 object BadActualLabelArgument extends ErrorCodesEnum
 object ActualTypeParametersMustMatchFormalTypeParameterAmount extends ErrorCodesEnum
 object ActualArgumentsSizeError extends ErrorCodesEnum
+object NamedTypeIsNotWellFormed extends ErrorCodesEnum
+object MissingMethodDefinition extends ErrorCodesEnum
 
 object TypeCheckerErrorCodes{
   def sameTypeForIfBranches: ErrorCodeG =
@@ -100,9 +102,9 @@ object TypeCheckerErrorCodes{
              (of actual argument) is not subtyping of %s""")
   def badActualLabelArgument: ErrorCodeG =
     ErrorCodeG(BadActualLabelArgument,
-      "Invocation of %s : Actual type for generic" +
-        s" type variable %s does not satisfy subtyping" +
-        s" constraint")
+      "Invocation of %s : Actual type %s for generic" +
+        s" does not satisfy subtyping " +
+        s" constraint of label variable: %s <: %s <: %s")
 
   def actualTypeParametersSizeError: ErrorCodeG =
     ErrorCodeG(ActualTypeParametersMustMatchFormalTypeParameterAmount,
@@ -113,10 +115,26 @@ object TypeCheckerErrorCodes{
     ErrorCodeG(ActualArgumentsSizeError,
       "Method '%s' : Actual arguments amount must" +
         s" match the formal arguments amount")
+
+  def namedTypeIsNotWellFormed: ErrorCodeG =
+    ErrorCodeG(NamedTypeIsNotWellFormed,
+      "Type '%s' is not well formed. Details: %s")
+
+  def missingMethodDefinition: ErrorCodeG =
+    ErrorCodeG(MissingMethodDefinition,
+      s"There must exist a method definition of each" +
+        s" method signature. Missing method definition" +
+        s" for: %s")
 }
 
 case class TypeErrorG(analysisError: AnalysisError) extends ThrowableAnalysisError
 object TypeErrorG{
+  def missingMethodDefinition(astNode: ObSecGAstNode, methodDefNames: List[String]): TypeErrorG =
+    typeError(astNode,TypeCheckerErrorCodes.missingMethodDefinition,List(methodDefNames.mkString(", ")))
+
+  def namedTypeIsNotWellFormed(node: ObSecGAstNode,typeName:String,wellFormedError:String): TypeErrorG =
+    typeError(node,TypeCheckerErrorCodes.namedTypeIsNotWellFormed,List(typeName,wellFormedError))
+
   def actualArgumentsSizeError(expr: GObSecElement,method:String): TypeErrorG =
     typeError(expr.astNode,TypeCheckerErrorCodes.actualArgumentsSizeError,List(method))
 
@@ -126,8 +144,8 @@ object TypeErrorG{
   def ifConditionExpectABoolean(node: ObSecGAstNode): TypeErrorG =
     typeError(node,TypeCheckerErrorCodes.ifConditionExpectABoolean)
 
-  def returnTypeError(node:ObSecGAstNode, method: String, returnedType: String, expectedType: String): TypeErrorG =
-    typeError(node,TypeCheckerErrorCodes.returnTypeError,List(method,returnedType,expectedType))
+  def returnTypeError(node:ObSecGAstNode, method: String, returnedType: STypeG, expectedType: STypeG): TypeErrorG =
+    typeError(node,TypeCheckerErrorCodes.returnTypeError,List(method,returnedType.prettyPrint(),expectedType.prettyPrint()))
 
   def methodNotFound(node:ObSecGAstNode, method: String): TypeErrorG =
     typeError(node,TypeCheckerErrorCodes.methodNotFound,List(method))
@@ -135,8 +153,12 @@ object TypeErrorG{
   def subTypingError(node:ObSecGAstNode,method: String, actualType: STypeG, expectedType: STypeG): TypeErrorG =
     typeError(node,TypeCheckerErrorCodes.subTypingError,List(method,actualType.toString,expectedType.toString))
 
-  def badActualLabelArgument(node:ObSecGAstNode, method: String, typeVar: String): TypeErrorG =
-    typeError(node,TypeCheckerErrorCodes.badActualLabelArgument,List(method,typeVar))
+  def badActualLabelArgument(node:ObSecGAstNode, method: String, typeVar: BoundedLabelVar,label:LabelG): TypeErrorG =
+    typeError(node,TypeCheckerErrorCodes.badActualLabelArgument,
+      List(method,label.prettyPrint(),
+        typeVar.lowerBound.prettyPrint(),
+        label.prettyPrint(),
+        typeVar.upperBound.prettyPrint()))
 
   def actualTypeParametersSizeError(node:ObSecGAstNode, method: String,
                                     actualTypeCount:Int,

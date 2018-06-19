@@ -69,7 +69,7 @@ class ApplicationController @Inject()(configuration: play.api.Configuration) ext
     val currentDirectory = new java.io.File(".").getCanonicalPath
     val exampleDir = configuration.underlying.getString("languagepad.exampleDirectory")
     val exampleDirFullPath = Paths.get(currentDirectory, exampleDir)
-    val exampleHelper = new ExampleHelper(exampleDirFullPath.toString,".obsec")
+    val exampleHelper = new ExampleHelper(exampleDirFullPath.toString,".gobsec")
     exampleHelper.examples()
   }
 

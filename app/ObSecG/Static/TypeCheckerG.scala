@@ -79,7 +79,7 @@ class TypeChecker(judgements: GObSecJudgmentsExtensions,
             pair._1.typeVar,
             TypeVarBounds(closedLowerBound, closedLowerBound))
           if (!typeInBound(extendedGenVarEnv, pair._2, closedLowerBound, closeUpperBound))
-            throw TypeErrorG.badActualLabelArgument(pair._2.astNode, m, pair._1.typeVar)
+            throw TypeErrorG.badActualLabelArgument(pair._2.astNode, m, pair._1,pair._2)
           substitutions = substitutions ++ List((pair._1, pair._2))
         }
         //check the argument count
@@ -91,8 +91,8 @@ class TypeChecker(judgements: GObSecJudgmentsExtensions,
             closeGenType(
               pair._2,
               mType.typeVars.zip(types))
-          if (!judgements.<::(extendedGenVarEnv,
-            pair._1, subtitutedType)) {
+          if (judgements.<::(extendedGenVarEnv,
+            pair._1, subtitutedType).isInstanceOf[SubtypingFail]) {
             throw TypeErrorG.subTypingError(pair._1.astNode, m, pair._1, subtitutedType)
           }
         }
@@ -126,9 +126,7 @@ class TypeChecker(judgements: GObSecJudgmentsExtensions,
       val methodDefNames = methods.map(x => x.name)
       val methsNoDef = privateMethodNames.filter(x => !methodDefNames.contains(x))
       if (methsNoDef.nonEmpty) {
-        throw TypeError(s"There must exist a method definition of each" +
-          s" method signature. Missing method definition" +
-          s" for: ${methodDefNames.foldLeft("")((acc, m) => acc + " " + m)}.")
+        throw TypeErrorG.missingMethodDefinition(expr.astNode, methodDefNames)
       }
       //TODO: Check this in the ResolverIdentifier
       val methsNoSignature = methodDefNames.filter(x => !privateMethodNames.contains(x))
@@ -149,8 +147,8 @@ class TypeChecker(judgements: GObSecJudgmentsExtensions,
         var methodGenVarEnv = auxiliaryFunctions.multiExtend(genVarEnv, mType.typeVars)
         var s = typeCheck(methodGenVarEnv, methodScope, aliasScope, m.mBody)
         print(s"$s <:: ${mType.codomain}")
-        if (!judgements.<::(methodGenVarEnv, s, mType.codomain))
-          throw TypeErrorG.returnTypeError(m.mBody.astNode, m.name, s.toString, mType.codomain.toString)
+        if (judgements.<::(methodGenVarEnv, s, mType.codomain).isInstanceOf[SubtypingFail])
+          throw TypeErrorG.returnTypeError(m.mBody.astNode, m.name, s, mType.codomain)
       }
       stype
     case IfExpr(cond, e1, e2) =>
@@ -179,15 +177,13 @@ class TypeChecker(judgements: GObSecJudgmentsExtensions,
               ObjectType(deftype.name, deftype.methods))
             //println(newTypeAliasScope.toList())
             if (!judgements.isWellFormed(Environment.empty(): LabelVarEnvironment, closedType))
-              throw TypeError(s"Type declaration '${deftype.name}' declaration " +
-                s"is not well-formed: $closedType")
+              throw TypeErrorG.namedTypeIsNotWellFormed(deftype.astNode,deftype.name,errorCollector.errors)
             newTypeAliasScope.add(deftype.name, closedType.asInstanceOf[TypeG])
           case ta: TypeAlias =>
             val closedType = closeAliases(newTypeAliasScope.toList, ta.objType)
             //println(newTypeAliasScope.toList())
             if (!judgements.isWellFormed(Environment.empty(): LabelVarEnvironment, closedType))
-              throw TypeError(s"Type in the type alias '${ta.aliasName}' " +
-                s"declaration is not well-formed: $closedType")
+              throw TypeErrorG.namedTypeIsNotWellFormed(ta.astNode,ta.aliasName,errorCollector.errors)
             newTypeAliasScope.add(ta.aliasName, closedType.asInstanceOf[TypeG])
         }
       }
@@ -206,7 +202,7 @@ class TypeChecker(judgements: GObSecJudgmentsExtensions,
         .forall(e =>
           judgements
             .<::(genVarEnv, typeCheck(genVarEnv, scope, aliasScope, e),
-              STypeG(StringType, StringType))))
+              STypeG(StringType, StringType)) == SubtypingSuccess))
         throw TypeError("Arguments of 'mklist' must be of type String<String")
       STypeG(StringGListType(StringType), StringGListType(StringType))
     case ConsListExpr(elem, list) =>
@@ -218,15 +214,14 @@ class TypeChecker(judgements: GObSecJudgmentsExtensions,
   private def typeInBound(genVarEnv: LabelVarEnvironment,
                           actualType: LabelG,
                           lower: LabelG, upper: LabelG): Boolean = {
-    judgements.<::(genVarEnv, actualType, upper) &&
-      judgements.<::(genVarEnv, lower, actualType)
+    (judgements.<::(genVarEnv, actualType, upper) &&
+      judgements.<::(genVarEnv, lower, actualType)) == SubtypingSuccess
   }
 
   def closeAliases(aliasScope: TypeAliasScope, sType: STypeG): STypeG = {
     //TODO: Check problem with alias with same name at different scopes
     val aliases = aliasScope.toList
-    STypeG(closeAliases(aliases, sType.privateType).asInstanceOf[TypeG],
-      closeAliases(aliases, sType.publicType))
+    sType.map(facet => closeAliases(aliases, facet))
   }
 
   def closeAliases(aliases: List[(String, TypeG)],
@@ -241,10 +236,7 @@ class TypeChecker(judgements: GObSecJudgmentsExtensions,
                           ): STypeG = substitutions match {
     case List() => g
     case (tv, actualLabel) :: t => closeGenType(
-      STypeG(
-        TypeSubstG.substLabel(g.privateType, tv, actualLabel).asInstanceOf[TypeG],
-        TypeSubstG.substLabel(g.publicType, tv, actualLabel)
-      ), t)
+      g.map(facet => TypeSubstG.substLabel(facet, tv, actualLabel)), t)
 
   }
 

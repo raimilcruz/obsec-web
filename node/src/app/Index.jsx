@@ -268,7 +268,7 @@ export default class Main extends React.Component {
                         <tr>
                             <td>S</td>
                             <td>::=</td>
-                            <td>T &lt; T</td>
+                            <td>T &lt; U</td>
                             <td>(Security types)</td>
                         </tr>
                         <tr>
@@ -294,25 +294,49 @@ export default class Main extends React.Component {
                             <td>(Types)</td>
                         </tr>
                         <tr>
+                            <td>U</td>
+                            <td>::=</td>
+                            <td>T | L</td>
+                            <td>(Labels)</td>
+                        </tr>
+                        <tr>
                             <td>OT</td>
                             <td>::=</td>
                             <td>[X M*] | [M*]</td>
                             <td>(Object Type)</td>
                         </tr>
                         <tr>
-                            <td>M</td>
+                            <td>    M</td>
                             <td>::=</td>
-                            <td>{this.lcb()} name : S* -> S {this.rcb()} </td>
+                            <td>{this.lcb()} name [LD*]: S* -> S {this.rcb()} </td>
                             <td>(Method signature)</td>
+                        </tr>
+                        <tr>
+                            <td>LD</td>
+                            <td>::=</td>
+                            <td>LV <strong>super</strong> T | LV <strong>extends</strong> T | LV : T .. T</td>
+                            <td>(Label bound)</td>
+                        </tr>
+                        <tr>
+                            <td>LV</td>
+                            <td>::=</td>
+                            <td>L | <strong>low</strong>  L</td>
+                            <td>(Label variables)</td>
                         </tr>
                         <tr>
                             <td>t</td>
                             <td>::=</td>
-                            <td> o | x | t.m(t) | b | n | s |
-                                <strong>if</strong> t <strong>then</strong> t <strong>else</strong> t |
-                                <strong>mkList</strong>(t*) | <strong>let</strong> {"{"} TD* TA* VD* {"}"} <strong>in</strong> t
+                            <td> o | x | t[T*].m(t*) | b | n | s |
+                                <strong> if</strong> t <strong>then</strong> t <strong>else</strong> t
                             </td>
                             <td>(Terms)</td>
+                        </tr>
+                        <tr>
+                            <td colSpan={2}></td>
+                            <td>
+                                <strong>mkList</strong>(t*) | <strong>let</strong> {"{"} TD* TA* VD* {"}"} <strong>in</strong> t
+                            </td>
+                            <td></td>
                         </tr>
                         <tr>
                             <td>o</td>
@@ -366,6 +390,12 @@ export default class Main extends React.Component {
                             <td>identifier</td>
                             <td>(Type Variable)</td>
                         </tr>
+                        <tr>
+                            <td>L</td>
+                            <td>::=</td>
+                            <td>identifier</td>
+                            <td>(Label Variable)</td>
+                        </tr>
                         </tbody>
                     </table>
                     <br/>
@@ -382,14 +412,14 @@ export default class Main extends React.Component {
                        {
                            this.state.typeDefinitionsOpen=="Int"?
                            "[" +
-                           "{+ : Int<Int -> Int<Int}\n" +
-                           "{- : Int<Int -> Int<Int}\n"+
-                           "{== : Int<Int -> Bool<Bool}]"
+                           "{+ [l >: Int] : Int<l -> Int<l}\n" +
+                           "{- [l >: Int] : Int<l -> Int<l}\n"+
+                           "{== [l >: Int] : Int<l -> Bool<(Bool,l)}]"
                            : (this.state.typeDefinitionsOpen=="Bool")?
                            "[{if : T<T T<T -> T<T}]"
                            : (this.state.typeDefinitionsOpen=="String")?
                            "[" +
-                           "{== : String<String -> Bool<Bool}\n" +
+                           "{== [l >: String]: String<l -> Bool<(Bool,l)}\n" +
                            "{hash : -> Int<Int}\n"+
                            "{length : -> Int<Int}]"
                            : (this.state.typeDefinitionsOpen=="StrList")?

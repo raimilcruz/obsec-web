@@ -42,8 +42,6 @@ class ResolverGSpec extends FlatSpec with Matchers with BaseSpec {
     }
   }
 
-
-
   "Label variable names in a method declaraton" must "be unique" in {
     var program = "{z : {ot X {m[T super Int, T super Int] : Int -> Int}}<L => \n def m p  = p \n }.m(1)"
     ObSecGParser(program) match{

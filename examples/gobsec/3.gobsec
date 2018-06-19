@@ -1,0 +1,10 @@
+let{
+    deftype AuthServer {
+        {login: String<H String -> Int}
+    }
+    val auth =  new {z : AuthServer<L =>
+        def login password guess = if password.==[String](guess) then 1 else 0
+    }
+}
+in
+    auth.login("qwe123","qwe123")

@@ -1,0 +1,19 @@
+let{
+    type StringEq = [{== : String -> Bool}]
+    deftype StrEqList{
+        {isEmpty: -> Bool<L}
+        {head: -> String<StringEq }
+        {tail: -> StrList<StrEqList}
+    }
+    val listHelper =  new {z : [{contains : StrList<StrEqList -> Bool<L}]<L  =>
+                          def contains myList  =
+                              if myList.isEmpty()
+                              then false
+                              else
+                                if myList.head().==("a")
+                                then true
+                                else z.contains(myList.tail())
+                    }
+    }
+in
+    listHelper.contains(mklist("b","c","a"))
