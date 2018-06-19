@@ -76,11 +76,12 @@ object ActualTypeParametersMustMatchFormalTypeParameterAmount extends ErrorCodes
 object ActualArgumentsSizeError extends ErrorCodesEnum
 object NamedTypeIsNotWellFormed extends ErrorCodesEnum
 object MissingMethodDefinition extends ErrorCodesEnum
+object BadStringListLabel extends ErrorCodesEnum
 
 object TypeCheckerErrorCodes{
   def sameTypeForIfBranches: ErrorCodeG =
     ErrorCodeG(SameTypeForIfBranches,
-    "Both branches of an if expression must have the same type")
+    "Both branches of an if expression must have the same type. Branch types: %s and %s")
 
   def ifConditionExpectABoolean: ErrorCodeG =
     ErrorCodeG(IfConditionExpectABoolean,
@@ -125,10 +126,23 @@ object TypeCheckerErrorCodes{
       s"There must exist a method definition of each" +
         s" method signature. Missing method definition" +
         s" for: %s")
+
+  def badStringListLabel: ErrorCodeG =
+    ErrorCodeG(BadStringListLabel,
+      s"Actual label %s must satifies String <: %s")
 }
 
 case class TypeErrorG(analysisError: AnalysisError) extends ThrowableAnalysisError
 object TypeErrorG{
+  def badStringListLabel(astNode: ObSecGAstNode,actualLabel:LabelG): TypeErrorG =
+    typeError(astNode,TypeCheckerErrorCodes.badActualLabelArgument,
+      List(
+        "mkList",
+        actualLabel.prettyPrint(),
+        "String",
+        actualLabel.prettyPrint(),
+        "Top"))
+
   def missingMethodDefinition(astNode: ObSecGAstNode, methodDefNames: List[String]): TypeErrorG =
     typeError(astNode,TypeCheckerErrorCodes.missingMethodDefinition,List(methodDefNames.mkString(", ")))
 
@@ -138,8 +152,10 @@ object TypeErrorG{
   def actualArgumentsSizeError(expr: GObSecElement,method:String): TypeErrorG =
     typeError(expr.astNode,TypeCheckerErrorCodes.actualArgumentsSizeError,List(method))
 
-  def sameTypeForIfBranches(node: ObSecGAstNode): TypeErrorG =
-    typeError(node,TypeCheckerErrorCodes.sameTypeForIfBranches)
+  def sameTypeForIfBranches(node: ObSecGAstNode, typeThen:STypeG,typeElse:STypeG): TypeErrorG =
+    typeError(node,TypeCheckerErrorCodes.sameTypeForIfBranches,
+      List(typeThen.prettyPrint(),
+        typeElse.prettyPrint()))
 
   def ifConditionExpectABoolean(node: ObSecGAstNode): TypeErrorG =
     typeError(node,TypeCheckerErrorCodes.ifConditionExpectABoolean)

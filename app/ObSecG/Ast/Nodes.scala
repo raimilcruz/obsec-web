@@ -64,7 +64,7 @@ case class BooleanLiteral(v:Boolean) extends ObSecGAstExprNode {
   override def children: List[ObSecGAstNode] = List()
 }
 
-case class ListLiteral(elems: List[ObSecGAstExprNode]) extends ObSecGAstExprNode {
+case class ListLiteral(label: TypeAnnotation, elems: List[ObSecGAstExprNode]) extends ObSecGAstExprNode {
   override def children: List[ObSecGAstNode] = elems
 }
 case class ConsListOperatorNode(elem :ObSecGAstExprNode,list:ObSecGAstExprNode) extends ObSecGAstExprNode {

@@ -65,7 +65,7 @@ trait TypeG extends LabelG {
 
   def unUsedTypeVar: String = "unused"
 
-  def UnUsedTypeVars: List[BoundedLabelVar] = List(BoundedLabelVar("x",Bottom, ObjectType.top))
+  //def UnUsedTypeVars: List[BoundedLabelVar] = List(BoundedLabelVar("x",Bottom, ObjectType.top))
 }
 
 /*/*
@@ -353,9 +353,9 @@ case object StringListType extends TypeG with PrimType {
   */
 case class StringGListType(elemPolicy: TypeG) extends TypeG with PrimType {
   override def methSig(x: String): MTypeG = x match {
-    case "isEmpty" => MTypeG(UnUsedTypeVars, List(), STypeG(BooleanType, BooleanType))
-    case "head" => MTypeG(UnUsedTypeVars, List(), STypeG(StringType, elemPolicy))
-    case "tail" => MTypeG(UnUsedTypeVars, List(), STypeG(StringGListType(elemPolicy), StringGListType(elemPolicy)))
+    case "isEmpty" => MTypeG(List(), List(), STypeG(BooleanType, BooleanType))
+    case "head" => MTypeG(List(), List(), STypeG(StringType, elemPolicy))
+    case "tail" => MTypeG(List(), List(), STypeG(StringGListType(elemPolicy), StringGListType(elemPolicy)))
   }
 
   override def containsMethod(x: String): Boolean = x match {
@@ -364,9 +364,9 @@ case class StringGListType(elemPolicy: TypeG) extends TypeG with PrimType {
   }
 
   override def toObjType: ObjectType = ObjectType("x",
-    List(MethodDeclarationG("isEmpty", MTypeG(UnUsedTypeVars, List(), STypeG(BooleanType, BooleanType))),
-      MethodDeclarationG("head", MTypeG(UnUsedTypeVars, List(), STypeG(StringType, elemPolicy))),
-      MethodDeclarationG("tail", MTypeG(UnUsedTypeVars, List(), STypeG(TypeVar("x"), TypeVar("x"))))
+    List(MethodDeclarationG("isEmpty", MTypeG(List(), List(), STypeG(BooleanType, BooleanType))),
+      MethodDeclarationG("head", MTypeG(List(), List(), STypeG(StringType, elemPolicy))),
+      MethodDeclarationG("tail", MTypeG(List(), List(), STypeG(TypeVar("x"), TypeVar("x"))))
     )).setIsPrimitive(true)
 
   override def toString: String = s"StrList[$elemPolicy]"

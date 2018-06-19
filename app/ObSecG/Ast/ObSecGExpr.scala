@@ -114,7 +114,7 @@ case class BooleanExpr(v:Boolean) extends PrimitiveLiteral
   */
 sealed trait SurfaceExpr extends ObSecGExpr
 
-case class ListConstructorExpr(elems: List[ObSecGExpr]) extends ObSecGExpr
+case class ListConstructorExpr(label:LabelG, elems: List[ObSecGExpr]) extends ObSecGExpr
 case class ConsListExpr(elem :ObSecGExpr,list:ObSecGExpr) extends ObSecGExpr
 
 case class LetStarExpr(declarations: List[Declaration],body:ObSecGExpr) extends ObSecGExpr

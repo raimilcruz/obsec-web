@@ -140,4 +140,12 @@ class SubtypingSpec extends FlatSpec with Matchers with ElementServiceBaseSpec {
         assert(subtypingChecker.<::(Environment.empty[TypeVarBounds](),StringType,stringEqType) == SubtypingSuccess)
     }
   }
+
+  "StringList <: StringGenList[Top]" must "work" in{
+      var judgements = new GObSecGJudgmentImpl(new ErrorCollector)
+      var subtypingChecker = new AmadioCardelliSubtypingG(judgements,judgements.errorCollector)
+
+      assert(subtypingChecker.<::(Environment.empty[TypeVarBounds](),StringListType,StringGListType(ObjectType.top)) == SubtypingSuccess)
+
+  }
 }

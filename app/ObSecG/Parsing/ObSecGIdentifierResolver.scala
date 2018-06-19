@@ -74,8 +74,10 @@ class ObSecGIdentifierResolver {
       IfExpr(resolve(typeIdentifierScope,valueIdentifier,c),
         resolve(typeIdentifierScope,valueIdentifier,e1),
         resolve(typeIdentifierScope,valueIdentifier,e2))
-    case ListLiteral(elems)=>
-      ListConstructorExpr(elems.map(e=>resolve(typeIdentifierScope,valueIdentifier,e)))
+    case ListLiteral(label,elems)=>
+      ListConstructorExpr(
+        resolveType(typeIdentifierScope, label,labelPosisition = true),
+        elems.map(e=>resolve(typeIdentifierScope,valueIdentifier,e)))
     case ConsListOperatorNode(e1,e2)=>
       ConsListExpr(resolve(typeIdentifierScope,valueIdentifier,e1),
         resolve(typeIdentifierScope,valueIdentifier,e2))

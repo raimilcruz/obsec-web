@@ -42,7 +42,7 @@ class InterpreterG {
           val varDeclaractions = declarations.filter(x=> x.isInstanceOf[LocalDeclaration]).map(d=>d.asInstanceOf[LocalDeclaration])
           val newEnv = varDeclaractions.foldLeft(env)((acc, decl) => Environment.extend(acc,decl.variable,internalEval(acc,decl.rExpr,steps-1)))
           internalEval(newEnv,body,steps-1)
-        case ListConstructorExpr(elems) => RuntimeGStrList(elems.map(x=>internalEval(env,x,steps-1).asInstanceOf[RuntimeGStr]))
+        case ListConstructorExpr(_,elems) => RuntimeGStrList(elems.map(x=>internalEval(env,x,steps-1).asInstanceOf[RuntimeGStr]))
         case _ => throw new StuckError(s"Stuck in internalEval with: $expr")
       }
   def primValEval(primVal: PrimitiveLiteral): RuntimeGValue = primVal match {

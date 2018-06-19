@@ -158,7 +158,7 @@ class TypeChecker(judgements: GObSecJudgmentsExtensions,
       val sE1 = typeCheck(genVarEnv, scope, aliasScope, e1)
       val sE2 = typeCheck(genVarEnv, scope, aliasScope, e2)
       if (sE1 != sE2)
-        throw TypeErrorG.sameTypeForIfBranches(expr.astNode)
+        throw TypeErrorG.sameTypeForIfBranches(expr.astNode,sE1,sE2)
       //depending on the type of the condiction we should lift the public type of the resulting type
       //TODO: Implement this properly: I should check for the empty object type
       if (sCond.publicType != BooleanType)
@@ -197,13 +197,19 @@ class TypeChecker(judgements: GObSecJudgmentsExtensions,
           add(d.variable,
             typeCheck(genVarEnv, letScope, newTypeAliasScope, d.rExpr)))
       typeCheck(genVarEnv, letScope, newTypeAliasScope, body)
-    case ListConstructorExpr(elems) =>
-      if (!elems
-        .forall(e =>
-          judgements
-            .<::(genVarEnv, typeCheck(genVarEnv, scope, aliasScope, e),
-              STypeG(StringType, StringType)) == SubtypingSuccess))
-        throw TypeError("Arguments of 'mklist' must be of type String<String")
+    case ListConstructorExpr(label,elems) =>
+      //1. check String <: label . This an adhoc check since we do not have label
+      //variable at type level.
+      val closedLabel  = closeAliases(aliasScope.toList,label)
+      if(judgements.<::(genVarEnv,StringType,closedLabel) != SubtypingSuccess)
+        throw TypeErrorG.badStringListLabel(label.astNode,label)
+      elems.foreach(e =>{
+          val expressionType =  typeCheck(genVarEnv, scope, aliasScope, e)
+          if(judgements.<::(genVarEnv,
+            expressionType,
+            STypeG(StringType, closedLabel)) != SubtypingSuccess)
+            throw TypeErrorG.subTypingError(e.astNode,"mkList",expressionType,STypeG(StringType, label))
+      })
       STypeG(StringGListType(StringType), StringGListType(StringType))
     case ConsListExpr(elem, list) =>
       val tList = typeCheck(genVarEnv, scope, aliasScope, list)

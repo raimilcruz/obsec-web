@@ -1,5 +1,5 @@
 let{
-    type StringEq = [{== : String -> Bool}]
+    type StringEq = [{== [T super String] : String -> Bool<(Bool,T)}]
     deftype StrEqList{
         {isEmpty: -> Bool<L}
         {head: -> String<StringEq }
@@ -10,10 +10,10 @@ let{
                               if myList.isEmpty()
                               then false
                               else
-                                if myList.head().==("a")
+                                if myList.head().==[String]("a")
                                 then true
                                 else z.contains(myList.tail())
                     }
     }
 in
-    listHelper.contains(mklist("b","c","a"))
+    listHelper.contains(mklist[StringEq]("b","c","a"))

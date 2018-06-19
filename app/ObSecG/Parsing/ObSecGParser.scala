@@ -97,7 +97,8 @@ object ObSecGParser extends StandardTokenParsers with PackratParsers with Implic
     (("cons" ~ LEFTPAREN) ~> ((expr <~ ",") ~ expr)) <~ RIGHTPAREN ^^ {case elem~l => ConsListOperatorNode(elem,l)}
 
   lazy val mkListExpr : Parser[ObSecGAstExprNode] =
-    ((MKLIST ~ LEFTPAREN) ~> repsep(expr,",")) <~ RIGHTPAREN ^^ (l => ListLiteral(l))
+     MKLIST ~> ((LEFTSBRACKET ~> myPositioned(labelType)) <~ RIGHTSBRACKET) ~ ((LEFTPAREN ~> repsep(myPositioned(expr), ",")) <~ RIGHTPAREN)^^
+      {case label~ l => ListLiteral(label,l)}
 
   lazy val letStarExpr :PackratParser[ObSecGAstExprNode] =
     ((LET ~ LEFTBRACKET )~> (rep(myPositioned(typeDecl)) ~ rep(myPositioned(localDecl)))) ~ ((RIGHTBRACKET ~ IN) ~> myPositioned(expr)) ^^
