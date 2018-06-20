@@ -3,7 +3,7 @@ package ObSecG.Static
 import Common.{Environment, ErrorCollector}
 import ObSecG.Ast._
 
-case class RecordTypeG(methods: List[MethodDeclarationG]) extends TypeG {
+case class RecordTypeG(methods: List[MethodDeclarationG]) extends TypeG with Primitable{
   override def toString: String =  s"{${methods.map(x => x.toString).fold("")((x: String, y: String) => x + y).toString}}"
   override def methSig(x: String): MTypeG = throw new NotImplementedError("Not important")
   override def containsMethod(x: String): Boolean = throw new NotImplementedError("Not important")
@@ -185,8 +185,12 @@ class AmadioCardelliSubtypingG(
 
           var set = newSet
           for (m2 <- methodsR2) {
-            val mt1 = methodsR1.find(x => x.name == m2.name).get.mType
             val mt2 = m2.mType
+            val m1Option = methodsR1.find(x => x.name == m2.name)
+            if(m1Option.isEmpty)
+              throw SubtypingError(t1,t2).setMessage(s"Method ${m2.name} of " +
+                s"second type is not in the first type")
+            val mt1 = m1Option.get.mType
             /*
             1) Gamma |- U2 <: U1
             2)Gamma |- L1 <: L2
@@ -233,15 +237,26 @@ class AmadioCardelliSubtypingG(
         case (p1: PrimType, _) =>
           if(printRules) println(s"$spaces [PrimL]")
           innerSubType(labelVariableEnv,newSet, p1.toObjType, t2,deep+1)
-        case (_, p2: PrimType) if TypeEquivalenceG.alphaEq(t1,p2.toObjType)=>
-          newSet
+        case (_, p2: PrimType) =>
+          if(printRules) println(s"$spaces [PrimR]")
+          innerSubType(labelVariableEnv,newSet, t1, p2.toObjType ,deep+1)
         case (ot1@ObjectType(_, _), _) =>
           if(printRules) println(s"$spaces [ObjL]")
           innerSubType(labelVariableEnv,newSet, unfold(ot1), t2,deep+1)
         case (_, ot2@ObjectType(_, _)) if !ot2.isPrimitive  =>
           if(printRules) println(s"$spaces [ObjR]")
-
           innerSubType(labelVariableEnv,newSet, t1, unfold(ot2),deep+1)
+        case (_, ot2@ObjectType(_, _)) if ot2.isPrimitive  =>
+          if(printRules) println(s"$spaces [ObjRPrim]")
+          //both type should be equivalent, but not only with alphaEq.
+          //A way to verify that is to ask for t1<:ot2 and ot2<:t1
+          t1 match {
+            case recordOrObject: Primitable if recordOrObject.isPrimitive =>
+              innerSubType(labelVariableEnv, newSet, t1, unfold(ot2), deep + 1)
+            case _ =>
+              val firstSet = innerSubType(labelVariableEnv, newSet, t1, unfold(ot2), deep + 1)
+              innerSubType(labelVariableEnv, firstSet, unfold(ot2), t1, deep + 1)
+          }
 
         case _ => throw SubtypingError(t1,t2)
       }
@@ -249,7 +264,7 @@ class AmadioCardelliSubtypingG(
   }
 
   private def unfold(t1: ObjectType): LabelG = {
-    TypeSubstG.substRecVar(RecordTypeG(t1.methods), t1.selfVar, t1)
+    TypeSubstG.substRecVar(RecordTypeG(t1.methods).setIsPrimitive(t1.isPrimitive), t1.selfVar, t1)
   }
 }
 case class SubtypingError(t1:LabelG,t2:LabelG) extends Error {

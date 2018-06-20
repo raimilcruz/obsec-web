@@ -42,13 +42,14 @@ class ObSecGIdentifierResolver {
       if (methods.map(x => x.name).distinct.lengthCompare(methods.size) == 0) {
         var objectScope = new NestedScope(valueIdentifier)
         objectScope.add(self,true)
+        val resolvedSelfType = resolveAnnotatedFacetedType(typeIdentifierScope, typeAnnotation)
         Obj(self,
-          resolveAnnotatedFacetedType(typeIdentifierScope, typeAnnotation),
+          resolvedSelfType,
           methods.map(meth => {
             val methodLabelDefinitionScope = new NestedScope(typeIdentifierScope)
             var methodValueVariableScope = new NestedScope(objectScope)
 
-            addMethodLabelVariable(methodLabelDefinitionScope , meth.name, typeAnnotation.left)
+            addMethodLabelVariable(methodLabelDefinitionScope , meth.name, resolvedSelfType.privateType)
             //add method to scope
             meth.args.elems.foreach(x=> liftError(methodValueVariableScope.add(x.name,true),x))
 
@@ -122,20 +123,20 @@ class ObSecGIdentifierResolver {
 
   private def addMethodLabelVariable(typeIdentifierScope: Scope[TypeIdentifierDeclarationPoint],
                                      name: String,
-                                     containerType : TypeAnnotation): Unit = containerType match {
-    case ObjectTypeNode(self,methods) =>
+                                     containerType : TypeG): Unit = containerType match {
+    case ObjectType(self,methods) =>
       if (methods.map(x => x.name).distinct.lengthCompare(methods.size) == 0) {
-        val possibleMethods = methods.filter(m => m.name.name == name)
+        val possibleMethods = methods.filter(m => m.name == name)
         if (possibleMethods.size == 1) {
           val methodDeclarationG = possibleMethods.head
           methodDeclarationG.mType.typeVars.foreach(labelVar =>
-            typeIdentifierScope.add(labelVar.name,if(labelVar.isAster) LowLabelDeclarationPoint else LabelDeclarationPoint)
+            typeIdentifierScope.add(labelVar.typeVar,if(labelVar.isAster) LowLabelDeclarationPoint else LabelDeclarationPoint)
           )
           Unit
         }
       }
       else
-        throw ResolverError.duplicatedMethodInObjectType(methods.reverse.groupBy(identity).collect({case (x,List(_,_,_*)) => x}).head)
+        throw ResolverError.duplicatedMethodInObjectType(methods.reverse.groupBy(identity).collect({case (x,List(_,_,_*)) => x.astNode}).head)
     case _ => Unit
   }
 
@@ -150,9 +151,9 @@ class ObSecGIdentifierResolver {
                           labelPosisition: Boolean):LabelG = (typeAnnotation match{
 
     case ObjectTypeNode(selfVar,methods) =>
-      var objectTypeScope = new NestedScope(typeIdentifierScope)
+      val objectTypeScope = new NestedScope(typeIdentifierScope)
       objectTypeScope.add(selfVar,SelfDeclarationPoint)
-      ObjectType(selfVar,methods.map(m=> resolveMethodDeclaration(typeIdentifierScope,m)))
+      ObjectType(selfVar,methods.map(m=> resolveMethodDeclaration(objectTypeScope,m)))
     case NoRecursiveObjectTypeNode(methods)=> resolveType(typeIdentifierScope,ObjectTypeNode("gen",methods),labelPosisition)
     case TypeIdentifier(n) =>
       val namedType = resolveBuiltinNamedTypes(n,labelPosisition)

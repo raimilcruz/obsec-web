@@ -125,13 +125,15 @@ case class UnionLabel(left: LabelG,right: LabelG) extends LabelG {
   }
 }
 
-
-case class ObjectType(selfVar: String, methods: List[MethodDeclarationG]) extends TypeG {
+trait Primitable{
   var isPrimitive = false
-  def setIsPrimitive(b:Boolean):ObjectType={
+  def setIsPrimitive(b:Boolean):this.type ={
     isPrimitive = b
     this
   }
+}
+case class ObjectType(selfVar: String, methods: List[MethodDeclarationG]) extends TypeG with Primitable{
+
 
   override def methSig(x: String): MTypeG = {
     //we must close the type
@@ -351,7 +353,7 @@ case object StringListType extends TypeG with PrimType {
   *
   * @param elemPolicy The type must be subtype of String
   */
-case class StringGListType(elemPolicy: TypeG) extends TypeG with PrimType {
+case class StringGListType(elemPolicy: LabelG) extends TypeG with PrimType {
   override def methSig(x: String): MTypeG = x match {
     case "isEmpty" => MTypeG(List(), List(), STypeG(BooleanType, BooleanType))
     case "head" => MTypeG(List(), List(), STypeG(StringType, elemPolicy))

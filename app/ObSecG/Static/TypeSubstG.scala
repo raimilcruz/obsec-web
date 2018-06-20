@@ -34,7 +34,7 @@ class TypeSubstG(auxiliaryFunctions: IAuxiliaryFunctions) extends ITypeSubsG {
     case gv:LabelVar => gv
     case UnionLabel(l1,l2)=>
       UnionLabel(substRecVar(l1,x,t2),substRecVar(l2,x,t2))
-    case RecordTypeG(methods) =>
+    case record@RecordTypeG(methods) =>
       RecordTypeG(methods.map(m =>
         MethodDeclarationG(m.name,
           MTypeG(
@@ -43,7 +43,7 @@ class TypeSubstG(auxiliaryFunctions: IAuxiliaryFunctions) extends ITypeSubsG {
             m.mType.domain.map(stype =>
               stype.map(facet => substRecVar(facet, x, t2))),
             m.mType.codomain.map(facet => substRecVar(facet, x, t2))
-          ))))
+          )))).setIsPrimitive(record.isPrimitive)
     case ot@ObjectType(y, methods) =>
       if (y == x) t
       else {

@@ -210,7 +210,7 @@ class TypeChecker(judgements: GObSecJudgmentsExtensions,
             STypeG(StringType, closedLabel)) != SubtypingSuccess)
             throw TypeErrorG.subTypingError(e.astNode,"mkList",expressionType,STypeG(StringType, label))
       })
-      STypeG(StringGListType(StringType), StringGListType(StringType))
+      STypeG(StringGListType(StringType), StringGListType(closedLabel))
     case ConsListExpr(elem, list) =>
       val tList = typeCheck(genVarEnv, scope, aliasScope, list)
       val tElem = typeCheck(genVarEnv, scope, aliasScope, elem)

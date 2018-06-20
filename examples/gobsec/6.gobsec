@@ -1,5 +1,6 @@
 let{
-    type StringEq = [{== [T super String] : String -> Bool<(Bool,T)}]
+    //remember the the rol of low T is crucial
+    type StringEq = [{== [low T super String] : String -> Bool<(Bool,T)}]
     deftype StrEqList{
         {isEmpty: -> Bool<L}
         {head: -> String<StringEq }
