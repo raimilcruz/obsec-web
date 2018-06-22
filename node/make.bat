@@ -1,0 +1,1 @@
+npm run build && copy build\app.js ..\public\javascripts\app.js /Y
