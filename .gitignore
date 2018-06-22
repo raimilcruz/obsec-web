@@ -30,3 +30,5 @@ project/.sbtserver.lock
 *.trace.db
 .java-version
 
+
+/node/build/*

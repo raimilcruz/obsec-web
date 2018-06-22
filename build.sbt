@@ -1,6 +1,6 @@
 name := """obsec-web"""
 
-version := "0.0.2"
+version := "2.0.0"
 
 lazy val root = (project in file(".")).enablePlugins(PlayScala)
 //lazy val languageservice = project
@@ -18,5 +18,3 @@ libraryDependencies ++= Seq(
 resolvers += "scalaz-bintray" at "http://dl.bintray.com/scalaz/releases"
 resolvers += Resolver.url("Typesafe Ivy releases", url("https://repo.typesafe.com/typesafe/ivy-releases"))(Resolver.ivyStylePatterns)
 
-
-//fork in run := true

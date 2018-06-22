@@ -6,12 +6,12 @@ import javax.inject._
 import Common.{AnalysisError, ThrowableAnalysisError}
 import play.api.libs.json.{Json, Writes}
 import play.api.mvc._
-import play.api.mvc._
 import play.api.libs.json._
 import ObSecG.Static.TypeCheckerG
 import ObSecG.Parsing._
 import ObSecG.Runtime.InterpreterG
-import models.{Example, ExampleHelper}
+import models.{Example, ExampleHelper, IndexModel}
+import views._
 
 
 @Singleton
@@ -57,7 +57,11 @@ class ApplicationController @Inject()(configuration: play.api.Configuration) ext
 
 
   def index(prod: Int) = Action { implicit request =>
-    Ok(views.html.index(prod))
+    Ok(views.html.index(prod,
+      IndexModel(
+        "ObSec Pad",
+        "GObSec Pad, an online interpreter to experiment with GObSec, " +
+          "a security typed-language with type-base declassification")))
   }
 
   def examples = Action { implicit request =>

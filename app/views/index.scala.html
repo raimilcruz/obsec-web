@@ -1,4 +1,5 @@
-@(prod: Int)
+@(prod: Int, indexModel: IndexModel)
+
 @import java.net._
 
 <!doctype html>
@@ -7,9 +8,8 @@
 <head>
   <meta charset="utf-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <title>ObSec Pad</title>
-  <meta name="description" content="ObSec Pad, an online interpreter to experiment with ObSec,
-  a security typed-language with type-base declassification">
+  <title>@(indexModel.pageTitle)</title>
+  <meta name="description" content="@(indexModel.metaContent)">
     <meta name="keywords" content="type-based declassification, relaxed noninterference"/>
 
   <!-- Use minimum-scale=1 to enable GPU rasterization -->
@@ -17,18 +17,7 @@
     name="viewport"
     content="width=device-width, initial-scale=1, user-scalable=0, maximum-scale=1, minimum-scale=1"
   >
-
-  <script type="text/x-mathjax-config">
-    MathJax.Hub.Config({ TeX: { extensions: ["color.js", "action.js"] }});
-  </script>
-  <script type="text/javascript"
-     src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
-  </script>
   <link rel="stylesheet" type="text/css" href="@routes.Assets.versioned("stylesheets/flexboxgrid.min.css")">
-  <!--<link rel="stylesheet" href="/path/to/styles/github.css">-->
-
-  <!--<link rel="stylesheet" type="text/css" href="main.css">-->
-  <!--<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">-->
 </head>
 
 <body>
