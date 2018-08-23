@@ -1,11 +1,11 @@
 import ObSec.Ast._
 import Common.Environment
 import ObSec.Ast.{ObSecExpr, Obj}
-import ObSec.Parsing.{ObSecParser, ObSecParserError}
+import ObSec.Parsing.ObSecParser
 
 package ObSec.Runtime {
 
-  import Common.StuckError
+  import Common.{ParserError, StuckError}
 
 
   /**
@@ -63,7 +63,7 @@ package ObSec.Runtime {
 
 
   object Interpreter {
-    def apply(x: String): Either[ObSecParserError, RuntimeValue] = {
+    def apply(x: String): Either[ParserError, RuntimeValue] = {
       val expr = ObSecParser(x)
       expr match {
         case Left(e) => Left(e)

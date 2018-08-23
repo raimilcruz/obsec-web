@@ -34,7 +34,7 @@ class ExampleHelper(val examplePath:String,fileExtension:String) {
     * @return
     */
   def examples(): List[Example]={
-    var files = getListOfFiles(examplePath)
+    var files = getListOfFiles(examplePath).sortBy(f=>f.getName)
     files.map(parseMetadata)
   }
   private def getListOfFiles(dir: String):List[File] = {

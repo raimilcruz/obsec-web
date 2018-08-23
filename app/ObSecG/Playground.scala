@@ -1,5 +1,9 @@
+
 package ObSecG
 
+import Common.Environment
+import ObSec.Ast._
+import ObSec.Static.TypeEquivalence
 import ObSecG.Ast.{IntType, STypeG, TypeErrorG}
 import ObSecG.Parsing.{ObSecGIdentifierResolver, ObSecGParser}
 import ObSecG.Static.TypeCheckerG
@@ -19,7 +23,48 @@ object Playground{
        // }
     }
   }
+  /*def join(t1: Type,t2:Type,
+           map1: Environment[ObjType],
+           map2: Environment[ObjType],
+           alreadySeen:List[((Type,Type),Type)]):Type= {
+    val findResult = alreadySeen.find((x) => TypeEquivalence.alphaEq(x._1._1, t1) && TypeEquivalence.alphaEq(x._1._2, t2))
+    if (findResult.isDefined)
+      findResult.get._2
+    else {
+      case (o1@ObjType(vt1, methods1), o2@ObjType(vt2, methods2)) =>
+        val joinVar = TypeVar(freshVar())
+
+        //all common methods with the same amount of arguments.
+        val elegibleMethods = methods1.map(m => (m.name, m.mtype.domain)).toSet
+          .intersect(methods2.map(m => (m.name, m.mtype.domain)).toSet).toList.map(p => p._1)
+
+        //var elegibleMethods = List[String]()
+        val joinedMethods = elegibleMethods.foreach(m => {
+          val m1 = methods1.find(meth => meth.name == m).get
+          val m2 = methods2.find(meth => meth.name == m).get
+
+          val domain = m1.mtype.domain.zip(m2.mtype.domain).map(pair => {
+            SType(meet(pair._1.privateType, pair._2.privateType, map1, map2, alreadySeen),
+              meet(pair._1.publicType, pair._2.publicType,, map1, map2, alreadySeen))
+          })
+
+        })
+        ObjType(joinVar, List())
+      case _ => ???
+    }
+  }
+  def meet(t1: Type,t2:Type,
+           map1: Environment[ObjType],
+           map2: Environment[ObjType],
+           resultingMap:List[((Type,Type),Type)]):ObjType= {
+   ???
+  }
+  def freshVar():String = "j"*/
 }
+
+
+
+
 /*class Playground {
   def usage1():Unit={
     val a: SecType[SecString,StringConcat]
@@ -53,4 +98,5 @@ case class SecTypeImpl[S2, S1<:S2](val safety:S1) extends SecType[S2,S1] {
   override def declassificationType(): S2 = safety
 }*/
 //type ¬[A] = A => Nothing
+
 

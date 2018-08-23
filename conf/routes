@@ -7,13 +7,13 @@ GET     /favicon.ico                      controllers.Assets.at(path="/public/im
 GET     /                                 controllers.ApplicationController.index(prod: Int = 1)
 GET     /:prod                            controllers.ApplicationController.index(prod: Int)
 
-POST    /typecheck                       controllers.ApplicationController.typecheck
-POST    /reduce                           controllers.ApplicationController.reduce
-POST    /examples                           controllers.ApplicationController.examples
+POST    /typecheck                       controllers.ObsecController.typecheck
+POST    /reduce                           controllers.ObsecController.reduce
+POST    /examples                           controllers.ObsecController.examples
 
-#GET     /generic/                       controllers.ObSecGController.index
-#GET     /generic/typecheck               controllers.ObSecGController.typecheck
-#GET     /generic/reduce                  controllers.ObSecGController.reduce
+POST     /gexamples                       controllers.GObsecController.examples
+POST     /gtypecheck               controllers.GObsecController.typecheck
+POST     /greduce                  controllers.GObsecController.reduce
 
 # Map static resources from the /public folder to the /assets URL path
 

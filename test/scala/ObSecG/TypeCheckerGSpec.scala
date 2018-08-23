@@ -1,6 +1,5 @@
 package scala.ObSecG
 
-import Common.TypeError
 import ObSecG.Ast._
 import ObSecG.Parsing.{ObSecGParser, ObSecGIdentifierResolver}
 import ObSecG.Static._

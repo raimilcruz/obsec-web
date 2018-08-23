@@ -1,6 +1,6 @@
 package scala.ObSecG
 
-import Common.{CommonError, CommonErrorCodes, TypeError}
+import Common.{CommonError, CommonErrorCodes}
 import ObSecG.Ast._
 import ObSecG.Parsing.{ObSecGIdentifierResolver, ObSecGParser}
 import ObSecG.Static.TypeCheckerG
@@ -109,6 +109,14 @@ class ResolverGSpec extends FlatSpec with Matchers with BaseSpec {
       case Right(ast)=>
         val res = ObSecGIdentifierResolver(ast)
         assert(true)
+    }
+  }
+  "Label variable" should "be in scope for method definition" in {
+    val program = "let{\n    deftype AuthServer {\n        {sum[low T super Int]: -> Int}\n    }\n    val auth =  new {z : AuthServer<L =>\n        def sum   = 1.+[T](1)\n    }\n    }\nin\n1"
+    ObSecGParser(program) match{
+      case Right(ast)=>
+        val res = ObSecGIdentifierResolver(ast)
+        assert(res == Var("a"))
     }
   }
 }

@@ -1,20 +1,8 @@
 import React from 'react';
-import ReactDOM from 'react-dom';
-import $ from 'jquery';
 import Paper from 'material-ui/Paper';
-import TextField from 'material-ui/TextField';
 import RaisedButton from 'material-ui/RaisedButton';
 import request from 'superagent';
 import Subheader from 'material-ui/Subheader';
-import Popover from 'material-ui/Popover';
-import LoadableContent from './components/LoadableContent';
-
-import ArrowDownward from 'material-ui/svg-icons/navigation/arrow-downward';
-import Toggle from 'material-ui/Toggle';
-
-import RErrorIcon from 'material-ui/svg-icons/social/sentiment-very-dissatisfied.js';
-
-import {red500} from 'material-ui/styles/colors';
 
 import SelectField from 'material-ui/SelectField';
 import MenuItem from 'material-ui/MenuItem';
@@ -26,8 +14,10 @@ import AceEditor from 'react-ace';
 import 'brace/mode/java';
 import 'brace/theme/github';
 
-var Highlight = require('react-highlight');
+const Highlight = require('react-highlight');
 import AnalysisIssue from './components/AnalysisIssue';
+import GObSecSyntax from './components/GObSecSyntax';
+import ObSecSyntax from './components/ObSecSyntax';
 
 const HelpIcon = (props) => (
     <SvgIcon {...props}>
@@ -40,18 +30,8 @@ const errorStyle={
     color:'red'
 };
 
-function replaceCurlyBracket(str){
-    return str.replace(/@;/g, "{").replace(/#;/g,"}");
-}
 
-const examples = [
-]
-const examplesItems = examples.map((e) => {
-    return <MenuItem key={e.value} value={e.value} primaryText={e.text}/>
-});
-
-
-export default class Main extends React.Component {
+export default class LanguagePad extends React.Component {
     state = {
         formula: "bar",
         program: "",
@@ -64,55 +44,57 @@ export default class Main extends React.Component {
         defaultProgram: null,
         expressionType: "",
         syntaxOpen: false,
-        typeDefinitionsOpen:null,
-        anchorEl:null,
         markers:[],
         loadingExamples: true,
         examples: [],
+    };
+
+
+
+    urlExamples = "examples";
+    urlTypeCheck = "typecheck";
+    urlExecute = "reduce";
+    language = "gobsec";
+
+    constructor(props) {
+        super(props);
+        if(this.props.urlExamples)
+            this.urlExamples = this.props.urlExamples;
+        if(this.props.urlTypeCheck)
+            this.urlTypeCheck = this.props.urlTypeCheck;
+        if(this.props.urlExecute)
+            this.urlExecute = this.props.urlExecute;
+        if(this.props.language)
+            this.language = this.props.language;
     }
 
     componentDidMount() {
-        //this.math = MathJax.Hub.getAllJax("toLatex")[0]
+        console.log("component did mount:"+ this.urlExamples);
         this.loadExamples();
     }
 
 
-    onChange = (e, v) => {
-        if (!this.math)
-            this.math = MathJax.Hub.getAllJax("toLatex")[0]
-        this.setState({formula: v}, () => {
-            //MathJax.Hub.Queue(["Typeset",MathJax.Hub, "toLatex"]);
-            MathJax.Hub.Queue(["Text", this.math, this.state.formula])
-        });
-    }
-
-    guessPlusSymbol = (c) => {
-        v.split("")
-    }
     onChangeProgram = (v) => {
-        //this.guessPlusSymbol(v);
         this.setState({
             program: v,//v.replace("\\", "λ").replace("&", "∧").replace("|", "∨"),
             typingState: 0,
             markers:[]
         })
-    }
+    };
 
     findProgramByValue(v) {
         return this.state.examples.filter(e => e.id == v)[0]
     }
     loadExamples() {
         this.setState({loadingExamples: true}, () => {
-            request.post('examples')
+            request.post(this.urlExamples)
                 .send()
                 .set('Accept', 'application/json')
                 .end((err, res) => {
                     if (err || !res.ok) {
                         alert('Oh no! Configuration Error');
                     } else {
-                        if (res.body.status == "OK") {
-                            console.log(res.body.examples);
-
+                        if (res.body.status === "OK") {
                             this.setState({
                                 loadingExamples: false,
                                 examples: res.body.examples,
@@ -136,21 +118,19 @@ export default class Main extends React.Component {
 
     changeDefaultProgram = (event, index, defaultProgram) => {
         let p = this.findProgramByValue(defaultProgram);
-        console.log("change default program");
-        console.log(defaultProgram);
         this.setState({defaultProgram, program: p.program, desc: p.desc,typingState:0,markers:[]})
     };
 
     typecheck = () => {
         this.setState({error: "", executionState: 0, typingState: 0}, () => {
-            request.post('typecheck')
+            request.post(this.urlTypeCheck)
                 .send({program: this.state.program})
                 .set('Accept', 'application/json')
                 .end((err, res) => {
                     if (err || !res.ok) {
                         alert('Oh no! error');
                     } else {
-                        if (res.body.status == "OK") {
+                        if (res.body.status === "OK") {
                             this.setState({
                                 expressionType: res.body.expressionType,
                                 typingState: 1
@@ -159,7 +139,7 @@ export default class Main extends React.Component {
                             })
                         }
 
-                        else if(res.body.status == "AnalysisKO"){
+                        else if(res.body.status === "AnalysisKO"){
                             this.setState({
                                 error: res.body.issue.message,
                                 analysisIssue: res.body.issue,
@@ -173,18 +153,22 @@ export default class Main extends React.Component {
                     }
                 });
         });
-    }
+    };
 
     reduce = () => {
-        this.setState({loadingReduce: true, executionState: 0, executionError: null}, () => {
-            request.post('reduce')
+        this.setState({
+            loadingReduce: true,
+            executionState: 0,
+            executionError: null
+        }, () => {
+            request.post(this.urlExecute)
                 .send({program: this.state.program})
                 .set('Accept', 'application/json')
                 .end((err, res) => {
                     if (err || !res.ok) {
                         alert('Oh no! Configuration Error');
                     } else {
-                        if (res.body.status == "OK") {
+                        if (res.body.status === "OK") {
                             this.setState({
                                 error: res.body.error,
                                 executionResult: res.body.result,
@@ -194,21 +178,13 @@ export default class Main extends React.Component {
 
                             })
                         }
-                        else  {
+                        else {
                             alert('Oh no! error ' + res.body.error);
                         }
                     }
                 });
         });
-    }
-
-
-    onToggle = (e, v) => {
-        this.setState({substitutionMode: v ? 0 : 1}, () => {
-            if (this.state.tree) this.reduce();
-        });
-
-    }
+    };
 
     syntaxHandleOpen = () => {
         this.setState({syntaxOpen: true});
@@ -217,20 +193,7 @@ export default class Main extends React.Component {
     syntaxHandleClose = () => {
         this.setState({syntaxOpen: false});
     };
-    handleTouchTap = (event,obSecType) => {
-        // This prevents ghost click.
-        event.preventDefault();
 
-        this.setState({
-            typeDefinitionsOpen: obSecType,
-            anchorEl: event.currentTarget,
-        });
-    };
-    handleRequestClose = () => {
-        this.setState({
-            typeDefinitionsOpen: null,
-        });
-    };
     handleIssueClick = (issue) => {
         let position = issue.position;
         this.setState({
@@ -238,15 +201,6 @@ export default class Main extends React.Component {
                 endRow: position.lineEnd, endCol: position.columnEnd, className: 'errorHighlight', type: 'text' }]
         });
     };
-
-    lcb() {
-        return '{'
-    };
-
-    rcb() {
-        return '}'
-    };
-
 
     render() {
 
@@ -263,181 +217,17 @@ export default class Main extends React.Component {
                     open={this.state.syntaxOpen}
                     onRequestClose={this.syntaxHandleClose}
                 >
-                    <table>
-                        <tbody>
-                        <tr>
-                            <td>S</td>
-                            <td>::=</td>
-                            <td>T &lt; U</td>
-                            <td>(Security types)</td>
-                        </tr>
-                        <tr>
-                            <td>T</td>
-                            <td>::=</td>
-                            <td>
-                                <RaisedButton
-                                    onTouchTap={(event)=> this.handleTouchTap(event,"Bool")}
-                                    label="Bool"
-                                /> |
-                                <RaisedButton
-                                    onTouchTap={(event)=> this.handleTouchTap(event,"Int")}
-                                    label="Int"
-                                /> |
-                                <RaisedButton
-                                    onTouchTap={(event)=> this.handleTouchTap(event,"String")}
-                                    label="String"
-                                /> |
-                                <RaisedButton
-                                    onTouchTap={(event)=> this.handleTouchTap(event,"StrList")}
-                                    label="StrList"
-                                /> | X | OT</td>
-                            <td>(Types)</td>
-                        </tr>
-                        <tr>
-                            <td>U</td>
-                            <td>::=</td>
-                            <td>T | L</td>
-                            <td>(Labels)</td>
-                        </tr>
-                        <tr>
-                            <td>OT</td>
-                            <td>::=</td>
-                            <td>[X M*] | [M*]</td>
-                            <td>(Object Type)</td>
-                        </tr>
-                        <tr>
-                            <td>    M</td>
-                            <td>::=</td>
-                            <td>{this.lcb()} name [LD*]: S* -> S {this.rcb()} </td>
-                            <td>(Method signature)</td>
-                        </tr>
-                        <tr>
-                            <td>LD</td>
-                            <td>::=</td>
-                            <td>LV <strong>super</strong> T | LV <strong>extends</strong> T | LV : T .. T</td>
-                            <td>(Label bound)</td>
-                        </tr>
-                        <tr>
-                            <td>LV</td>
-                            <td>::=</td>
-                            <td>L | <strong>low</strong>  L</td>
-                            <td>(Label variables)</td>
-                        </tr>
-                        <tr>
-                            <td>t</td>
-                            <td>::=</td>
-                            <td> o | x | t[T*].m(t*) | b | n | s |
-                                <strong> if</strong> t <strong>then</strong> t <strong>else</strong> t
-                            </td>
-                            <td>(Terms)</td>
-                        </tr>
-                        <tr>
-                            <td colSpan={2}></td>
-                            <td>
-                                <strong>mkList</strong>(t*) | <strong>let</strong> {"{"} TD* TA* VD* {"}"} <strong>in</strong> t
-                            </td>
-                            <td></td>
-                        </tr>
-                        <tr>
-                            <td>o</td>
-                            <td>::=</td>
-                            <td> <strong>new</strong> {this.lcb()} x : S => (<strong>def</strong> name x* = t)* {this.rcb()}
-                            </td>
-                            <td>(Object)</td>
-                        </tr>
-                        <tr>
-                            <td>TD</td>
-                            <td>::=</td>
-                            <td> <strong>deftype</strong>{this.lcb()} M*  {this.rcb()}
-                            </td>
-                            <td>(Type Declaration)</td>
-                        </tr>
-                        <tr>
-                            <td>TA</td>
-                            <td>::=</td>
-                            <td> <strong>type</strong> X = OT
-                            </td>
-                            <td>(Type Alias)</td>
-                        </tr>
-                        <tr>
-                            <td>VD</td>
-                            <td>::=</td>
-                            <td> <strong>val</strong> x = t
-                            </td>
-                            <td>(Value declaration)</td>
-                        </tr>
-                        <tr>
-                            <td>b</td>
-                            <td>::=</td>
-                            <td>true | false</td>
-                            <td>(Booleans)</td>
-                        </tr>
-                        <tr>
-                            <td>n</td>
-                            <td>::=</td>
-                            <td>natural numbers</td>
-                            <td>(Natural numbers)</td>
-                        </tr>
-                        <tr>
-                            <td>s</td>
-                            <td>::=</td>
-                            <td>string literals</td>
-                            <td>(String literals)</td>
-                        </tr>
-                        <tr>
-                            <td>X</td>
-                            <td>::=</td>
-                            <td>identifier</td>
-                            <td>(Type Variable)</td>
-                        </tr>
-                        <tr>
-                            <td>L</td>
-                            <td>::=</td>
-                            <td>identifier</td>
-                            <td>(Label Variable)</td>
-                        </tr>
-                        </tbody>
-                    </table>
+                    {
+                        this.language === "gobsec"? <GObSecSyntax />:
+                            (this.language === "obsec"? <ObSecSyntax />: <div>No language syntax provided</div>)
+                    }
+
                     <br/>
                 </Dialog>
 
-                <Popover
-                    open={this.state.typeDefinitionsOpen!=null}
-                    anchorEl={this.state.anchorEl}
-                    anchorOrigin={{horizontal: 'left', vertical: 'bottom'}}
-                    targetOrigin={{horizontal: 'left', vertical: 'top'}}
-                    onRequestClose={this.handleRequestClose}
-                >
-                   <Highlight className="java">
-                       {
-                           this.state.typeDefinitionsOpen=="Int"?
-                           "[" +
-                           "{+ [l >: Int] : Int<l -> Int<l}\n" +
-                           "{- [l >: Int] : Int<l -> Int<l}\n"+
-                           "{== [l >: Int] : Int<l -> Bool<(Bool,l)}]"
-                           : (this.state.typeDefinitionsOpen=="Bool")?
-                           "[{if : T<T T<T -> T<T}]"
-                           : (this.state.typeDefinitionsOpen=="String")?
-                           "[" +
-                           "{== [l >: String]: String<l -> Bool<(Bool,l)}\n" +
-                           "{hash : -> Int<Int}\n"+
-                           "{length : -> Int<Int}]"
-                           : (this.state.typeDefinitionsOpen=="StrList")?
-                           "[l \n" +
-                           "{isEmpty : -> Bool<Bool}\n" +
-                           "{head : -> String<String}\n"+
-                           "{tail : -> l<l}]"
-                           :
-                            null
-                       }
-                   </Highlight>
-                </Popover>
-
-
-
                 <div className="form" style={{position: "relative"}}>
                     {
-                        this.state.loadingExamples == true ?
+                        this.state.loadingExamples?
                             <div>Loading programs</div>
                             :
                             <SelectField value={this.state.defaultProgram}
@@ -456,19 +246,6 @@ export default class Main extends React.Component {
                         Program
                     </div>
                     <div style={{position: 'relative'}}>
-                        {
-                            /*<MyTextField floatingLabelText="Program"
-                                     name="formula"
-                                     value={this.state.program}
-                                     multiLine={true}
-                                     onChange={this.onChangeProgram}
-                                     rows="5"
-                                     style={{width: '70%', marginRight: '16px'}}
-                                     errorText={this.state.error}
-                                     onKeyDown={this.onKeyDown}
-                                     ref={(c) => this._program = c}
-                        />*/
-                        }
 
                            <AceEditor
                             name="formula"

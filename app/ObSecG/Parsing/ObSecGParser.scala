@@ -1,7 +1,7 @@
 package ObSecG.Parsing
 
 
-import Common.OffsetPositional
+import Common.{OffsetPositional, ParserError}
 import ObSec.Parsing.DebugPackratParsers
 import ObSecG.Ast
 import ObSecG.Ast._
@@ -76,7 +76,7 @@ object ObSecGParser extends StandardTokenParsers with PackratParsers with Implic
   def HIGH ="H"
 
 
-  def myPositioned[T <: OffsetPositional](p: => Parser[T]): Parser[T] = Parser(in => p(in) match {
+  implicit def myPositioned[T <: OffsetPositional](p: => Parser[T]): Parser[T] = Parser(in => p(in) match {
     case Success(t, in1) =>
       Success(
         if (t.pos == NoPosition)
@@ -279,10 +279,10 @@ object ObSecGParser extends StandardTokenParsers with PackratParsers with Implic
     * @param string The program source
     * @return An AST
     */
-  def apply(string: String): Either[ObSecParserError, ObSecGAstExprNode] = {
+  def apply(string: String): Either[ParserError, ObSecGAstExprNode] = {
     //parseAll(program,string) match {
     phrase(expr) (new lexical.Scanner(string)) match {
-      case x: NoSuccess => Left(ObSecParserError("["+x.next.pos+"] failure: "+x.msg,x.next.pos,x.next.rest.pos,x.next.offset))
+      case x: NoSuccess => Left(ParserError("["+x.next.pos+"] failure: "+x.msg,x.next.pos,x.next.rest.pos,x.next.offset))
       case Success(result, next) => Right(result)
     }
   }
@@ -292,10 +292,10 @@ object ObSecGParser extends StandardTokenParsers with PackratParsers with Implic
     * @param string The type syntax
     * @return The expression representing the type
     */
-  def parseType(string:String):Either[ObSecParserError, TypeAnnotation] = {
+  def parseType(string:String):Either[ParserError, TypeAnnotation] = {
     //parseAll(singleType,string) match {
     phrase(privateType) (new lexical.Scanner(string)) match {
-      case x: NoSuccess => Left(ObSecParserError("["+x.next.pos+"] failure: "+x.msg,x.next.pos,x.next.rest.pos,x.next.offset))
+      case x: NoSuccess => Left(ParserError("["+x.next.pos+"] failure: "+x.msg,x.next.pos,x.next.rest.pos,x.next.offset))
       case Success(result, next) => Right(result)
     }
   }
@@ -304,16 +304,16 @@ object ObSecGParser extends StandardTokenParsers with PackratParsers with Implic
     * @param string The type syntax
     * @return The expression representing the type
     */
-  def parseSType(string:String):Either[ObSecParserError, AnnotatedFacetedType] = {
+  def parseSType(string:String):Either[ParserError, AnnotatedFacetedType] = {
     //parseAll(stype,string) match {
     phrase(stype) (new lexical.Scanner(string)) match {
-      case  x: NoSuccess => Left(ObSecParserError("["+x.next.pos+"] failure: "+x.msg,x.next.pos,x.next.rest.pos,x.next.offset))
+      case  x: NoSuccess => Left(ParserError("["+x.next.pos+"] failure: "+x.msg,x.next.pos,x.next.rest.pos,x.next.offset))
       case Success(result, next) => Right(result)
     }
   }
 
 }
 
-case class ObSecParserError(msg: String,pos:Position,endPos:Position,offset:Int)
+
 
 

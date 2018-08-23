@@ -117,7 +117,7 @@ class TypeChecker(judgements: GObSecJudgmentsExtensions,
       //the private type must be an object type
       //TODO: check this in the ResolverIdentifier
       if (!stype.privateType.isInstanceOf[ObjectType])
-        throw TypeError("The private facet must be an object type")
+        throw CommonError.genericError(selfType.astNode,"The private facet must be an object type")
       //1. An object can not have repeated method definitions. We check for repeated method
       // in the ResolverIdentifier
       //both methods list: in type and in definition must have the same elements
@@ -131,14 +131,14 @@ class TypeChecker(judgements: GObSecJudgmentsExtensions,
       //TODO: Check this in the ResolverIdentifier
       val methsNoSignature = methodDefNames.filter(x => !privateMethodNames.contains(x))
       if (methsNoSignature.nonEmpty) {
-        throw TypeError(s"There must exist a method signature for each method definition. Missing method signature for: ${methsNoSignature.foldLeft("")((acc, m) => acc + " " + m)}.")
+        throw CommonError.genericError(expr.astNode,s"There must exist a method signature for each method definition. Missing method signature for: ${methsNoSignature.foldLeft("")((acc, m) => acc + " " + m)}.")
       }
       //each method must be well-typed with respect the object type
       for (m <- methods) {
         val mType = stype.privateType.methSig(m.name)
         //TODO: Check this in the ResolverIdentifier
         if (mType.domain.size != m.args.size)
-          throw TypeError(s"Method '${m.name}': Mismatch in amount of arguments between definition and signature")
+          throw CommonError.genericError(m.astNode,s"Method '${m.name}': Mismatch in amount of arguments between definition and signature")
 
         val methodScope = new NestedScope[STypeG](scope)
         methodScope.add(self, stype)

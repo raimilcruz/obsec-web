@@ -1,13 +1,15 @@
 package ObSec.Ast
 
-  /**
+import Common.AstNode
+
+/**
     * <Expr> ::= <Var> | <Obj> | <MethodInv>
     */
 
   /**
     * Top Algebraic Data Type for expression in ObSec
     */
-  sealed trait ObSecExpr{
+  sealed trait ObSecExpr extends AstNode{
 
   }
 

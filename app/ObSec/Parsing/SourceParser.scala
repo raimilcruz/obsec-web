@@ -1,12 +1,14 @@
 package ObSec.Parsing
 
+import Common.{OffsetPositional, ParserError}
 import ObSec.Ast._
 import ObSec.Parsing.ObSecParser.rep1
+import ObSecG.Parsing.ObSecGParser.Parser
 
 import scala.util.parsing.combinator.syntactical.StandardTokenParsers
 import scala.util.parsing.combinator.token.StdTokens
 import scala.util.parsing.combinator.{ImplicitConversions, JavaTokenParsers, PackratParsers}
-import scala.util.parsing.input.Position
+import scala.util.parsing.input.{NoPosition, Position}
 
 
 
@@ -65,9 +67,19 @@ object ObSecParser extends StandardTokenParsers with PackratParsers with Implici
   def LOW ="L"
   def HIGH ="H"
 
+  def myPositioned[T <: OffsetPositional](p: => Parser[T]): Parser[T] = Parser(in => p(in) match {
+    case Success(t, in1) =>
+      Success(
+        if (t.pos == NoPosition)
+          (((t setPos in.pos) setOffSet in.offset)
+            setEndPos in1.pos)
+            setSource in.source.subSequence(in.offset,in1.offset) else t, in1)
+    case ns: NoSuccess => ns
+  })
+
   def  program: PackratParser[ObSecExpr] = phrase(expr)//new Wrap("program",phrase(expr))
   lazy val expr : Parser[ObSecExpr] = {
-    valExpr |||  varExpr ||| methodInvExpr | ifThenElse | letStarExpr | mkListExpr | consList
+    myPositioned(valExpr) |||  varExpr ||| methodInvExpr | ifThenElse | letStarExpr | mkListExpr | consList
   }
 
   lazy val consList: Parser[ObSecExpr] =
@@ -203,10 +215,10 @@ object ObSecParser extends StandardTokenParsers with PackratParsers with Implici
     * @param string The program source
     * @return An AST
     */
-  def apply(string: String): Either[ObSecParserError, ObSecExpr] = {
+  def apply(string: String): Either[ParserError, ObSecExpr] = {
     //parseAll(program,string) match {
     phrase(expr) (new lexical.Scanner(string)) match {
-      case x: NoSuccess => Left(ObSecParserError("["+x.next.pos+"] failure: "+x.msg,x.next.pos,x.next.offset))
+      case x: NoSuccess => Left(ParserError("["+x.next.pos+"] failure: "+x.msg,x.next.pos,x.next.rest.pos,x.next.offset))
       case Success(result, next) => Right(result)
     }
   }
@@ -216,10 +228,10 @@ object ObSecParser extends StandardTokenParsers with PackratParsers with Implici
     * @param string The type syntax
     * @return The expression representing the type
     */
-  def parseType(string:String):Either[ObSecParserError, Type] = {
+  def parseType(string:String):Either[ParserError, Type] = {
     //parseAll(singleType,string) match {
     phrase(singleType) (new lexical.Scanner(string)) match {
-      case x: NoSuccess => Left(ObSecParserError("["+x.next.pos+"] failure: "+x.msg,x.next.pos,x.next.offset))
+      case x: NoSuccess => Left(ParserError("["+x.next.pos+"] failure: "+x.msg,x.next.pos,x.next.rest.pos,x.next.offset))
       case Success(result, next) => Right(result)
     }
   }
@@ -228,17 +240,17 @@ object ObSecParser extends StandardTokenParsers with PackratParsers with Implici
     * @param string The type syntax
     * @return The expression representing the type
     */
-  def parseSType(string:String):Either[ObSecParserError, SType] = {
+  def parseSType(string:String):Either[ParserError, SType] = {
     //parseAll(stype,string) match {
     phrase(stype) (new lexical.Scanner(string)) match {
-      case  x: NoSuccess => Left(ObSecParserError("["+x.next.pos+"] failure: "+x.msg,x.next.pos,x.next.offset))
+      case  x: NoSuccess => Left(ParserError("["+x.next.pos+"] failure: "+x.msg,x.next.pos,x.next.rest.pos,x.next.offset))
       case Success(result, next) => Right(result)
     }
   }
 
 }
 
-trait ObSecCompilationError
-case class ObSecParserError(msg: String,pos:Position,offset:Int) extends ObSecCompilationError
+
+
 
 

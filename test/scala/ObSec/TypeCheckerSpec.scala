@@ -2,7 +2,7 @@ package scala.ObSec
 
 
 
-import Common.{NestedScope, Scope, TypeError}
+import Common.{CommonError, NestedScope, Scope}
 import ObSec.Ast._
 import ObSec.Parsing.ObSecParser
 import ObSec.Static._
@@ -47,7 +47,7 @@ class TypeCheckerSpec extends FlatSpec {
     expr match {
       case Left(x) => fail("parsing error")
       case Right(ast) => {
-        intercept[TypeError] {
+        intercept[] {
           TypeChecker(ast)
         }
       }
@@ -58,7 +58,7 @@ class TypeCheckerSpec extends FlatSpec {
     expr match {
       case Left(x) => fail("parsing error")
       case Right(ast) => {
-        intercept[TypeError] {
+        intercept[CommonError] {
           TypeChecker(ast)
         }
       }
@@ -69,7 +69,7 @@ class TypeCheckerSpec extends FlatSpec {
     expr match {
       case Left(x) => fail("parsing error")
       case Right(ast) => {
-        intercept[TypeError] {
+        intercept[CommonError] {
           TypeChecker(ast)
         }
       }
@@ -91,7 +91,7 @@ class TypeCheckerSpec extends FlatSpec {
     expr match {
       case Left(x) => fail("parsing error")
       case Right(ast) => {
-        intercept[TypeError] {
+        intercept[CommonError] {
           TypeChecker(ast)
         }
       }
@@ -102,7 +102,7 @@ class TypeCheckerSpec extends FlatSpec {
     expr match {
       case Left(x) => fail("parsing error")
       case Right(ast) => {
-        intercept[TypeError] {
+        intercept[CommonError] {
           TypeChecker(ast)
         }
       }
@@ -140,7 +140,7 @@ class TypeCheckerSpec extends FlatSpec {
 
     expr match {
       case Right(ast) =>
-        intercept[TypeError] {
+        intercept[CommonError] {
           TypeChecker(ast)
         }
       case _ => fail("parsing error")
@@ -151,7 +151,7 @@ class TypeCheckerSpec extends FlatSpec {
     var t =  ObSecParser("{z : {ot x}<Int =>}")
     t match {
       case Right(ast)=>
-        intercept[TypeError] {
+        intercept[CommonError] {
           TypeChecker(ast)
         }
       case _ => fail("parsing error")
@@ -163,7 +163,7 @@ class TypeCheckerSpec extends FlatSpec {
     var expr = ObSecParser("{z : {ot x {add : x<x -> x<x}}<{ot x} => {add x = z}}")
     expr match {
       case Right(ast)=>
-        intercept[TypeError] {
+        intercept[CommonError] {
           TypeChecker(ast)
         }
       case _ => fail("parsing error")
@@ -315,7 +315,7 @@ class TypeCheckerSpec extends FlatSpec {
     var expr = ObSecParser("\"abc\".hash().==(\"abc\")")
     expr match {
       case Right(ast)=>
-        intercept[TypeError]{
+        intercept[CommonError]{
           TypeChecker(ast)
         }
       case _ => fail("parsing error")
@@ -342,7 +342,7 @@ class TypeCheckerSpec extends FlatSpec {
     var expr = ObSecParser("let{\ntype t = [{== : Int<L -> Bool<L}]\nauth = new {z : [{login : String<t String<L -> Int<L}]<L \n            => \n            def login password guess = if password.==(guess) then 1 else 0}\n} in \nauth.login(\"qwe123\",\"qwe123\")")
     expr match {
       case Right(ast) =>
-        intercept[TypeError] {
+        intercept[CommonError] {
           TypeChecker(ast)
         }
       case _ => fail("parsing error")
@@ -371,7 +371,7 @@ class TypeCheckerSpec extends FlatSpec {
     var t = ObSecParser("let{\n    deftype StringEq{{== : String<Int -> Bool<L}}\n    val auth = new {z : [{login : String<StringEq String<L -> Int<L}]<L \n            => \n            def login password guess = if password.==(guess) then 1 else 0}\n} in \nauth.login(\"qwe123\",\"qwe123\")")
     t match{
       case Right(ast) =>
-        intercept[TypeError]{
+        intercept[CommonError]{
           TypeChecker(ast)
         }
 

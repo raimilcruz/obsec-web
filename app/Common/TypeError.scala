@@ -1,5 +1,6 @@
 package Common
 
+
 import scala.util.parsing.input.{NoPosition, Position, Positional}
 
 trait OffsetPositional extends Positional{
@@ -44,15 +45,17 @@ trait ThrowableAnalysisError extends Error{
   def analysisError: AnalysisError
 }
 
-case class TypeError(str: String) extends Error
-
 object ImplementationError extends ErrorCodesEnum
 object SecTypeIsNotWellFormed extends ErrorCodesEnum
 object VariableAlreadyDefinedInScope extends ErrorCodesEnum
+object GenericErrorCode extends ErrorCodesEnum
 
 case class CommonErrorCode(code: ErrorCodesEnum,message:String) extends ErrorCode
 
 object CommonErrorCodes{
+  def genericError: CommonErrorCode =
+    CommonErrorCode(GenericErrorCode,"%s")
+
   val secTypeIsNotWellFormed: CommonErrorCode =
     CommonErrorCode(SecTypeIsNotWellFormed,
       "Security type: %s is not well-formed : %s")
@@ -69,6 +72,9 @@ object CommonErrorCodes{
 case class CommonError(analysisError: AnalysisError) extends ThrowableAnalysisError
 
 object CommonError{
+  def genericError(astNode: AstNode, message: String): CommonError =
+    commonError(astNode,CommonErrorCodes.genericError,List(message))
+
   def implementationError(node:AstNode,message:String):CommonError =
     commonError(node,CommonErrorCodes.implementationError,List(message))
 
