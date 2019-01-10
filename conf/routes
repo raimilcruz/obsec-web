@@ -15,6 +15,9 @@ POST     /gexamples                       controllers.GObsecController.examples
 POST     /gtypecheck               controllers.GObsecController.typecheck
 POST     /greduce                  controllers.GObsecController.reduce
 
+POST     /getjudgment               controllers.GObsecController.getJudgment
+POST     /stepjudgment               controllers.GObsecController.stepJudgment
+
 # Map static resources from the /public folder to the /assets URL path
 
 GET     /assets/*file                     controllers.Assets.versioned(path="/public", file: Asset)

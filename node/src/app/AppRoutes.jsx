@@ -4,16 +4,18 @@ import { render } from 'react-dom';
 import { Router, Route, Link, browserHistory, useRouterHistory, IndexRoute } from 'react-router';
 import {createHashHistory} from 'history';
 import LanguagePad from './LanguagePad';
+import DerivationTreeManager from './components/DerivationTreeManager';
 import Main from './Main';
 
 
 class GLanguagePad  extends React.Component{
     render() {
-        return <LanguagePad urlExamples={"gexamples"}
-                            urlTypeCheck={"gtypecheck"}
-                            urlExecute={"greduce"}
-                            language={"gobsec"}
-        />
+        return
+            <LanguagePad urlExamples={"gexamples"}
+                                urlTypeCheck={"gtypecheck"}
+                                urlExecute={"greduce"}
+                                language={"gobsec"}
+            />
     }
 }
 
@@ -23,6 +25,7 @@ const AppRoutes = (
         <Route path="/" component={Main}>
           <IndexRoute component={LanguagePad} />
           <Route path={"/generic"} component={GLanguagePad}/>
+          <Route path={"/judgment"} component={DerivationTreeManager}/>
         </Route>
 	</Router>
 );

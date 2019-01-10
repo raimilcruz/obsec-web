@@ -85,4 +85,18 @@ body {
 	margin-left:10px;
 }
 
+.infer-step{
+	border-radius: 2px;
+}
+
+.infer-step-pending{
+	border: 2px solid gray;
+}
+.infer-step-done{
+	border: 2px solid green;
+}
+.infer-step-failed{
+	border: 2px solid red;
+}
+
 

@@ -1,0 +1,27 @@
+let{
+
+    val l =  new {
+      z : [
+            {empty[T: String .. Top] : -> [a {isEmpty: -> Bool<Bool} {head: -> String<T} {tail: -> a<a}]<L}
+            {const[T: String .. Top] : String<T   [a {isEmpty: -> Bool<Bool} {head: -> String<T} {tail: -> a<a}]<L ->
+                                                [a {isEmpty: -> Bool<Bool} {head: -> String<T} {tail: -> a<a}]<L}
+          ]<L
+      =>
+      def empty = new {
+        z1: [a {isEmpty: -> Bool<Bool} {head: -> String<T} {tail: -> a<a}]<L
+        =>
+        def isEmpty = true
+        def head = z1.head()
+        def tail = z1.tail()
+      }
+      def const x l = new {
+        z1: [a {isEmpty: -> Bool<Bool} {head: -> String<T} {tail: -> a<a}]<L
+        =>
+        def isEmpty = false
+        def head = x
+        def tail = l
+      }
+    }
+}
+in
+  l.const[String]("a",l.empty[String]()).head()
