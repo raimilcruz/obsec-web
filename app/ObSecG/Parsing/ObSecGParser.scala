@@ -1,8 +1,7 @@
 package ObSecG.Parsing
 
 
-import Common.{OffsetPositional, ParserError}
-import ObSec.Parsing.DebugPackratParsers
+import Common.{DebugPackratParsers, OffsetPositional, ParserError}
 import ObSecG.Ast
 import ObSecG.Ast._
 
@@ -17,7 +16,7 @@ import scala.util.parsing.input.{NoPosition, Position, Positional}
   * Defining a parser for ObSec language
   */
 object ObSecGParser extends StandardTokenParsers with PackratParsers with ImplicitConversions with DebugPackratParsers{
-  lexical.reserved += ("if" , "then" , "else" , "true", "false", "let" ,"in", "type", "new", "def","val","deftype", "ot" , "Int" , "String" , "Bool", "StrList" , "L" , "H"  ,"mklist",
+  lexical.reserved += ("if" , "then" , "else" , "true", "false", "let" ,"in", "type", "new", "def","val","deftype", "ot" , "Int" , "String" , "Bool", "StrList" , "L" , "H"  ,"mklist","I",
     "cons",
     "extends","super","low" )
   lexical.delimiters ++= (": . < > -> => + - * / ( ) [ ] { } , = ; <: .." split ' ')
@@ -74,6 +73,8 @@ object ObSecGParser extends StandardTokenParsers with PackratParsers with Implic
 
   def LOW ="L"
   def HIGH ="H"
+
+  def IMPLICIT_LABEL ="I"
 
 
   implicit def myPositioned[T <: OffsetPositional](p: => Parser[T]): Parser[T] = Parser(in => p(in) match {
@@ -183,8 +184,9 @@ object ObSecGParser extends StandardTokenParsers with PackratParsers with Implic
 
 
 
+
   lazy val labelType : PackratParser[TypeAnnotation] ={
-    myPositioned(objType) | myPositioned(unionLabel) | myPositioned(lowLabel) | myPositioned(highLabel) |
+    myPositioned(objType) |  myPositioned(lowLabel) | myPositioned(highLabel) | myPositioned(implictLabel) |
       myPositioned(primType)  | myPositioned(varType)
   }
   lazy val unionLabel :  PackratParser[UnionTypeAnnotation]={
@@ -206,6 +208,7 @@ object ObSecGParser extends StandardTokenParsers with PackratParsers with Implic
 
   lazy val lowLabel : PackratParser[TypeAnnotation]= LOW ^^ {_ => LowLabelNode}
   lazy val highLabel : PackratParser[TypeAnnotation]= HIGH ^^ {_ => HighLabelNode}
+  lazy val implictLabel : PackratParser[TypeAnnotation] = IMPLICIT_LABEL ^^   { _ => ImplicitLabelNode}
 
   lazy val primVal :  Parser[ObSecGAstExprNode] =
     myPositioned(stringLiteralExpr) | myPositioned(integerExpr) | myPositioned(boolExpr)
@@ -250,14 +253,14 @@ object ObSecGParser extends StandardTokenParsers with PackratParsers with Implic
     repsep(myPositioned(typeVarBound),",")
   }
   lazy val typeVarBound:PackratParser[LabelVariableDeclarationNode]={
-    myPositioned(typeVarBoundAster) | myPositioned(typeVarBoundNoAster)
+    /*myPositioned(typeVarBoundAster) |*/ myPositioned(typeVarBoundNoAster)
   }
   lazy val typeVarBoundNoAster:PackratParser[LabelVariableDeclarationNode]={
     myPositioned(upperConstraint) | myPositioned(lowerConstraint) | myPositioned(boundConstraint)
   }
-  lazy val typeVarBoundAster:PackratParser[LabelVariableDeclarationNode]={
+ /* lazy val typeVarBoundAster:PackratParser[LabelVariableDeclarationNode]={
     ("low" ~> myPositioned(typeVarBound)) ^^ (labelVarDefinition => labelVarDefinition.toAster)
-  }
+  }*/
   lazy val upperConstraint:PackratParser[SubLabelVariableDeclaration]={
     ((identifier <~ "extends") ~ myPositioned(labelType)) ^^
     {case id ~ rawType => SubLabelVariableDeclaration(id,rawType)}

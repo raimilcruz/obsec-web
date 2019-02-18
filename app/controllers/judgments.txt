@@ -1,0 +1,32 @@
+List[Premise]
+----
+Conclusion
+
+Premise: Judgment | SideCondition | PartialFunction
+
+Prem1 & Prem2 & ... PremN
+----
+Conclusion
+
+Conclusion : (Context,Goal,Output)
+
+Version 1:
+Prem1 & Prem2 & ... PremN
+----
+Context | Goal : Output	
+
+Version 2:
+
+Prem1 & Prem2 & ... PremN
+----
+Goal
+
+We have an implict conversion from Goal to Conclusion (g) => ([],g,NoOutput)
+
+Version 3:
+
+Prem1 & Prem2 & ... PremN
+----
+Context | Goal
+
+We have an implicit conversion from ContextGoal to Conclusion (cg) => (cg.Context,cg.Goal,NoOutput)

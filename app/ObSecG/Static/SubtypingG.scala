@@ -5,8 +5,6 @@ import ObSecG.Ast._
 
 case class RecordTypeG(methods: List[MethodDeclarationG]) extends TypeG with Primitable{
   override def toString: String =  s"{${methods.map(x => x.toString).fold("")((x: String, y: String) => x + y).toString}}"
-  override def methSig(x: String): MTypeG = throw new NotImplementedError("Not important")
-  override def containsMethod(x: String): Boolean = throw new NotImplementedError("Not important")
 
   override def prettyPrint(builder: StringBuilder): Unit = {
     builder.append("[")
@@ -224,6 +222,11 @@ class AmadioCardelliSubtypingG(
                 prevSet + Tuple2(LabelVar(tv.typeVar),tv.upperBound) + Tuple2(tv.lowerBound,LabelVar(tv.typeVar))
               })
             set = set.union(newSet)
+            if(mt1.isPrimitive){
+              if(ProtectsJudgement.isSoundMethodSignature(mt2))
+                return set
+              throw SubtypingError(t1,t2)
+            }
             for (pair <- mt2Renamed.domain.zip(mt1.domain)) {
               set = <::(extendedGenVarEnv,set, pair._1, pair._2,deep+1)
             }
@@ -233,20 +236,20 @@ class AmadioCardelliSubtypingG(
         case (p1: PrimType, p2: PrimType) =>
           if(printRules) println(s"$spaces [Prim]")
           if(p1 == p2) newSet
-          else innerSubType(labelVariableEnv,newSet, p1.toObjType, p2.toObjType,deep+1)
+          else throw SubtypingError(p1,p2)//"Subtyping between primitive types is nominal" // innerSubType(labelVariableEnv,newSet, p1.toObjType, p2.toObjType,deep+1)
         case (p1: PrimType, _) =>
           if(printRules) println(s"$spaces [PrimL]")
-          innerSubType(labelVariableEnv,newSet, p1.toObjType, t2,deep+1)
-        case (_, p2: PrimType) =>
-          if(printRules) println(s"$spaces [PrimR]")
-          innerSubType(labelVariableEnv,newSet, t1, p2.toObjType ,deep+1)
+          innerSubType(labelVariableEnv,newSet, toRecordType(p1), t2,deep+1)
+        //case (_, p2: PrimType) =>
+        //  if(printRules) println(s"$spaces [PrimR]")
+        //  innerSubType(labelVariableEnv,newSet, t1, toRecordType(p2),deep+1)
         case (ot1@ObjectType(_, _), _) =>
           if(printRules) println(s"$spaces [ObjL]")
           innerSubType(labelVariableEnv,newSet, unfold(ot1), t2,deep+1)
-        case (_, ot2@ObjectType(_, _)) if !ot2.isPrimitive  =>
+        case (_, ot2@ObjectType(_, _)) /*if !ot2.isPrimitive */ =>
           if(printRules) println(s"$spaces [ObjR]")
           innerSubType(labelVariableEnv,newSet, t1, unfold(ot2),deep+1)
-        case (_, ot2@ObjectType(_, _)) if ot2.isPrimitive  =>
+        /*case (_, ot2@ObjectType(_, _)) if ot2.isPrimitive  =>
           if(printRules) println(s"$spaces [ObjRPrim]")
           //both type should be equivalent, but not only with alphaEq.
           //A way to verify that is to ask for t1<:ot2 and ot2<:t1
@@ -256,7 +259,7 @@ class AmadioCardelliSubtypingG(
             case _ =>
               val firstSet = innerSubType(labelVariableEnv, newSet, t1, unfold(ot2), deep + 1)
               innerSubType(labelVariableEnv, firstSet, unfold(ot2), t1, deep + 1)
-          }
+          }*/
 
         case _ => throw SubtypingError(t1,t2)
       }
@@ -264,7 +267,10 @@ class AmadioCardelliSubtypingG(
   }
 
   private def unfold(t1: ObjectType): LabelG = {
-    TypeSubstG.substRecVar(RecordTypeG(t1.methods).setIsPrimitive(t1.isPrimitive), t1.selfVar, t1)
+    TypeSubstG.substRecVar(RecordTypeG(t1.methods).setIsPrimitive(false), t1.selfVar, t1)
+  }
+  private def toRecordType(t:PrimType):RecordTypeG = {
+    RecordTypeG(t.methods).setIsPrimitive(true)
   }
 }
 case class SubtypingError(t1:LabelG,t2:LabelG) extends Error {

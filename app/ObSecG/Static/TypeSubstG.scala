@@ -30,6 +30,7 @@ class TypeSubstG(auxiliaryFunctions: IAuxiliaryFunctions) extends ITypeSubsG {
     */
   def substRecVar(t: LabelG, x: String, t2: LabelG): LabelG = t match {
     case p:PrimType => p
+    case ImplicitLabel => ImplicitLabel
     case TypeVar(y: String) => if (x == y) t2 else t
     case gv:LabelVar => gv
     case UnionLabel(l1,l2)=>
@@ -64,7 +65,7 @@ class TypeSubstG(auxiliaryFunctions: IAuxiliaryFunctions) extends ITypeSubsG {
                 m.mType.domain.map(stype =>
                   stype.map(facet => substRecVar(substRecVar(facet, y, TypeVar(newVar)),x, t2))),
                 m.mType.codomain.map(facet => substRecVar(substRecVar(facet, y, TypeVar(newVar)),x, t2))
-            )))).setIsPrimitive(ot.isPrimitive)
+            ))))//.setIsPrimitive(ot.isPrimitive)
       }
   }
   def substLabel(containerType: LabelG, labelVar: BoundedLabelVar, actualType: LabelG): LabelG = {
@@ -100,6 +101,7 @@ class TypeSubstG(auxiliaryFunctions: IAuxiliaryFunctions) extends ITypeSubsG {
   //let assume that t2 is closed (it does not contains free type vars)
   private def substLabelVar(t: LabelG, x: String, t2: LabelG): LabelG = t match {
     case p:PrimType => p
+    case ImplicitLabel => ImplicitLabel
     case TypeVar(y: String) => t
     case lv@LabelVar(y) => if(x==y) t2 else t
     case RecordTypeG(methods) =>

@@ -38,17 +38,23 @@ class WellFormedCheckerG(judgements: GObSecJudgements, errorCollector: ErrorColl
                            s: STypeG): Boolean =
     isWellFormed(genVarEnv,objectEnv,s.privateType) &&
       isWellFormed(genVarEnv,objectEnv,s.publicType) &&
-      ( judgements.<::(genVarEnv, closeType(objectEnv,s.privateType),closeType(objectEnv,s.publicType)) == SubtypingSuccess
-        || {
-        errorCollector.report(s"Private facet must be subtype of public facet in security type: ${s.astNode.source}")
-        false
-        }
+      (
+        if(s.publicType == ImplicitLabel)
+          true
+        else
+        ( judgements.<::(genVarEnv, closeType(objectEnv,s.privateType),closeType(objectEnv,s.publicType)) == SubtypingSuccess
+          || {
+          errorCollector.report(s"Private facet must be subtype of public facet in security type: ${s.astNode.source}")
+          false
+          }
+        )
       )
 
    private def isWellFormed(genVarEnv: LabelVarEnvironment,
                              objectEnv: SelfDefinitionEnvironment,
                              t: LabelG): Boolean = t match {
       case p: PrimType => true
+      case ImplicitLabel => true
       case Bottom => true
       case TypeVar(x) => true
       case x:LabelVar => true
@@ -67,9 +73,9 @@ class WellFormedCheckerG(judgements: GObSecJudgements, errorCollector: ErrorColl
                 isWellFormed(
                   methodLabelEnvironment,newEnv, m.mType.codomain)
             })
-      case UnionLabel(left,right)=>
+     /* case UnionLabel(left,right)=>
         isWellFormed(genVarEnv,objectEnv,left) &&
-          isWellFormed(genVarEnv,objectEnv,right)
+          isWellFormed(genVarEnv,objectEnv,right)*/
     }
 
   private def labelVariableWellFormed(genVarEnv: LabelVarEnvironment,

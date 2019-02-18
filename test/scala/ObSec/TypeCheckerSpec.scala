@@ -6,6 +6,7 @@ import Common.{CommonError, NestedScope, Scope}
 import ObSec.Ast._
 import ObSec.Parsing.ObSecParser
 import ObSec.Static._
+import ObSecG.Ast.TypeErrorG
 import org.scalatest.FlatSpec
 
 /**
@@ -47,7 +48,7 @@ class TypeCheckerSpec extends FlatSpec {
     expr match {
       case Left(x) => fail("parsing error")
       case Right(ast) => {
-        intercept[] {
+        intercept[TypeErrorG] {
           TypeChecker(ast)
         }
       }

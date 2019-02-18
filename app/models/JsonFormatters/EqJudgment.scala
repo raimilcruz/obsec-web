@@ -1,7 +1,8 @@
 package models.JsonFormatters
 
 import Common.judgment._
-import controllers.JudgmentRequestApi
+import Common.judgment.examples.{EqJudgmentGoal, Nat}
+import models.judgment.JudgmentRequestApi
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
 
@@ -56,13 +57,18 @@ class EqJudgmentWriter  extends JudgmentWriter {
     )
   }
 
+
   override def premiseWrites: Writes[JudgmentPremise] = new Writes[JudgmentPremise] {
     override def writes(o: JudgmentPremise): JsValue = Json.obj(
       "key" -> key,
       "context" -> o.context,
-      "goal" -> o.goal.asInstanceOf[EqJudgmentGoal]
+      "goal" -> o.goal.asInstanceOf[EqJudgmentGoal],
+      "rep" -> conclusionRep(o)
     )
   }
 
-  override def stepWrites(stepId:String): Writes[JudgmentStep] = JudgmentJsonWriters.judgmentStepWriter(stepId)
+  override def stepWrites(stepId:String): Writes[JudgmentStep] = JudgmentJsonWriters.judgmentStepWriter(key,stepId)
+
+  override def conclusionRep(judgment: JudgmentBase): String =
+    ((g:EqJudgmentGoal)=> s"${g.n1.toInt} == ${g.n2.toInt}").apply(judgment.goal.asInstanceOf[EqJudgmentGoal])
 }

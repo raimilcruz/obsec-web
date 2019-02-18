@@ -4,20 +4,20 @@ package ObSecG
 import Common.Environment
 import ObSec.Ast._
 import ObSec.Static.TypeEquivalence
-import ObSecG.Ast.{IntType, STypeG, TypeErrorG}
+import ObSecG.Ast.{STypeG, TypeErrorG}
 import ObSecG.Parsing.{ObSecGIdentifierResolver, ObSecGParser}
 import ObSecG.Static.TypeCheckerG
 
 object Playground{
   def main(args:Array[String]):Unit= {
-    val program = "let{\n    type StringEq = [{== [low T super String] : String -> Bool<(Bool,T)}]\n    deftype StrEqList{\n        {isEmpty: -> Bool<L}\n        {head: -> String<StringEq }\n        {tail: -> StrList<StrEqList}\n    }\n    val listHelper =  new {z : [{contains : StrList<StrEqList -> Bool<L}]<L  =>\n                          def contains myList  =\n                              myList.head().==[String](\"a\")\n                    }\n    }\nin\n    listHelper.contains(mklist[StringEq](\"b\",\"c\",\"a\"))"
+    val program = "let{\n    type StringEq = [{== [] : String<I -> Bool<I}]\n    deftype AuthServer {\n        {login: String<StringEq String -> Int}\n    }\n    val auth =  new {z : AuthServer<L =>\n        def login password guess = if password.==(guess) then 1 else 0\n        }\n    }\nin\nauth.login(\"qwe123\",\"qwe123\")"
     ObSecGParser(program) match{
       case Right(ast)=>
         val expr = ObSecGIdentifierResolver(ast)
         //try {
           val theType = TypeCheckerG(expr)
-
-          assert(theType == STypeG(IntType, IntType))
+          print(theType)
+         // assert(theType == STypeG(IntType, IntType))
         //}catch{
         //  case e : TypeErrorG => print(e.analysisError)
        // }

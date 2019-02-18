@@ -7,6 +7,7 @@ import ObSecG.Static._
 import org.scalatest.{FlatSpec, Matchers}
 
 
+/*
 class ProtectsSpec extends FlatSpec with Matchers with BaseSpec {
   "Interface for Int type " must "be sound" in{
     val intInterface = IntType.toObjType
@@ -69,3 +70,4 @@ class ProtectsSpec extends FlatSpec with Matchers with BaseSpec {
     }
   }
 }
+*/

@@ -114,6 +114,10 @@ case object HighLabelNode extends TypeAnnotation {
 
   override def children: List[ObSecGAstNode] = List()
 }
+case object ImplicitLabelNode extends  TypeAnnotation {
+  override def toString: String = "I*"
+  override def children: List[ObSecGAstNode] = List()
+}
 
 case class UnionTypeAnnotation(left:TypeAnnotation,right: TypeAnnotation) extends TypeAnnotation {
   override def children: List[ObSecGAstNode] = List(left,right)

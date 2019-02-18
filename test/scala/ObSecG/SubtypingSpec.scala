@@ -8,7 +8,8 @@ import org.scalatest.{FlatSpec, Matchers}
 
 class SubtypingSpec extends FlatSpec with Matchers with ElementServiceBaseSpec {
 
-  "Subtyping T1 <: T1 v T2" must "work" in{
+
+  /*"Subtyping T1 <: T1 v T2" must "work" in{
 
     val env = Environment.empty[TypeVarBounds]()
     var judgements = new GObSecGJudgmentImpl(new ErrorCollector)
@@ -63,19 +64,19 @@ class SubtypingSpec extends FlatSpec with Matchers with ElementServiceBaseSpec {
     var subtypingChecker = new AmadioCardelliSubtypingG(judgements,judgements.errorCollector)
     //T: Int .. Top, T1: T ..Top
     assert(subtypingChecker.<::(env,left,rigth) == SubtypingSuccess)
-  }
+  }*/
   "Subtyping between Int and type variable bound" must "work" in{
 
-    val left  =  IntType
+    val left  =  IntADT
     val env = Environment.empty[TypeVarBounds]().
-      extend("T",TypeVarBounds(IntType,OT("X2",List()))).
+      extend("T",TypeVarBounds(IntADT,OT("X2",List()))).
       extend("T1",TypeVarBounds(LabelVar("T"),OT("X2",List())))
 
     var judgements = new GObSecGJudgmentImpl(new ErrorCollector)
     var subtypingChecker = new AmadioCardelliSubtypingG(judgements,judgements.errorCollector)
     //T: Int .. Top, T1: T ..Top
     //assert(subtypingChecker.<::(env,left,ObjectType.top))
-    assert(subtypingChecker.<::(env,IntType,LabelVar("T")) == SubtypingSuccess)
+    assert(subtypingChecker.<::(env,IntADT,LabelVar("T")) == SubtypingSuccess)
   }
 
   "String <: [==[T super String]: String<L -> String<L]" must "work" in{
@@ -87,7 +88,7 @@ class SubtypingSpec extends FlatSpec with Matchers with ElementServiceBaseSpec {
         var judgements = new GObSecGJudgmentImpl(new ErrorCollector)
         var subtypingChecker = new AmadioCardelliSubtypingG(judgements,judgements.errorCollector)
 
-        assert(subtypingChecker.<::(Environment.empty[TypeVarBounds](),StringType,stringEqType) == SubtypingSuccess)
+        assert(subtypingChecker.<::(Environment.empty[TypeVarBounds](),StringADT,stringEqType) == SubtypingSuccess)
     }
   }
   "String </: Bad StringEq" must "work" in{
@@ -99,7 +100,7 @@ class SubtypingSpec extends FlatSpec with Matchers with ElementServiceBaseSpec {
         var judgements = new GObSecGJudgmentImpl(new ErrorCollector)
         var subtypingChecker = new AmadioCardelliSubtypingG(judgements,judgements.errorCollector)
 
-        assert(subtypingChecker.<::(Environment.empty[TypeVarBounds](),StringType,stringEqType).isInstanceOf[SubtypingFail])
+        assert(subtypingChecker.<::(Environment.empty[TypeVarBounds](),StringADT,stringEqType).isInstanceOf[SubtypingFail])
     }
   }
   "String <: StringEq, where StringEq where the result does not use the label" must "not work" in{
@@ -111,7 +112,7 @@ class SubtypingSpec extends FlatSpec with Matchers with ElementServiceBaseSpec {
         var judgements = new GObSecGJudgmentImpl(new ErrorCollector)
         var subtypingChecker = new AmadioCardelliSubtypingG(judgements,judgements.errorCollector)
 
-        assert(subtypingChecker.<::(Environment.empty[TypeVarBounds](),StringType,stringEqType).isInstanceOf[SubtypingFail])
+        assert(subtypingChecker.<::(Environment.empty[TypeVarBounds](),StringADT,stringEqType).isInstanceOf[SubtypingFail])
     }
   }
 
@@ -124,7 +125,7 @@ class SubtypingSpec extends FlatSpec with Matchers with ElementServiceBaseSpec {
         var judgements = new GObSecGJudgmentImpl(new ErrorCollector)
         var subtypingChecker = new AmadioCardelliSubtypingG(judgements,judgements.errorCollector)
 
-        assert(subtypingChecker.<::(Environment.empty[TypeVarBounds](),StringType,stringEqType) == SubtypingSuccess)
+        assert(subtypingChecker.<::(Environment.empty[TypeVarBounds](),StringADT,stringEqType) == SubtypingSuccess)
     }
   }
 
@@ -137,7 +138,7 @@ class SubtypingSpec extends FlatSpec with Matchers with ElementServiceBaseSpec {
         var judgements = new GObSecGJudgmentImpl(new ErrorCollector)
         var subtypingChecker = new AmadioCardelliSubtypingG(judgements,judgements.errorCollector)
 
-        assert(subtypingChecker.<::(Environment.empty[TypeVarBounds](),StringType,stringEqType) == SubtypingSuccess)
+        assert(subtypingChecker.<::(Environment.empty[TypeVarBounds](),StringADT,stringEqType) == SubtypingSuccess)
     }
   }
 
@@ -152,7 +153,7 @@ class SubtypingSpec extends FlatSpec with Matchers with ElementServiceBaseSpec {
     var judgements = new GObSecGJudgmentImpl(new ErrorCollector)
     var subtypingChecker = new AmadioCardelliSubtypingG(judgements,judgements.errorCollector)
 
-    assert(subtypingChecker.<::(Environment.empty[TypeVarBounds](),StringGListType(ObjectType.top),StringGListType(StringType)) != SubtypingSuccess)
+    assert(subtypingChecker.<::(Environment.empty[TypeVarBounds](),StringGListType(ObjectType.top),StringGListType(StringADT)) != SubtypingSuccess)
 
   }
 }

@@ -29,6 +29,8 @@ class TypeChecker(judgements: GObSecJudgmentsExtensions,
     typeCheck(Environment.empty(), new Scope, new Scope, x)
 
 
+
+
   /**
     *
     * @param genVarEnv  The generic variable subtyping constraint environment(eg::= X<:T,..)
@@ -43,9 +45,7 @@ class TypeChecker(judgements: GObSecJudgmentsExtensions,
                 expr: ObSecGExpr): STypeG =
     wrapError[STypeG](expr match {
     case Var(x) => scope.lookup(x)
-    case IntExpr(_) => STypeG(IntType, IntType)
-    case BooleanExpr(_) => STypeG(BooleanType, BooleanType)
-    case StringExpr(_) => STypeG(StringType, StringType)
+    case p:PrimitiveLiteral => typePrimitives(p)
     case methInv@MethodInv(e1, types, args, m) => {
       val s1 = typeCheck(genVarEnv, scope, aliasScope, e1)
       val argTypes = args.elems.map(param =>
@@ -53,12 +53,15 @@ class TypeChecker(judgements: GObSecJudgmentsExtensions,
 
       val privateFacet = auxiliaryFunctions.tUpperBound(genVarEnv, s1.privateType)
       //println("typeCheck:" + s"private facet:$privateFacet")
-      if (privateFacet.containsMethod(m)) {
-        var mType = privateFacet.methSig(m)
+      if(mInU(m,privateFacet)){
+
+        //case for object types
+        //case for primitive types
+        var mType = methSig(privateFacet,m)
         //println(s"Method type : ${mType}")
         val publicFacet = auxiliaryFunctions.tUpperBound(genVarEnv, s1.publicType)
-        if (publicFacet.containsMethod(m)) {
-          mType = publicFacet.methSig(m)
+        if (mInU(m,publicFacet)) {
+          mType = methSig(publicFacet,m)
         }
 
         //check subtyping for method constraints
@@ -82,28 +85,22 @@ class TypeChecker(judgements: GObSecJudgmentsExtensions,
             throw TypeErrorG.badActualLabelArgument(pair._2.astNode, m, pair._1,pair._2)
           substitutions = substitutions ++ List((pair._1, pair._2))
         }
+        //instantiate method signature with actual type argument and arguments types
+        val closedSignature =  instantiateMethodSignature(mType,types,argTypes)
         //check the argument count
-        if (mType.domain.size != args.elems.size)
+        if (closedSignature.domain.size != args.elems.size)
           throw TypeErrorG.actualArgumentsSizeError(methInv.args,methInv.method)
         //check subtyping between $mType.domain and s2
-        for (pair <- argTypes.zip(mType.domain)) {
-          val subtitutedType =
-            closeGenType(
-              pair._2,
-              mType.typeVars.zip(types))
-          if (judgements.<::(extendedGenVarEnv,
-            pair._1, subtitutedType).isInstanceOf[SubtypingFail]) {
-            throw TypeErrorG.subTypingError(pair._1.astNode, m, pair._1, subtitutedType)
+        for (pair <- argTypes.zip(closedSignature.domain)) {
+          if (judgements.<::(extendedGenVarEnv,pair._1, pair._2).isInstanceOf[SubtypingFail]) {
+            throw TypeErrorG.subTypingError(pair._1.astNode, m, pair._1, pair._2)
           }
         }
 
-        if (publicFacet.containsMethod(m))
-          closeGenType(mType.codomain,
-            publicFacet.methSig(m).typeVars.zip(types))
+        if (mInU(m,publicFacet))
+          closedSignature.codomain
         else
-          closeGenType(STypeG(mType.codomain.privateType, UnionLabel(mType.codomain.publicType, s1.publicType)),
-            privateFacet.methSig(m).typeVars.zip(types))
-
+          STypeG(closedSignature.codomain.privateType,ObjectType.top)
       }
       else
         throw TypeErrorG.methodNotFound(methInv.methodNameNode, m)
@@ -134,8 +131,9 @@ class TypeChecker(judgements: GObSecJudgmentsExtensions,
         throw CommonError.genericError(expr.astNode,s"There must exist a method signature for each method definition. Missing method signature for: ${methsNoSignature.foldLeft("")((acc, m) => acc + " " + m)}.")
       }
       //each method must be well-typed with respect the object type
+      val privObjectType = stype.privateType.asInstanceOf[ObjectType]
       for (m <- methods) {
-        val mType = stype.privateType.methSig(m.name)
+        val mType = privObjectType.methSig(m.name)
         //TODO: Check this in the ResolverIdentifier
         if (mType.domain.size != m.args.size)
           throw CommonError.genericError(m.astNode,s"Method '${m.name}': Mismatch in amount of arguments between definition and signature")
@@ -153,15 +151,15 @@ class TypeChecker(judgements: GObSecJudgmentsExtensions,
       stype
     case IfExpr(cond, e1, e2) =>
       val sCond = typeCheck(genVarEnv, scope, aliasScope, cond)
-      if (sCond.privateType != BooleanType)
+      if (sCond.privateType != BoolADT)
         throw TypeErrorG.ifConditionExpectABoolean(cond.astNode)
       val sE1 = typeCheck(genVarEnv, scope, aliasScope, e1)
       val sE2 = typeCheck(genVarEnv, scope, aliasScope, e2)
       if (sE1 != sE2)
         throw TypeErrorG.sameTypeForIfBranches(expr.astNode,sE1,sE2)
-      //depending on the type of the condiction we should lift the public type of the resulting type
+      //depending on the type of the condition we should lift the public type of the resulting type
       //TODO: Implement this properly: I should check for the empty object type
-      if (sCond.publicType != BooleanType)
+      if (sCond.publicType != BoolADT)
         STypeG(sE1.privateType, ObjectType.top)
       else sE1
     case LetStarExpr(declarations, body) =>
@@ -201,21 +199,71 @@ class TypeChecker(judgements: GObSecJudgmentsExtensions,
       //1. check String <: label . This an adhoc check since we do not have label
       //variable at type level.
       val closedLabel  = closeAliases(aliasScope.toList,label)
-      if(judgements.<::(genVarEnv,StringType,closedLabel) != SubtypingSuccess)
+      if(judgements.<::(genVarEnv,StringADT,closedLabel) != SubtypingSuccess)
         throw TypeErrorG.badStringListLabel(label.astNode,label)
       elems.foreach(e =>{
           val expressionType =  typeCheck(genVarEnv, scope, aliasScope, e)
           if(judgements.<::(genVarEnv,
             expressionType,
-            STypeG(StringType, closedLabel)) != SubtypingSuccess)
-            throw TypeErrorG.subTypingError(e.astNode,"mkList",expressionType,STypeG(StringType, label))
+            STypeG(StringADT, closedLabel)) != SubtypingSuccess)
+            throw TypeErrorG.subTypingError(e.astNode,"mkList",expressionType,STypeG(StringADT, label))
       })
-      STypeG(StringGListType(StringType), StringGListType(closedLabel))
+      STypeG(StringGListType(StringADT), StringGListType(closedLabel))
     case ConsListExpr(elem, list) =>
       val tList = typeCheck(genVarEnv, scope, aliasScope, list)
       val tElem = typeCheck(genVarEnv, scope, aliasScope, elem)
-      throw new NotImplementedError()
+      throw new NotImplementedError("Type checker: ConstListExpr case not implemented")
   },expr.astNode)
+
+  private def mInU(m: String, u:LabelG): Boolean = u match{
+    case p: PrimType=> p.methods.count(sig => sig.name == m) >=0
+    case ot: ObjectType => ot.containsMethod(m)
+    case _ => throw new NotImplementedError(s"m in U, unsupported case for $u")
+  }
+  private def methSig(u: LabelG, m: String): MTypeG = u match{
+    case p: PrimType => p.methods.find(method => method.name == m).get.mType
+    case ot: ObjectType=> ot.methods.find(method => method.name == m).get.mType
+    case _ => throw new NotImplementedError(s"methSig, unsupported case for $u")
+  }
+  def instantiateMethodSignature(mType: MTypeG, actualTypes: NodeList[LabelG], argTypes: List[STypeG]):MTypeG ={
+    val closedDomain = mType.domain.map(t=> closeGenType(t, mType.typeVars.zip(actualTypes)))
+    val closedCodomain = closeGenType(mType.codomain, mType.typeVars.zip(actualTypes))
+
+    //rules for implicit substitutions
+    //TODO: to use type-equivalence
+    val allInputsTypeArePublic = argTypes.forall(x=> x.privateType == x.publicType)
+    if(allInputsTypeArePublic){
+      val explicitDomain = closedDomain.map(toPublicExplicitSecuritType)
+      val explicitCodomain = toPublicExplicitSecuritType(closedCodomain)
+      MTypeG(List(),explicitDomain,explicitCodomain)
+    }
+    else{
+      val explicitDomain = closedDomain.zip(argTypes).map(p =>
+        if(p._1.publicType == ImplicitLabel)
+          STypeG(p._1.privateType,p._2.publicType)
+        else
+          p._1
+      )
+      val explicitCodomain = toPrivateExplicitSecuritType(closedCodomain)
+      MTypeG(List(),explicitDomain,explicitCodomain)
+    }
+  }
+  private def toPublicExplicitSecuritType(s:STypeG):STypeG =
+    if(s.publicType == ImplicitLabel)
+      STypeG(s.privateType,s.privateType)
+    else
+      s
+  private def toPrivateExplicitSecuritType(s:STypeG):STypeG =
+    if(s.publicType == ImplicitLabel)
+      STypeG(s.privateType,ObjectType.top)
+    else
+      s
+
+  def typePrimitives(expr: PrimitiveLiteral):STypeG = expr match{
+    case IntExpr(_) => STypeG(IntADT, IntADT)
+    case BooleanExpr(_) => STypeG(BoolADT, BoolADT)
+    case StringExpr(_) => STypeG(StringADT, StringADT)
+  }
 
   private def typeInBound(genVarEnv: LabelVarEnvironment,
                           actualType: LabelG,

@@ -85,18 +85,44 @@ body {
 	margin-left:10px;
 }
 
-.infer-step{
-	border-radius: 2px;
+#derivationTree{
+	text-align: center;
 }
 
-.infer-step-pending{
-	border: 2px solid gray;
+.infer-step{
+	border-radius: 2px;
+	display: inline-block;
+	margin: 0 2px;
 }
-.infer-step-done{
-	border: 2px solid green;
+.infer-step:hover{
+	border-left: 1px solid black;
 }
-.infer-step-failed{
-	border: 2px solid red;
+
+.infer-step.infer-step-pending{
+
+}
+.infer-step.infer-step-done{
+
+}
+.infer-step.infer-step-failed{
+
+}
+hr {
+	display: block;
+	height: 1px;
+	border: 0;
+	border-top: 1px solid gray;
+	margin: 2px 0;
+	padding: 0;
+}
+hr.infer-step-pending{
+	border-top: 2px solid gray;
+}
+hr.infer-step-done{
+	border-top: 2px solid green;
+}
+hr.infer-step-failed{
+	border-top: 2px solid red;
 }
 
 

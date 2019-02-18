@@ -13,10 +13,10 @@ class TypeCheckerGSpec extends FlatSpec with Matchers with ElementServiceBaseSpe
   "Type checker with : {z : [ot a {m[T super Int] : Int<T -> Int<T}] => def m(x)= x}" should "work" in{
     val methodType =
       MTypeG(
-        List(BoundedLabelVar("T",IntType,ObjectType.top)),
+        List(BoundedLabelVar("T",IntADT,ObjectType.top)),
         List(
-          ST(IntType,GV("T"))),
-        ST(IntType,GV("T")))
+          ST(IntADT,GV("T"))),
+        ST(IntADT,GV("T")))
     val objType = OT("a",List(MD("m",methodType)))
     val st = ST(objType,objType)
     val expr = Obj("z",st,List(MethodDef("m",List("x"),Var("x"))))
@@ -87,7 +87,7 @@ class TypeCheckerGSpec extends FlatSpec with Matchers with ElementServiceBaseSpe
        "=> " +
        "def m p  = {z1 : " +
         "[{m2[T1 super T] : Int<T -> Int<T}] " +
-        "=> def m2 p2 = p2.+[Int](1)}}"
+        "=> def m2 p2 = p2.+(1)}}"
 
      val otInner = OT("gen",
        List(
@@ -96,8 +96,8 @@ class TypeCheckerGSpec extends FlatSpec with Matchers with ElementServiceBaseSpe
            MT(
              List(
                BL("T1",LabelVar("T"), ObjectType.top)),
-               List(ST(IntType,LabelVar("T"))),
-               ST(IntType,LabelVar("T"))
+               List(ST(IntADT,LabelVar("T"))),
+               ST(IntADT,LabelVar("T"))
              ))))
      val otOuter =
        OT(
@@ -106,9 +106,9 @@ class TypeCheckerGSpec extends FlatSpec with Matchers with ElementServiceBaseSpe
            MD("m",
              MT(
                List(
-                 BL("T",IntType,ObjectType.top)),
+                 BL("T",IntADT,ObjectType.top)),
                List(
-                 ST(IntType,LabelVar("T"))),
+                 ST(IntADT,LabelVar("T"))),
                ST(otInner,otInner)))))
      val expectedType =  ST(otOuter,otOuter)
      ObSecGParser(program) match{
@@ -120,26 +120,26 @@ class TypeCheckerGSpec extends FlatSpec with Matchers with ElementServiceBaseSpe
   "Invocation of add over int " must "work" in {
     var program = "1.+[Int](1)"
     ObSecGParser(program) match{
-      case Right(ast)=> assert(TypeCheckerG(ObSecGIdentifierResolver(ast)) == ST(IntType,IntType))
+      case Right(ast)=> assert(TypeCheckerG(ObSecGIdentifierResolver(ast)) == ST(IntADT,IntADT))
     }
   }
   "Invocation of minus over int " must "work" in {
     var program = "1.-[Int](1)"
     ObSecGParser(program) match{
-      case Right(ast)=> assert(TypeCheckerG(ObSecGIdentifierResolver(ast)) == ST(IntType,IntType))
+      case Right(ast)=> assert(TypeCheckerG(ObSecGIdentifierResolver(ast)) == ST(IntADT,IntADT))
     }
   }
   "Invocation of eq over int " must "work" in {
     var program = "1.==[Int](1)"
     ObSecGParser(program) match{
-      case Right(ast)=> assert(TypeCheckerG(ObSecGIdentifierResolver(ast)) == ST(BooleanType,BooleanType))
+      case Right(ast)=> assert(TypeCheckerG(ObSecGIdentifierResolver(ast)) == ST(BoolADT,BoolADT))
     }
   }
 
   "Method invocation with type parameters" should "work" in {
     var program = "{z : {ot X {m[T super Int, T1 : T .. Top ] : Int<T -> Int<T1}}<L => \n def m p  = p.+[Int](1) \n }.m[Int,Int](1)"
     ObSecGParser(program) match{
-      case Right(ast)=> assert(TypeCheckerG(ObSecGIdentifierResolver(ast)) == ST(IntType,IntType))
+      case Right(ast)=> assert(TypeCheckerG(ObSecGIdentifierResolver(ast)) == ST(IntADT,IntADT))
     }
   }
   "Method invocation with wrong actual type parameters" should "work" in {
@@ -172,7 +172,7 @@ class TypeCheckerGSpec extends FlatSpec with Matchers with ElementServiceBaseSpe
       case Right(ast)=>
         val expr = ObSecGIdentifierResolver(ast)
         var res = TypeCheckerG(expr)
-        assert(res == STypeG(IntType,IntType))
+        assert(res == STypeG(IntADT,IntADT))
     }
   }
 
@@ -183,7 +183,7 @@ class TypeCheckerGSpec extends FlatSpec with Matchers with ElementServiceBaseSpe
         val expr = ObSecGIdentifierResolver(ast)
         val theType =  TypeCheckerG(expr)
 
-        assert(theType == STypeG(IntType,IntType))
+        assert(theType == STypeG(IntADT,IntADT))
     }
   }
 

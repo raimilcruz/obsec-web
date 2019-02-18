@@ -8,6 +8,7 @@ import org.scalatest.{FlatSpec, Matchers}
 /**
   * Created by racruz on 24-08-2017.
   */
+/*
 class NormalizeSpe extends FlatSpec with Matchers with ElementServiceBaseSpec{
 
   "Union type with direct aster label in left position" should "work" in{
@@ -51,3 +52,4 @@ class NormalizeSpe extends FlatSpec with Matchers with ElementServiceBaseSpec{
     assert(result == UnionLabel(IntType,StringType))
   }
 }
+*/

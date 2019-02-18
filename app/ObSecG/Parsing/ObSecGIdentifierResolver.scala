@@ -100,7 +100,7 @@ class ObSecGIdentifierResolver {
         resolveDeclaration(letTypeScope,valueIdentifier,d).setAstNode(d)
       }),
         resolve(letTypeScope,letValueIdentifierScope,body))
-    case _ => throw new NotImplementedError()
+    case _ => throw new NotImplementedError("ObSecGIdentifierResolver.resolveInteral not implemented")
   }
 
   def liftError(action: => Unit, node: AstNode): Unit = {
@@ -201,7 +201,7 @@ class ObSecGIdentifierResolver {
     case UnionTypeAnnotation(left,right)=>
       UnionLabel(resolveType(typeIdentifierScope,left,labelPosisition = false),
         resolveType(typeIdentifierScope,right,labelPosisition = false))
-    case _ => throw new NotImplementedError()
+    case _ => throw new NotImplementedError("resolveType not implemented")
   }).setAstNode(typeAnnotation)
 
 
@@ -240,6 +240,7 @@ class ObSecGIdentifierResolver {
         (annotatedFacetedType.right match{
           case LowLabelNode => STypeG(g,g)
           case HighLabelNode => STypeG(g,ObjectType.top)
+          case ImplicitLabelNode => STypeG(g,ImplicitLabel)
           case _ => STypeG(g,
             resolveType(typeIdentifierScope, annotatedFacetedType.right,labelPosisition = true))
         }).setAstNode(annotatedFacetedType)
@@ -269,11 +270,11 @@ class ObSecGIdentifierResolver {
 
   private def resolveBuiltinNamedTypes(typeName:String,labelPosition:Boolean): Either[LabelG,String]={
     if(typeName == "Int")
-      Left(IntType)
+      Left(IntADT)
     else if(typeName=="String")
-      Left(StringType)
+      Left(StringADT)
     else if(typeName == "Bool")
-      Left(BooleanType)
+      Left(BoolADT)
     else if(typeName == "StrList")
       Left(StringListType)
     else if(typeName == "Top")

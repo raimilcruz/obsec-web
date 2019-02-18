@@ -34,19 +34,11 @@ class DerivationTreeManager extends React.Component{
                             alert('Oh no! Configuration Error');
                         } else {
                             if (res.body.status === "OK") {
+                                res.body.premise.stepId = res.body.premise.key;
                                 this.setState({
                                     adquiringJudgment: false,
-                                    rootJudgment: {
-                                        context: res.body.premise.context,
-                                        goal: res.body.premise.goal,
-                                        premises:[],
-                                        key : res.body.premise.key,
-                                        stepId:res.body.premise.key
-                                    }
-                                }, () => {
-                                    //TODO: extra things here
-
-                                })
+                                    rootJudgment: res.body.premise
+                                });
                             }
                             else {
                                 alert('Oh no! error ' + res.body.error);
@@ -69,7 +61,6 @@ class DerivationTreeManager extends React.Component{
     render() {
         return (
             <div >
-                <span>Insert two number to show the judgment step to derive a less than b </span>
                 <TextField id="firstNumber" type="number" onChange={this.handleOnChange_FirstNumber}/>
                 <TextField id="secondNumber" type="number" onChange={this.handleOnChange_SecondNumber} />
                 <button onClick={this.handleClick_ShowJudgment}>Show Judgment</button>
@@ -81,7 +72,7 @@ class DerivationTreeManager extends React.Component{
                                 ?<div>
                                     <DerivationTree rootDerivation={this.state.rootJudgment}/>
                                 </div>
-                                :<div></div>
+                                :null
                                 }
                         </div>
                         </div>

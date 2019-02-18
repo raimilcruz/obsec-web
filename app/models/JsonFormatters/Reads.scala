@@ -1,13 +1,16 @@
 package models.JsonFormatters
 
-import controllers.{JudgmentRequestApi, JudgmentStepApi}
+import models.judgment.JudgmentStepApi
+import models.judgment.JudgmentRequestApi
 import play.api.libs.json._
 
 //Json Readers
 object JudgmentJsonReaders{
   val requestReader : Map[String,JudgmentReader] =
     Map("less-eq" ->  new LessEqJudgmentReader,
-      "eq" ->  new EqJudgmentReader)
+      "eq" ->  new EqJudgmentReader,
+      "typing" -> new Typing.TypingJudgmentReader
+    )
 
   implicit val judgmentRequesReads = new Reads[JudgmentRequestApi]{
     override def reads(json: JsValue): JsResult[JudgmentRequestApi] = {

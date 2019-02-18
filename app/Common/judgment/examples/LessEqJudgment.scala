@@ -1,4 +1,6 @@
-package Common.judgment
+package Common.judgment.examples
+
+import Common.judgment._
 
 //usage
 sealed trait Nat{
@@ -30,6 +32,8 @@ case class LessEqJudgmentGoal(n1:Nat,n2:Nat) extends JudgmentGoal {
 }
 case class LessEqPremise(context: JudgmentContext,goal:LessEqJudgmentGoal) extends JudgmentPremise {
   override def key: String = "less-eq"
+
+  override def output: JudgmentOutput = NoOutput
 }
 
 case class EqJudgmentGoal(n1:Nat,n2:Nat) extends JudgmentGoal {
@@ -38,6 +42,8 @@ case class EqJudgmentGoal(n1:Nat,n2:Nat) extends JudgmentGoal {
 
 case class EqPremise(context: JudgmentContext,goal:EqJudgmentGoal) extends JudgmentPremise {
   override def key: String = "eq"
+
+  override def output: JudgmentOutput = NoOutput
 }
 
 class JudgmentExample{
@@ -84,6 +90,7 @@ class LessEqJudgmentAdapter extends JudgmentAdapter{
         exampleJudgment.lEq(lessEqGoal.n1,lessEqGoal.n2)
       }
   }
+
 }
 class EqJudgmentAdapter extends JudgmentAdapter{
   override def key: String = "eq"

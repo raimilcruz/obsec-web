@@ -1,7 +1,8 @@
 package models.JsonFormatters
 
 import Common.judgment._
-import controllers.JudgmentRequestApi
+import Common.judgment.examples.{LessEqJudgmentGoal, Nat}
+import models.judgment.JudgmentRequestApi
 import play.api.libs.json._
 import play.api.libs.functional.syntax._
 
@@ -52,7 +53,7 @@ class LessEqJudgmentWriter  extends JudgmentWriter {
     override def writes(o: LessEqJudgmentGoal): JsValue = Json.obj(
       "n1" -> o.n1.toInt,
       "n2" -> o.n2.toInt,
-      "rep" -> s"${o.n1.toInt} << ${o.n2.toInt}"
+      "rep" -> s"${o.n1.toInt} \\leq ${o.n2.toInt}"
     )
   }
 
@@ -60,9 +61,13 @@ class LessEqJudgmentWriter  extends JudgmentWriter {
     override def writes(o: JudgmentPremise): JsValue = Json.obj(
       "key" -> key,
       "context" -> o.context,
-      "goal" -> o.goal.asInstanceOf[LessEqJudgmentGoal]
+      "goal" -> o.goal.asInstanceOf[LessEqJudgmentGoal],
+      "rep" -> conclusionRep(o)
     )
   }
 
-  override def stepWrites(stepId:String): Writes[JudgmentStep] = JudgmentJsonWriters.judgmentStepWriter(stepId)
+  override def stepWrites(stepId:String): Writes[JudgmentStep] = JudgmentJsonWriters.judgmentStepWriter(key,stepId)
+
+  override def conclusionRep(judgment: JudgmentBase): String =
+    ((g:LessEqJudgmentGoal)=> s"${g.n1.toInt} == ${g.n2.toInt}").apply(judgment.goal.asInstanceOf[LessEqJudgmentGoal])
 }

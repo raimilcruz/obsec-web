@@ -1,4 +1,4 @@
-package ObSec.Parsing
+package Common
 
 import scala.util.parsing.combinator.PackratParsers
 

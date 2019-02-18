@@ -1,6 +1,6 @@
 package ObSec.Parsing
 
-import Common.{OffsetPositional, ParserError}
+import Common.{DebugPackratParsers, OffsetPositional, ParserError}
 import ObSec.Ast._
 import ObSec.Parsing.ObSecParser.rep1
 import ObSecG.Parsing.ObSecGParser.Parser

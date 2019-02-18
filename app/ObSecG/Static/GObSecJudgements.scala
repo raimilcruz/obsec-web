@@ -108,6 +108,7 @@ abstract class IJudgment(judgements: GObSecJudgements,
     }
     catch {
       case e  if !e.isInstanceOf[ThrowableAnalysisError] =>
+        print(e.getStackTraceString)
         throw CommonError.implementationError(node,e.getMessage)
     }
   }
