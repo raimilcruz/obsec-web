@@ -14,10 +14,32 @@ class ExampleHelper(val examplePath:String,fileExtension:String) {
   private def parseMetadata(file: File) = {
     val xml = XML.loadFile(file.getAbsolutePath)
     val title = (xml \\ "Title").text
-    val description = (xml \\ "Description").text
+    var description = (xml \\ "Description").text
+    if(description == ""){
+      val descriptionFile = (xml \\ "DescriptionFile").text
+      description =
+        if(descriptionFile != "")
+          getMarkDownFileContent(descriptionFile)
+        else getMarkDownFileContent(removeFileExtension(file.getName) + ".md")
+    }
     var program  =  getDartProgram(getFileNameNoExtension(file.getName))
     Example(file.getName,title,description,program)
   }
+  private def getMarkDownFileContent(descriptionFileName: String): String={
+    val markdownFile = new File(examplePath,descriptionFileName)
+    if(markdownFile.exists()){
+      println(s"********************** ${markdownFile.toURI}")
+      val source = Source.fromFile(markdownFile.toURI).getLines mkString "\n"
+      return source
+    }
+    ""
+  }
+  private def removeFileExtension(fileName:String):String = {
+    if (fileName.indexOf(".") > 0)
+      return fileName.substring(0, fileName.lastIndexOf("."))
+    fileName
+  }
+
   private def getFileNameNoExtension(fileName: String) = {
     val i = fileName.lastIndexOf('.')
     if (i > 0)

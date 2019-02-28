@@ -62,7 +62,10 @@ const config = {
         test: /\.css$/,
         loader: 'style!css?modules',
         include: /flexboxgrid/,
-      },
+      },{
+        test: /\.json$/,
+        loader: "json-loader"
+      }
     ],
   },
   //Eslint config

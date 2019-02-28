@@ -11,6 +11,8 @@ import IconButton from 'material-ui/IconButton';
 import Dialog from 'material-ui/Dialog';
 import FlatButton from 'material-ui/FlatButton';
 import AceEditor from 'react-ace';
+
+import Markdown from 'react-markdown';
 import 'brace/mode/java';
 import 'brace/theme/github';
 
@@ -79,7 +81,7 @@ export default class LanguagePad extends React.Component {
             program: v,//v.replace("\\", "λ").replace("&", "∧").replace("|", "∨"),
             typingState: 0,
             markers:[]
-        })
+        });
     };
 
     findProgramByValue(v) {
@@ -116,9 +118,9 @@ export default class LanguagePad extends React.Component {
         ));
     };
 
-    changeDefaultProgram = (event, index, defaultProgram) => {
-        let p = this.findProgramByValue(defaultProgram);
-        this.setState({defaultProgram, program: p.program, desc: p.desc,typingState:0,markers:[]})
+    changeDefaultProgram = (event, index, programValue) => {
+        var p = this.findProgramByValue(programValue);
+        this.setState({program: p.program, desc: p.desc,typingState:0,markers:[]})
     };
 
     typecheck = () => {
@@ -238,13 +240,17 @@ export default class LanguagePad extends React.Component {
                             </SelectField>
                     }
 
-                    <div style={{color: "rgba(0, 0, 0, 0.541176)"}}>
-                        {this.state.desc}
+                    <div >
+                        <Markdown
+                            source={this.state.desc}
+                        />
                     </div>
+                   {/* <div dangerouslySetInnerHTML={{ __html: marked(this.lineBreakToBreak(this.state.desc)) }} />*/}
+                   {/* <div>
+                        {this.getMarkdownText()}
+                    </div>*/}
 
-                    <div>
-                        Program
-                    </div>
+                    <br/>
                     <div style={{position: 'relative'}}>
 
                            <AceEditor

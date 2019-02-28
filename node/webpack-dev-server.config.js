@@ -69,6 +69,8 @@ const config = {
                 loader: 'style!css?modules',
                 include: /flexboxgrid/,
             },
+            {   test: /\.json$/,
+                loader: "json-loader" }
         ],
     },
     //eslint config options. Part of the eslint-loader package

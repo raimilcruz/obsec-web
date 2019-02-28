@@ -1,8 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Example>
   <Title>2.1: Password policy with hash and eq</Title>
-  <Description>
-    This code differs from example 2 in that the type signature of `==' in not full implicit. Note that
-    the argument has policy H and the return type has an implicit policy. This signature is not well-formed.
-  </Description>
 </Example>
