@@ -33,8 +33,8 @@ class TypeSubstG(auxiliaryFunctions: IAuxiliaryFunctions) extends ITypeSubsG {
     case ImplicitLabel => ImplicitLabel
     case TypeVar(y: String) => if (x == y) t2 else t
     case gv:LabelVar => gv
-    case UnionLabel(l1,l2)=>
-      UnionLabel(substRecVar(l1,x,t2),substRecVar(l2,x,t2))
+    /*case UnionLabel(l1,l2)=>
+      UnionLabel(substRecVar(l1,x,t2),substRecVar(l2,x,t2))*/
     case record@RecordTypeG(methods) =>
       RecordTypeG(methods.map(m =>
         MethodDeclarationG(m.name,
@@ -136,8 +136,8 @@ class TypeSubstG(auxiliaryFunctions: IAuxiliaryFunctions) extends ITypeSubsG {
                 m.mType.codomain.map(facet => substLabelVar(facet, x, t2))
               ))
           }))
-    case UnionLabel(left,right)=>
-      UnionLabel(substLabelVar(left, x, t2),substLabelVar(right, x, t2))
+    /*case UnionLabel(left,right)=>
+      UnionLabel(substLabelVar(left, x, t2),substLabelVar(right, x, t2))*/
       //TODO: Implement normarlization of UnionLabel after substituting X*s
 
   }
@@ -203,7 +203,7 @@ class TypeSubstG(auxiliaryFunctions: IAuxiliaryFunctions) extends ITypeSubsG {
         result = result ++ l
       }
       result
-    case UnionLabel(left,right) => freeSelfVars(left) ++ freeSelfVars(right)
+    /*case UnionLabel(left,right) => freeSelfVars(left) ++ freeSelfVars(right)*/
     case _ => List()
   }
 
@@ -245,7 +245,7 @@ class TypeSubstG(auxiliaryFunctions: IAuxiliaryFunctions) extends ITypeSubsG {
         result = result ++ l
       }
       result
-    case UnionLabel(left,right) => freeLabelVars(left) ++ freeLabelVars(right)
+    /*case UnionLabel(left,right) => freeLabelVars(left) ++ freeLabelVars(right)*/
     case _ => List()
   }
 }

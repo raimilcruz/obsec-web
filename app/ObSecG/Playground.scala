@@ -10,7 +10,7 @@ import ObSecG.Static.TypeCheckerG
 
 object Playground{
   def main(args:Array[String]):Unit= {
-    val program = "let{\n    type StringEq = [{== [] : String<I -> Bool<I}]\n    deftype AuthServer {\n        {login: String<StringEq String -> Int}\n    }\n    val auth =  new {z : AuthServer<L =>\n        def login password guess = if password.==(guess) then 1 else 0\n        }\n    }\nin\nauth.login(\"qwe123\",\"qwe123\")"
+    val program = "let{\n    deftype StrEqList{\n        {isEmpty: -> Bool<I}\n        {head: -> String<I }\n        {tail: -> StrList<StrEqList}\n    }\n}\nin\n1"
     ObSecGParser(program) match{
       case Right(ast)=>
         val expr = ObSecGIdentifierResolver(ast)

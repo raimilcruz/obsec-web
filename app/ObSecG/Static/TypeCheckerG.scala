@@ -91,9 +91,9 @@ class TypeChecker(judgements: GObSecJudgmentsExtensions,
         if (closedSignature.domain.size != args.elems.size)
           throw TypeErrorG.actualArgumentsSizeError(methInv.args,methInv.method)
         //check subtyping between $mType.domain and s2
-        for (pair <- argTypes.zip(closedSignature.domain)) {
-          if (judgements.<::(extendedGenVarEnv,pair._1, pair._2).isInstanceOf[SubtypingFail]) {
-            throw TypeErrorG.subTypingError(pair._1.astNode, m, pair._1, pair._2)
+        for ((actualT,formalT) <- argTypes.zip(closedSignature.domain)) {
+          if (judgements.<::(extendedGenVarEnv,actualT, formalT).isInstanceOf[SubtypingFail]) {
+            throw TypeErrorG.subTypingError(args.astNode, m, actualT,formalT)
           }
         }
 
@@ -221,7 +221,9 @@ class TypeChecker(judgements: GObSecJudgmentsExtensions,
     case _ => throw new NotImplementedError(s"m in U, unsupported case for $u")
   }
   private def methSig(u: LabelG, m: String): MTypeG = u match{
-    case p: PrimType => p.methods.find(method => method.name == m).get.mType
+    case p: PrimType =>
+      println(s"!!!! Method${m} in label ${u}")
+      p.methods.find(method => method.name == m).get.mType
     case ot: ObjectType=> ot.methods.find(method => method.name == m).get.mType
     case _ => throw new NotImplementedError(s"methSig, unsupported case for $u")
   }

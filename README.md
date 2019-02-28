@@ -33,6 +33,18 @@ The following instructions are Unix valid commands. If you have Windows installe
     ./bin/obsec-web -Dhttp.port=`<available-port-number>
     ```
 
+# Deploy instructions
+To generate a deployable .zip file follows these instructions.
+1.  Run the script file `make` of the "node" folder:
+    ```sh
+    ./node/make
+    ```
+2. Run
+    ```sh
+    sbt run
+    ```
+   The deployable file will be generated in the folder 
+   `target/universal`
 
 ## Acknowledgments:
 This project is a fork of the project [https://github.com/pleiad/intrinsifymysoul](https://github.com/pleiad/intrinsifymysoul)

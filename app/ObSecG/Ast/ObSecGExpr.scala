@@ -125,6 +125,11 @@ case class TypeAlias(aliasName: String,objType: ObjectType) extends Declaration
 case class TypeDefinition(name:String,methods:List[MethodDeclarationG]) extends Declaration
 
 
+trait NodeConverts{
+  implicit def toNodeList[T <: GObSecElement](l:Iterable[T]):NodeList[T] = new NodeList[T](l.toList)
+}
+
+
 
 
 

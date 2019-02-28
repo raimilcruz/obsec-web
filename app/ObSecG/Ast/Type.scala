@@ -96,7 +96,7 @@ object Bottom extends LabelG {
     buffer.append("bot")
 }
 
-case class UnionLabel(left: LabelG,right: LabelG) extends LabelG {
+/*case class UnionLabel(left: LabelG,right: LabelG) extends LabelG {
     //throw new Error(s"UnionLabel.containsMethod not implemented. Request method: $x to type ${this}")
 
   override def prettyPrint(buffer:StringBuilder): Unit = {
@@ -107,7 +107,7 @@ case class UnionLabel(left: LabelG,right: LabelG) extends LabelG {
     buffer.append(")")
 
   }
-}
+}*/
 
 trait Primitable{
   var isPrimitive = false
@@ -227,8 +227,8 @@ object StringADT extends PrimType{
   override def name: String = "String"
   override def methods: List[MethodDeclarationG] = List(
     MethodDeclarationG("==",MTypeG(List(),List(StringADT.st),BoolADT.st).setPrimitive(true)),
-    MethodDeclarationG("length",MTypeG(List(),List(),BoolADT.st).setPrimitive(true)),
-    MethodDeclarationG("hash",MTypeG(List(),List(),BoolADT.st).setPrimitive(true))
+    MethodDeclarationG("length",MTypeG(List(),List(),IntADT.st).setPrimitive(true)),
+    MethodDeclarationG("hash",MTypeG(List(),List(),IntADT.st).setPrimitive(true))
   )
 
 }
@@ -363,8 +363,8 @@ trait IBuiltinObject{
   def toObjType : ObjectType
 }
 
-case object StringListType extends TypeG with IObject  with IBuiltinObject{
-  override def methSig(x: String): MTypeG = x match {
+case object StringListType extends PrimType /*with IObject  with IBuiltinObject*/{
+  /*override def methSig(x: String): MTypeG = x match {
     case "isEmpty" => MTypeG(List(), List(), STypeG(BoolADT, BoolADT))
     case "head" => MTypeG(List(), List(), STypeG(StringADT, StringADT))
     case "tail" => MTypeG(List(), List(), STypeG(StringListType, StringListType))
@@ -379,11 +379,19 @@ case object StringListType extends TypeG with IObject  with IBuiltinObject{
     List(MethodDeclarationG("isEmpty", MTypeG(List(), List(), STypeG(BoolADT, BoolADT))),
       MethodDeclarationG("head", MTypeG(List(), List(), STypeG(StringADT, StringADT))),
       MethodDeclarationG("tail", MTypeG(List(), List(), STypeG(TypeVar("x"), TypeVar("x"))))
-    ))//.setIsPrimitive(true)
+    ))//.setIsPrimitive(true)*/
 
   override def toString: String = "StrList"
 
   override def prettyPrint(buffer: StringBuilder): Unit = buffer.append("StrList")
+
+  override def name: String = "StrList"
+
+  override def methods: List[MethodDeclarationG] = List(
+    MethodDeclarationG("isEmpty", MTypeG(List(), List(), BoolADT.st).setPrimitive(true)),
+    MethodDeclarationG("head", MTypeG(List(), List(), StringADT.st).setPrimitive(true)),
+    MethodDeclarationG("tail", MTypeG(List(), List(), StringListType.st).setPrimitive(true))
+  )
 }
 
 /**
@@ -486,6 +494,8 @@ case class MTypeG(typeVars: List[BoundedLabelVar], domain: List[STypeG], codomai
     isPrimitive = b
     this
   }
+  def computedIsPrimitive:Boolean = domain.forall(x=>x.publicType == ImplicitLabel) && codomain.publicType == ImplicitLabel
+  def usedImplicitLabels = domain.exists(x=>x.publicType == ImplicitLabel) || codomain.publicType == ImplicitLabel
 }
 
 case class BoundedLabelVar(typeVar: String

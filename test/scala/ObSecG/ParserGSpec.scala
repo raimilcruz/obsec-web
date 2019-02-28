@@ -165,7 +165,7 @@ class ParserGSpec extends FlatSpec with Matchers with BaseSpec {
                           tI("X")))))))))))))
   }
 
-  "Union label" should "be recognized " in {
+  /*"Union label" should "be recognized " in {
     var program = "{z : {ot X {m: -> X<(X,X)}}<L => \n def m  = z.m() \n}"
     val res = ObSecGParser(program)
 
@@ -187,18 +187,18 @@ class ParserGSpec extends FlatSpec with Matchers with BaseSpec {
               List(),
               MI("z",List(),List(),"m")))))
     assert(res == expected)
-  }
+  }*/
 
-  "StringEq policy with union label" should "be recognized " in {
-    var program = "{ot rr {==[T super String]: String<T -> Bool<(Bool,T)}}"
+  "StringEq policy with implicit label" should "be recognized " in {
+    var program = "{ot rr {== : String<I -> Bool<I}}"
     val res = ObSecGParser.parseType(program)
 
     val expected = Right(ObjectTypeNode("rr",
       List(MD("==",
         MT(
-          List(superL("T",TypeIdentifier("String"))),
-          List(stA(TypeIdentifier("String"),TypeIdentifier("T"))),
-          stA(TypeIdentifier("Bool"),UnionTypeAnnotation(TypeIdentifier("Bool"),TypeIdentifier("T"))))))))
+          List(),
+          List(stA(TypeIdentifier("String"),ImplicitLabelNode)),
+          stA(TypeIdentifier("Bool"),ImplicitLabelNode))))))
     assert(res == expected)
   }
 
@@ -228,14 +228,14 @@ class ParserGSpec extends FlatSpec with Matchers with BaseSpec {
     assert(res == expected)
   }
 
-  "Low label " must "be recognized" in {
-    val annotatedType = ObSecGParser.parseType("[{==[low T super String] : -> Bool<T}]")
+  "Implicit label " must "be recognized" in {
+    val annotatedType = ObSecGParser.parseType("[{== : -> Bool<I}]")
     val expected = NoRecursiveObjectTypeNode(
       List(MD("==",
         MT(
-          List(superL("T",tI("String")).toAster),
           List(),
-          stA(tI("Bool"),tI("T"))))))
+          List(),
+          stA(tI("Bool"),ImplicitLabelNode)))))
     assert(annotatedType == Right(expected))
   }
 }

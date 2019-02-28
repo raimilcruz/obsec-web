@@ -79,9 +79,9 @@ class SubtypingSpec extends FlatSpec with Matchers with ElementServiceBaseSpec {
     assert(subtypingChecker.<::(env,IntADT,LabelVar("T")) == SubtypingSuccess)
   }
 
-  "String <: [==[T super String]: String<L -> String<L]" must "work" in{
+  "String <: [== : String<I -> String<I]" must "work" in{
 
-    val stringEq  = ObSecGParser.parseType("[{==[low T super String]: String<T -> Bool<(Bool,T)}]")
+    val stringEq  = ObSecGParser.parseType("[{==: String<I -> Bool<I}]")
     stringEq match{
       case Right(typ) =>
         val stringEqType = new ObSecGIdentifierResolver().resolveType(typeAnnotation = typ)
@@ -91,7 +91,7 @@ class SubtypingSpec extends FlatSpec with Matchers with ElementServiceBaseSpec {
         assert(subtypingChecker.<::(Environment.empty[TypeVarBounds](),StringADT,stringEqType) == SubtypingSuccess)
     }
   }
-  "String </: Bad StringEq" must "work" in{
+  "String <: [{== : String<String -> Bool<Bool}]" must "work" in{
 
     val stringEq  = ObSecGParser.parseType("{ot rr {== : String<String -> Bool<Bool}}")
     stringEq match{
@@ -100,47 +100,10 @@ class SubtypingSpec extends FlatSpec with Matchers with ElementServiceBaseSpec {
         var judgements = new GObSecGJudgmentImpl(new ErrorCollector)
         var subtypingChecker = new AmadioCardelliSubtypingG(judgements,judgements.errorCollector)
 
-        assert(subtypingChecker.<::(Environment.empty[TypeVarBounds](),StringADT,stringEqType).isInstanceOf[SubtypingFail])
-    }
-  }
-  "String <: StringEq, where StringEq where the result does not use the label" must "not work" in{
-
-    val stringEq  = ObSecGParser.parseType("{ot rr {==[low T : String .. String] : String<String -> Bool<Bool}}")
-    stringEq match{
-      case Right(typ) =>
-        val stringEqType = new ObSecGIdentifierResolver().resolveType(typeAnnotation = typ)
-        var judgements = new GObSecGJudgmentImpl(new ErrorCollector)
-        var subtypingChecker = new AmadioCardelliSubtypingG(judgements,judgements.errorCollector)
-
-        assert(subtypingChecker.<::(Environment.empty[TypeVarBounds](),StringADT,stringEqType).isInstanceOf[SubtypingFail])
-    }
-  }
-
-  "String <: StringEq, where StringEq where the result uses the label" must "work" in{
-
-    val stringEq  = ObSecGParser.parseType("{ot rr {==[low T : String .. String] : String<String -> Bool<(Bool,T)}}")
-    stringEq match{
-      case Right(typ) =>
-        val stringEqType = new ObSecGIdentifierResolver().resolveType(typeAnnotation = typ)
-        var judgements = new GObSecGJudgmentImpl(new ErrorCollector)
-        var subtypingChecker = new AmadioCardelliSubtypingG(judgements,judgements.errorCollector)
-
         assert(subtypingChecker.<::(Environment.empty[TypeVarBounds](),StringADT,stringEqType) == SubtypingSuccess)
     }
   }
 
-  "String <: StringEq, where StringEq where the result does not use a low label" must "work" in{
-
-    val stringEq  = ObSecGParser.parseType("{ot rr {==[T : String .. String] : String<String -> Bool<(Bool,T)}}")
-    stringEq match{
-      case Right(typ) =>
-        val stringEqType = new ObSecGIdentifierResolver().resolveType(typeAnnotation = typ)
-        var judgements = new GObSecGJudgmentImpl(new ErrorCollector)
-        var subtypingChecker = new AmadioCardelliSubtypingG(judgements,judgements.errorCollector)
-
-        assert(subtypingChecker.<::(Environment.empty[TypeVarBounds](),StringADT,stringEqType) == SubtypingSuccess)
-    }
-  }
 
   "StringList <: StringGenList[Top]" must "work" in{
       var judgements = new GObSecGJudgmentImpl(new ErrorCollector)

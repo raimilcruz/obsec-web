@@ -87,7 +87,7 @@ class TypeCheckerGSpec extends FlatSpec with Matchers with ElementServiceBaseSpe
        "=> " +
        "def m p  = {z1 : " +
         "[{m2[T1 super T] : Int<T -> Int<T}] " +
-        "=> def m2 p2 = p2.+(1)}}"
+        "=> def m2 p2 = p2}}"
 
      val otInner = OT("gen",
        List(
@@ -118,26 +118,26 @@ class TypeCheckerGSpec extends FlatSpec with Matchers with ElementServiceBaseSpe
    }
 
   "Invocation of add over int " must "work" in {
-    var program = "1.+[Int](1)"
+    var program = "1.+(1)"
     ObSecGParser(program) match{
       case Right(ast)=> assert(TypeCheckerG(ObSecGIdentifierResolver(ast)) == ST(IntADT,IntADT))
     }
   }
   "Invocation of minus over int " must "work" in {
-    var program = "1.-[Int](1)"
+    var program = "1.-(1)"
     ObSecGParser(program) match{
       case Right(ast)=> assert(TypeCheckerG(ObSecGIdentifierResolver(ast)) == ST(IntADT,IntADT))
     }
   }
   "Invocation of eq over int " must "work" in {
-    var program = "1.==[Int](1)"
+    var program = "1.==(1)"
     ObSecGParser(program) match{
       case Right(ast)=> assert(TypeCheckerG(ObSecGIdentifierResolver(ast)) == ST(BoolADT,BoolADT))
     }
   }
 
   "Method invocation with type parameters" should "work" in {
-    var program = "{z : {ot X {m[T super Int, T1 : T .. Top ] : Int<T -> Int<T1}}<L => \n def m p  = p.+[Int](1) \n }.m[Int,Int](1)"
+    var program = "{z : {ot X {m[T super Int, T1 : T .. Top ] : Int<T -> Int<T1}}<L => \n def m p  = p \n }.m[Int,Int](1)"
     ObSecGParser(program) match{
       case Right(ast)=> assert(TypeCheckerG(ObSecGIdentifierResolver(ast)) == ST(IntADT,IntADT))
     }
@@ -167,7 +167,7 @@ class TypeCheckerGSpec extends FlatSpec with Matchers with ElementServiceBaseSpe
   }
 
   "Something" should "work" in {
-    var program = "let{\n    type StringEq = [{==[T super String] : String<T -> Bool<(Bool,T)}]\n}\nin 1"
+    var program = "let{\n    type StringEq = [{== : String<I -> Bool<I}]\n}\nin 1"
     ObSecGParser(program) match{
       case Right(ast)=>
         val expr = ObSecGIdentifierResolver(ast)
@@ -177,7 +177,11 @@ class TypeCheckerGSpec extends FlatSpec with Matchers with ElementServiceBaseSpe
   }
 
   "Declassify password" should "work" in {
-    var program = "let{\n    type StringEq = [{== [low T : String .. String] : String<T -> Bool<(Bool,T)}]\n    deftype AuthServer {\n        {login: String<StringEq String -> Int}\n    }\n    val auth =  new {z : AuthServer<L =>\n        def login password guess = if password.==[String](guess) then 1 else 0\n        }\n    }\nin\nauth.login(\"qwe123\",\"qwe123\")"
+    var program = "let{\n    type StringEq = [{==  : String<I -> Bool<I }]\n" +
+      "deftype AuthServer {\n        " +
+      "{login: String<StringEq String -> Int}\n    }\n    " +
+      "val auth =  new {z : AuthServer<L =>\n        " +
+      "def login password guess = if password.==(guess) then 1 else 0\n        }\n    }\nin\nauth.login(\"qwe123\",\"qwe123\")"
     ObSecGParser(program) match{
       case Right(ast)=>
         val expr = ObSecGIdentifierResolver(ast)

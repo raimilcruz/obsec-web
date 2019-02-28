@@ -39,9 +39,9 @@ class WellFormedCheckerG(judgements: GObSecJudgements, errorCollector: ErrorColl
     isWellFormed(genVarEnv,objectEnv,s.privateType) &&
       isWellFormed(genVarEnv,objectEnv,s.publicType) &&
       (
-        if(s.publicType == ImplicitLabel)
+        /*if(s.publicType == ImplicitLabel)
           true
-        else
+        else*/
         ( judgements.<::(genVarEnv, closeType(objectEnv,s.privateType),closeType(objectEnv,s.publicType)) == SubtypingSuccess
           || {
           errorCollector.report(s"Private facet must be subtype of public facet in security type: ${s.astNode.source}")
@@ -66,12 +66,16 @@ class WellFormedCheckerG(judgements: GObSecJudgements, errorCollector: ErrorColl
                 auxiliaryDefinitions.
                 multiExtend(genVarEnv, m.mType.typeVars)
               labelVariableWellFormed(genVarEnv,objectEnv,m.mType.typeVars) &&
-              m.mType
-                .domain
-                .forall(s =>
-                  isWellFormed(methodLabelEnvironment,newEnv,s)) &&
-                isWellFormed(
-                  methodLabelEnvironment,newEnv, m.mType.codomain)
+              //verify that if signature uses implict labels, then all label need to be implicit
+                (if(m.mType.usedImplicitLabels)
+                  m.mType.computedIsPrimitive
+                else
+                  m.mType
+                    .domain
+                    .forall(s =>
+                      isWellFormed(methodLabelEnvironment,newEnv,s)) &&
+                    isWellFormed(
+                      methodLabelEnvironment,newEnv, m.mType.codomain))
             })
      /* case UnionLabel(left,right)=>
         isWellFormed(genVarEnv,objectEnv,left) &&

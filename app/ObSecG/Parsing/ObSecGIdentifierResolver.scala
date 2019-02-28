@@ -93,9 +93,10 @@ class ObSecGIdentifierResolver {
             letTypeScope.add(node.aliasName, typeAliasDeclaration)
           case node: DefTypeNode =>
             val defTypeDeclaration = TypeDeclarationPoint(null)
+            letTypeScope.add(node.name, defTypeDeclaration)
             val objectType = ObjectType(node.name,node.methods.map(m=> resolveMethodDeclaration(letTypeScope,m)))
             defTypeDeclaration.definingType = objectType
-            letTypeScope.add(node.name, defTypeDeclaration)
+
         }
         resolveDeclaration(letTypeScope,valueIdentifier,d).setAstNode(d)
       }),
@@ -198,9 +199,9 @@ class ObSecGIdentifierResolver {
           else
             throw ResolverError.typeIsNotDefined(typeAnnotation,n)
       }
-    case UnionTypeAnnotation(left,right)=>
+    /*case UnionTypeAnnotation(left,right)=>
       UnionLabel(resolveType(typeIdentifierScope,left,labelPosisition = false),
-        resolveType(typeIdentifierScope,right,labelPosisition = false))
+        resolveType(typeIdentifierScope,right,labelPosisition = false))*/
     case _ => throw new NotImplementedError("resolveType not implemented")
   }).setAstNode(typeAnnotation)
 

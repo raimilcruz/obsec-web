@@ -121,7 +121,7 @@ class AmadioCardelliSubtypingG(
           newSet
         //little optimization
         case (_,_) if TypeEquivalenceG.alphaEq(t1,t2) =>newSet
-        case (union@UnionLabel(t11,t12),_)=>
+       /* case (union@UnionLabel(t11,t12),_)=>
           if(printRules) println(s"$spaces [UnionL]")
 
           val set = innerSubType(labelVariableEnv,newSet,t11,t2,deep+1)
@@ -135,7 +135,7 @@ class AmadioCardelliSubtypingG(
           }
           catch {
             case x: SubtypingError => innerSubType(labelVariableEnv,newSet,t1,t22,deep+1)
-          }
+          }*/
         case (gl1:LabelVar,gl2:LabelVar) =>
           if(printRules) println(s"$spaces [Label]")
           //little optimization
@@ -222,9 +222,15 @@ class AmadioCardelliSubtypingG(
                 prevSet + Tuple2(LabelVar(tv.typeVar),tv.upperBound) + Tuple2(tv.lowerBound,LabelVar(tv.typeVar))
               })
             set = set.union(newSet)
-            if(mt1.isPrimitive){
-              if(ProtectsJudgement.isSoundMethodSignature(mt2))
+            //if(mt1.isPrimitive){
+            if(mt1.computedIsPrimitive){
+              println("!!!!!! is primitive !!!!")
+              if(ProtectsJudgement.isSoundMethodSignature(mt2)){
+                for ((mt2A,mt1A) <- mt2Renamed.domain.zip(mt1.domain)) {
+                  set = innerSubType(extendedGenVarEnv,set, mt2A.privateType, mt1A.privateType,deep+1)
+                }
                 return set
+              }
               throw SubtypingError(t1,t2)
             }
             for (pair <- mt2Renamed.domain.zip(mt1.domain)) {

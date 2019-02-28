@@ -87,7 +87,7 @@ object ProtectsJudgement{
     isSound(mt) || isImplicitSignature(mt)
   }
   private def isSound(mt:MTypeG)={
-    if(mt.domain.forall(x=> x.publicType == x.privateType))
+    if(mt.domain.forall(x=> TypeEquivalenceG.alphaEq(x.publicType,x.privateType)))
       true
     else
       TypeEquivalenceG.alphaEq(mt.codomain.publicType,ObjectType.top)

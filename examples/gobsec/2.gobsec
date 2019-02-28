@@ -1,10 +1,10 @@
 let{
-    type StringEq = [{== [low T : String .. String] : String<T -> Bool<(Bool,T)}]
+    type StringEq = [{== : String<I -> Bool<I}]
     deftype AuthServer {
         {login: String<StringEq String -> Int}
     }
     val auth =  new {z : AuthServer<L =>
-        def login password guess = if password.hash().==[Int](guess.hash()) then 1 else 0
+        def login password guess = if password.hash().==(guess.hash()) then 1 else 0
     }
 }
 in

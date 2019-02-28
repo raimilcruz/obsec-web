@@ -17,6 +17,8 @@ trait IAuxiliaryFunctions extends Environments {
     */
   def tUpperBound(labelVarEnvironment: LabelVarEnvironment, theType: LabelG): LabelG
 
+  def tLowerBound(labelVarEnvironment: LabelVarEnvironment, theType: LabelG): LabelG
+
   def multiExtend(labelVarEnvironment: LabelVarEnvironment,
                   vars: List[BoundedLabelVar]): LabelVarEnvironment =
 
@@ -49,11 +51,17 @@ class AuxiliaryFunctions extends IAuxiliaryFunctions {
     case _ => theType
   }
 
+  override def tLowerBound(labelVarEnvironment: LabelVarEnvironment,
+                           theType: LabelG): LabelG = theType match {
+    case labelVar: LabelVar => tLowerBound(labelVarEnvironment, labelVarEnvironment.lookup(labelVar.name).lower)
+    case _ => theType
+  }
+
   override def normalize(label: LabelG, labelVar: BoundedLabelVar): LabelG = label match{
     case l:LabelVar=>
       if(labelVar.typeVar == l.name && labelVar.isAster) labelVar.lowerBound
       else l
-    case UnionLabel(l1,l2)=>
+    /*case UnionLabel(l1,l2)=>
       (l1,l2) match{
         case (lv1:LabelVar,lv2:LabelVar)
           if lv1.isAster && lv2.isAster &&
@@ -75,7 +83,7 @@ class AuxiliaryFunctions extends IAuxiliaryFunctions {
               case _ => UnionLabel(ln1, ln2)
             }
           }
-      }
+      }*/
     case tv:TypeVar=> throw new Error("We should get here! We need to close the type")
     case ObjectType(selfVar,methods) =>
       ObjectType(
