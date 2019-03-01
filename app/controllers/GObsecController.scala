@@ -40,6 +40,13 @@ class GObsecController @Inject()(configuration: play.api.Configuration) extends 
     val exampleHelper = new ExampleHelper(exampleDirFullPath.toString,".gobsec")
     exampleHelper.examples()
   }
+  override def getSyntax: List[SyntaxModel] ={
+    val currentDirectory = new java.io.File(".").getCanonicalPath
+    val syntaxFile = configuration.underlying.getString("languagepad.gobsec.syntaxFile")
+    val syntaxFileFullPath = Paths.get(currentDirectory, syntaxFile)
+    val exampleHelper = new SyntaxHelper(syntaxFileFullPath.toString)
+    exampleHelper.syntax()
+  }
 
   override protected def typeOf(term:AstNode):String={
     var modelTerm = ObSecGIdentifierResolver(term.asInstanceOf[ObSecGAstExprNode])

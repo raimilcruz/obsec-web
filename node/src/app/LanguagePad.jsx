@@ -18,6 +18,7 @@ import 'brace/theme/github';
 
 const Highlight = require('react-highlight');
 import AnalysisIssue from './components/AnalysisIssue';
+import Syntax from './components/Syntax';
 import GObSecSyntax from './components/GObSecSyntax';
 import ObSecSyntax from './components/ObSecSyntax';
 
@@ -54,20 +55,51 @@ export default class LanguagePad extends React.Component {
 
 
     urlExamples = "examples";
+    urlSyntax = "syntax";
     urlTypeCheck = "typecheck";
     urlExecute = "reduce";
     language = "gobsec";
+
+    ruleDefinitions = [{
+            name : "S",
+            items:[{
+                name: "Int",
+                kind: "EAtom"
+            },{
+                name:"B"
+            }],
+            category:"Security types"
+        },{
+            name : "T",
+        items:[{
+            name: "C"
+        },{
+            name:"D"
+        }],
+            category:"Types"
+        },{
+            name:"Int",
+            expanded: "[" +
+            "{+ [l >: Int] : Int<l -> Int<l}\n" +
+            "{- [l >: Int] : Int<l -> Int<l}\n"+
+            "{== [l >: Int] : Int<l -> Bool<(Bool,l)}]"
+        }
+    ];
+
 
     constructor(props) {
         super(props);
         if(this.props.urlExamples)
             this.urlExamples = this.props.urlExamples;
+        if(this.props.urlSyntax)
+            this.urlSyntax= this.props.urlSyntax;
         if(this.props.urlTypeCheck)
             this.urlTypeCheck = this.props.urlTypeCheck;
         if(this.props.urlExecute)
             this.urlExecute = this.props.urlExecute;
         if(this.props.language)
             this.language = this.props.language;
+
     }
 
     componentDidMount() {
@@ -220,7 +252,7 @@ export default class LanguagePad extends React.Component {
                     onRequestClose={this.syntaxHandleClose}
                 >
                     {
-                        this.language === "gobsec"? <GObSecSyntax />:
+                        this.language === "gobsec"? <Syntax syntaxDefinition={this.ruleDefinitions}/>:
                             (this.language === "obsec"? <ObSecSyntax />: <div>No language syntax provided</div>)
                     }
 

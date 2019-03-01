@@ -5,7 +5,7 @@ import Syntax from './Syntax';
 var Highlight = require('react-highlight');
 
 export default class GObSecSyntax extends Syntax{
-    render(){
+   /* render(){
         return (
         <div>
             <table>
@@ -177,5 +177,5 @@ export default class GObSecSyntax extends Syntax{
             </Popover>
         </div>
         )
-    }
+    }*/
 }

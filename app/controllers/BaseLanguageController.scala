@@ -12,10 +12,18 @@ abstract class BaseLanguageController (configuration: play.api.Configuration) ex
   implicit val analysisErrorFormat = Json.format[UIAnalysisError]
   implicit val exampleFormat = Json.format[Example]
 
+  implicit val systemItemFormat = Json.format[SyntaxItem]
+  implicit val productionFormat = Json.format[SyntaxProduction]
+  implicit val syntaxFormat = Json.format[SyntaxModel]
+
 
   def examples = Action { implicit request =>
     val l = getExamples
     Ok(Json.obj("status" -> "OK", "examples" -> l))
+  }
+  def syntax= Action { implicit request =>
+    val l = getSyntax
+    Ok(Json.obj("status" -> "OK", "syntax" -> l))
   }
 
   def typecheck = Action(BodyParsers.parse.json) { implicit request =>
@@ -72,6 +80,7 @@ abstract class BaseLanguageController (configuration: play.api.Configuration) ex
     )
   }
   protected def getExamples : List[Example]
+  protected def getSyntax: List[SyntaxModel]
   protected def parse(p:String): Either[ParserError, AstNode]
   protected def typeOf(node:AstNode): String
   protected def run(node:AstNode): String

@@ -20,6 +20,7 @@ class ObsecController @Inject()(configuration: play.api.Configuration) extends B
     val exampleHelper = new ExampleHelper(exampleDirFullPath.toString,".obsec")
     exampleHelper.examples()
   }
+  override protected def getSyntax: List[SyntaxModel] = List()
 
   override protected def typeOf(node: AstNode): String = TypeChecker(node.asInstanceOf[ObSecExpr]).toString
 

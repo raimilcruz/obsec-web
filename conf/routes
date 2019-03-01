@@ -10,8 +10,10 @@ GET     /:prod                            controllers.ApplicationController.inde
 POST    /typecheck                       controllers.ObsecController.typecheck
 POST    /reduce                           controllers.ObsecController.reduce
 POST    /examples                           controllers.ObsecController.examples
+POST     /syntax                       controllers.ObsecController.syntax
 
 POST     /gexamples                       controllers.GObsecController.examples
+POST     /gsyntax                       controllers.GObsecController.syntax
 POST     /gtypecheck               controllers.GObsecController.typecheck
 POST     /greduce                  controllers.GObsecController.reduce
 

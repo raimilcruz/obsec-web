@@ -1,0 +1,50 @@
+{
+  "S":{
+    "items": ["T","U"],
+    "category":"Security types"
+  },
+  "T":{
+    "items": [{
+      "item": "Bool",
+      "expanded":true
+    },{
+      "item": "Int",
+      "expanded":true
+    },{
+      "item": "String",
+      "expanded":true
+    },{
+      "item": "StrList",
+      "expanded":true
+    },"X","OT"],
+    "category":"Types"
+  },
+  "U":{
+    "items": ["T","L"],
+    "category":"Labels"
+  },
+  "OT":{
+    "items": ["[X M*]","[M*]"],
+    "category":"Object Types"
+  },
+  "M":{
+    "items": ["{name [LD*]: S* -> S}"],
+    "category":"Method signatures"
+  },
+  "Int":{
+    "expanded": true,
+    "expansion": "[{+ [l >: Int] : Int<l -> Int<l} \r\n {- [l >: Int] : Int<l -> Int<l}\r\n {== [l >: Int] : Int<l -> Bool<(Bool,l)}]"
+  },
+  "Bool":{
+    "expanded": true,
+    "expansion": "[...]"
+  },
+  "String":{
+    "expanded": true,
+    "expansion": "[...]"
+  },
+  "StrList":{
+    "expanded": true,
+    "expansion": "[...]"
+  }
+}

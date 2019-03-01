@@ -13,6 +13,7 @@ import Main from './Main';
 class GLanguagePad  extends React.Component{
     render() {
         return (<LanguagePad urlExamples={"gexamples"}
+                             urlSyntax={"gsyntax"}
                                 urlTypeCheck={"gtypecheck"}
                                 urlExecute={"greduce"}
                                 language={"gobsec"}
