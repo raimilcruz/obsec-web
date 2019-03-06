@@ -14,13 +14,11 @@ import models._
 class ObsecController @Inject()(configuration: play.api.Configuration) extends BaseLanguageController (configuration){
 
   override protected def getExamples:List[Example] = {
-    val currentDirectory = new java.io.File(".").getCanonicalPath
-    val exampleDir = configuration.underlying.getString("languagepad.obsec.exampleDirectory")
-    val exampleDirFullPath = Paths.get(currentDirectory, exampleDir)
-    val exampleHelper = new ExampleHelper(exampleDirFullPath.toString,".obsec")
-    exampleHelper.examples()
+    examplesFromConfiguration("languagepad.obsec.exampleDirectory",".obsec")
   }
-  override protected def getSyntax: List[SyntaxModel] = List()
+  override def getSyntax: SyntaxModel ={
+    syntaxFromConfiguration("languagepad.obsec.syntaxFile")
+  }
 
   override protected def typeOf(node: AstNode): String = TypeChecker(node.asInstanceOf[ObSecExpr]).toString
 

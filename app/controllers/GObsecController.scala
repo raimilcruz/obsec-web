@@ -34,18 +34,12 @@ class GObsecController @Inject()(configuration: play.api.Configuration) extends 
 
 
   override protected def getExamples : List[Example] = {
-    val currentDirectory = new java.io.File(".").getCanonicalPath
-    val exampleDir = configuration.underlying.getString("languagepad.gobsec.exampleDirectory")
-    val exampleDirFullPath = Paths.get(currentDirectory, exampleDir)
-    val exampleHelper = new ExampleHelper(exampleDirFullPath.toString,".gobsec")
-    exampleHelper.examples()
+    examplesFromConfiguration("languagepad.gobsec.exampleDirectory",".gobsec")
   }
-  override def getSyntax: List[SyntaxModel] ={
-    val currentDirectory = new java.io.File(".").getCanonicalPath
-    val syntaxFile = configuration.underlying.getString("languagepad.gobsec.syntaxFile")
-    val syntaxFileFullPath = Paths.get(currentDirectory, syntaxFile)
-    val exampleHelper = new SyntaxHelper(syntaxFileFullPath.toString)
-    exampleHelper.syntax()
+
+
+  override def getSyntax: SyntaxModel ={
+    syntaxFromConfiguration("languagepad.gobsec.syntaxFile")
   }
 
   override protected def typeOf(term:AstNode):String={

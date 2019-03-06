@@ -9,6 +9,35 @@ export default class Syntax extends React.Component{
         anchorEl:null,
     };
     syntaxDefinition = [];
+    //sample definition of productions rules
+    /*syntaxDefinition = [{
+            name : "S",
+            items:[{
+                name: "Int",
+                expanded: "true"
+            },{
+                name:"B"
+            }],
+            category:"Security types"
+        },{
+            name : "T",
+        items:[{
+            name: "C"
+        },{
+            name:"D"
+        }],
+            category:"Types"
+        },{
+            name:"Int",
+            expanded:true,
+            expansion: "[" +
+            "{+ [l >: Int] : Int<l -> Int<l}\n" +
+            "{- [l >: Int] : Int<l -> Int<l}\n"+
+            "{== [l >: Int] : Int<l -> Bool<(Bool,l)}]"
+        }
+    ];*/
+
+
     constructor(props) {
         super(props);
         if(this.props.syntaxDefinition)
@@ -41,7 +70,9 @@ export default class Syntax extends React.Component{
     };
 
     renderSyntaxDefinition = ()=>{
-        return this.syntaxDefinition.filter(x=> !x.expanded).map(this.renderSyntaxRule);
+        return (this.syntaxDefinition)
+                ?this.syntaxDefinition.filter(x=> !x.expanded).map(this.renderSyntaxRule)
+                : "Syntax not provided";
     };
     renderSyntaxRule = (ruleDef)=>{
         const items = ruleDef.items.map((e,i)=> this.renderItem(e,i,ruleDef.items.length-1 !== i));
@@ -58,7 +89,7 @@ export default class Syntax extends React.Component{
         return (
             <span key={"item"+ index}>
                 <span>
-                    {(ruleItem.kind==="EAtom")
+                    {(ruleItem.expanded)
                         ?
                         <RaisedButton
                             onTouchTap={(event)=> this.handleTouchTap(event,ruleItem.name)}
@@ -79,7 +110,7 @@ export default class Syntax extends React.Component{
         //TODO: search the definition in syntaxDefinition
         const ruleExpanded = this.syntaxDefinition.filter(x=> x.name === ruleName)[0];
         if(ruleExpanded)
-            return (ruleExpanded.expanded);
+            return (ruleExpanded.expansion);
         return null;
     };
 

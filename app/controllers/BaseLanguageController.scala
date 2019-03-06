@@ -1,5 +1,7 @@
 package controllers
 
+import java.nio.file.Paths
+
 import Common.{AstNode, ParserError, ThrowableAnalysisError}
 import models._
 import play.api.libs.json.{Json, _}
@@ -80,8 +82,26 @@ abstract class BaseLanguageController (configuration: play.api.Configuration) ex
     )
   }
   protected def getExamples : List[Example]
-  protected def getSyntax: List[SyntaxModel]
+  protected def getSyntax: SyntaxModel
   protected def parse(p:String): Either[ParserError, AstNode]
   protected def typeOf(node:AstNode): String
   protected def run(node:AstNode): String
+
+
+  protected def examplesFromConfiguration(exampleDirectoryConfigurationKey:String,
+                                          exampleExtensions: String):List[Example] = {
+    val currentDirectory = new java.io.File(".").getCanonicalPath
+    val exampleDir = configuration.underlying.getString(exampleDirectoryConfigurationKey)
+    val exampleDirFullPath = Paths.get(currentDirectory, exampleDir)
+    val exampleHelper = new ExampleHelper(exampleDirFullPath.toString, exampleExtensions)
+    exampleHelper.examples()
+  }
+
+  protected def syntaxFromConfiguration(syntaxFileConfigurationKey:String):SyntaxModel = {
+    val currentDirectory = new java.io.File(".").getCanonicalPath
+    val syntaxFile = configuration.underlying.getString(syntaxFileConfigurationKey)
+    val syntaxFileFullPath = Paths.get(currentDirectory, syntaxFile)
+    val exampleHelper = new SyntaxHelper(syntaxFileFullPath.toString)
+    exampleHelper.syntax()
+  }
 }

@@ -27,13 +27,9 @@
     "items": ["[X M*]","[M*]"],
     "category":"Object Types"
   },
-  "M":{
-    "items": ["{name [LD*]: S* -> S}"],
-    "category":"Method signatures"
-  },
   "Int":{
     "expanded": true,
-    "expansion": "[{+  : Int<* -> Int<*} \r\n {- : Int<* -> Int<*}\r\n {== : Int<* -> Bool<*}]"
+    "expansion": "[{+ : Int<Int -> Int<Int} \r\n {- : Int<Int -> Int<Int}\r\n {== : Int<Int -> Bool<Bool}]"
   },
   "Bool":{
     "expanded": true,

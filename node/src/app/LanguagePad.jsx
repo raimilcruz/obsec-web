@@ -49,7 +49,9 @@ export default class LanguagePad extends React.Component {
         syntaxOpen: false,
         markers:[],
         loadingExamples: true,
+        loadingSyntax: true,
         examples: [],
+        syntax: {}
     };
 
 
@@ -59,32 +61,6 @@ export default class LanguagePad extends React.Component {
     urlTypeCheck = "typecheck";
     urlExecute = "reduce";
     language = "gobsec";
-
-    ruleDefinitions = [{
-            name : "S",
-            items:[{
-                name: "Int",
-                kind: "EAtom"
-            },{
-                name:"B"
-            }],
-            category:"Security types"
-        },{
-            name : "T",
-        items:[{
-            name: "C"
-        },{
-            name:"D"
-        }],
-            category:"Types"
-        },{
-            name:"Int",
-            expanded: "[" +
-            "{+ [l >: Int] : Int<l -> Int<l}\n" +
-            "{- [l >: Int] : Int<l -> Int<l}\n"+
-            "{== [l >: Int] : Int<l -> Bool<(Bool,l)}]"
-        }
-    ];
 
 
     constructor(props) {
@@ -105,6 +81,7 @@ export default class LanguagePad extends React.Component {
     componentDidMount() {
         console.log("component did mount:"+ this.urlExamples);
         this.loadExamples();
+        this.loadSyntax();
     }
 
 
@@ -143,7 +120,30 @@ export default class LanguagePad extends React.Component {
                     }
                 });
         });
+    };
+    loadSyntax() {
+        this.setState({loadingSyntax: true}, () => {
+            request.post(this.urlSyntax)
+                .send()
+                .set('Accept', 'application/json')
+                .end((err, res) => {
+                    if (err || !res.ok) {
+                        alert('Oh no! Configuration Error');
+                    } else {
+                        if (res.body.status === "OK") {
+                            this.setState({
+                                loadingSyntax: false,
+                                syntax: res.body.syntax,
+                            }, () => {
+                            })
+                        } else {
+                            alert('Oh no! error ' + res.body.error);
+                        }
+                    }
+                });
+        });
     }
+
     examplesItems(){
         return this.state.examples.map((e) => (
             <MenuItem key={e.id} value={e.id} primaryText={e.title}/>
@@ -251,11 +251,7 @@ export default class LanguagePad extends React.Component {
                     open={this.state.syntaxOpen}
                     onRequestClose={this.syntaxHandleClose}
                 >
-                    {
-                        this.language === "gobsec"? <Syntax syntaxDefinition={this.ruleDefinitions}/>:
-                            (this.language === "obsec"? <ObSecSyntax />: <div>No language syntax provided</div>)
-                    }
-
+                    <Syntax syntaxDefinition={this.state.syntax.productions}/>
                     <br/>
                 </Dialog>
 
