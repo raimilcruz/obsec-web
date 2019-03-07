@@ -10,7 +10,8 @@ import Common.AstNode
     * Top Algebraic Data Type for expression in ObSec
     */
   sealed trait ObSecExpr extends AstNode{
-
+    //default implementation
+    override def children: List[AstNode] = List()
   }
 
   /**

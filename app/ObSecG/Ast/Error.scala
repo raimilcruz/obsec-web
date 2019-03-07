@@ -1,69 +1,8 @@
 package ObSecG.Ast
 
-import Common.{AnalysisError, ErrorCode, ErrorCodesEnum, ThrowableAnalysisError}
+import Common._
 
 
-object DuplicatedMethodInObjectType extends ErrorCodesEnum
-object DuplicatedMethodInObject extends ErrorCodesEnum
-object InvalidTypeForPrivateFacet extends  ErrorCodesEnum
-object VariableAlreadyDefined extends ErrorCodesEnum
-object TypeIsNotDefined extends ErrorCodesEnum
-object VariableIsNotDefined extends ErrorCodesEnum
-
-object ResolverErrorCodes{
-  def duplicatedMethodInObjectType =
-    ErrorCodeG(DuplicatedMethodInObjectType,
-      "Duplicated method in object type")
-  def duplicatedMethodInObject =
-    ErrorCodeG(DuplicatedMethodInObject,
-      "Duplicated method in object ")
-
-  def invalidTypeForPrivateFacet =
-    ErrorCodeG(InvalidTypeForPrivateFacet,
-      "Invalid type for private facet. Private facet type just support: " +
-        "object types, self type variables and builtin types")
-
-  def variableAlreadyDefined =
-    ErrorCodeG(VariableAlreadyDefined,
-      "The variable %s is already defined in its scope")
-
-  def typeIsNotDefined =
-    ErrorCodeG(TypeIsNotDefined,
-      "Type %s is not defined")
-
-  def variableIsNotDefined =
-    ErrorCodeG(VariableIsNotDefined,
-      "Variable %s is not defined")
-}
-
-case class ErrorCodeG(code: ErrorCodesEnum, message: String) extends ErrorCode
-
-
-case class ResolverError(analysisError: AnalysisError) extends ThrowableAnalysisError
-object ResolverError{
-  def variableNotDefined(expression: ObSecGAstExprNode,variableName:String): ResolverError =
-    resolverError(expression,ResolverErrorCodes.variableIsNotDefined,List(variableName))
-
-
-  private def resolverError(node:ObSecGAstNode,errorCode: ErrorCodeG, parameters: List[String]=List())=
-    ResolverError(new AnalysisError(node,errorCode,parameters))
-
-  def typeIsNotDefined(typeAnnotation: TypeAnnotation, typeName: String): ResolverError =
-    resolverError(typeAnnotation,ResolverErrorCodes.typeIsNotDefined,List(typeName))
-
-  def variableAlreadyDefined(labelVar: ObSecGAstNode, variableName: String): ResolverError=
-    resolverError(labelVar,ResolverErrorCodes.variableAlreadyDefined,List(variableName))
-
-  def invalidTypeForPrivateFacet(annotatedFacetedType: AnnotatedFacetedType): ResolverError =
-    resolverError(annotatedFacetedType,ResolverErrorCodes.invalidTypeForPrivateFacet)
-
-  def duplicatedMethodInObjectType(node:ObSecGAstNode): ResolverError = {
-    resolverError(node,ResolverErrorCodes.duplicatedMethodInObjectType)
-  }
-
-  def duplicatedMethodInObject(expression: ObSecGAstNode): ResolverError =
-    resolverError(expression,ResolverErrorCodes.duplicatedMethodInObject)
-}
 
 //Analysis Error for type errors
 object SameTypeForIfBranches extends ErrorCodesEnum
@@ -78,6 +17,7 @@ object NamedTypeIsNotWellFormed extends ErrorCodesEnum
 object MissingMethodDefinition extends ErrorCodesEnum
 object BadStringListLabel extends ErrorCodesEnum
 
+case class ErrorCodeG(code: ErrorCodesEnum, message: String) extends ErrorCode
 object TypeCheckerErrorCodes{
   def sameTypeForIfBranches: ErrorCodeG =
     ErrorCodeG(SameTypeForIfBranches,

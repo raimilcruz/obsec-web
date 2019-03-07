@@ -20,6 +20,16 @@ class GLanguagePad  extends React.Component{
             />)
     }
 }
+class ELanguagePad  extends React.Component{
+    render() {
+        return (<LanguagePad urlExamples={"eexamples"}
+                             urlSyntax={"esyntax"}
+                             urlTypeCheck={"etypecheck"}
+                             urlExecute={"ereduce"}
+                             language={"eobsec"}
+        />)
+    }
+}
 
 
 const AppRoutes = (
@@ -28,6 +38,7 @@ const AppRoutes = (
           <IndexRoute component={GLanguagePad} />
           <Route path={"/generic"} component={GLanguagePad}/>
             <Route path={"/obsec"} component={LanguagePad}/>
+            <Route path={"/eobsec"} component={ELanguagePad}/>
             <Route path={"/eqjudgment"} component={EqJudgmentManager}/>
             <Route path={"/typingjudgment"} component={TypingJudgmentManager}/>
         </Route>

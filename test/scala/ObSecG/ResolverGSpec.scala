@@ -1,6 +1,6 @@
 package scala.ObSecG
 
-import Common.{CommonError, CommonErrorCodes}
+import Common.{CommonError, CommonErrorCodes, ResolverError, ResolverErrorCodes}
 import ObSecG.Ast._
 import ObSecG.Parsing.{ObSecGIdentifierResolver, ObSecGParser}
 import ObSecG.Static.TypeCheckerG

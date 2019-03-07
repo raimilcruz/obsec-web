@@ -17,6 +17,11 @@ POST     /gsyntax                       controllers.GObsecController.syntax
 POST     /gtypecheck               controllers.GObsecController.typecheck
 POST     /greduce                  controllers.GObsecController.reduce
 
+POST     /eexamples                       controllers.EObsecController.examples
+POST     /esyntax                       controllers.EObsecController.syntax
+POST     /etypecheck               controllers.EObsecController.typecheck
+POST     /ereduce                  controllers.EObsecController.reduce
+
 POST     /getjudgment               controllers.ExampleJudgmentController.getJudgment
 POST     /getTypingJudgment          controllers.ExampleJudgmentController.getTypingJudgment
 POST     /stepjudgment               controllers.JudgmentController.stepJudgment

@@ -1,9 +1,9 @@
-package ObSecG.Parsing
+package EObSec.Parsing
 
-import Common.{TypeAnnotation => _, _}
-import ObSecG.Ast._
+import Common._
+import ObSecE.Ast._
 
-class ObSecGIdentifierResolver {
+class IdentifierResolver {
 
   /**
     * This method performs the following tasks:
@@ -17,22 +17,22 @@ class ObSecGIdentifierResolver {
     * @param expression The ast model
     * @return
     */
-  def resolve(expression: ObSecGAstExprNode):ObSecGExpr =
+  def resolve(expression: AstNode):EObSecExpr =
     resolve(new Scope,new Scope,expression)
 
-  def resolveType(typeAnnotation: TypeAnnotation):LabelG=
+  def resolveType(typeAnnotation: TypeAnnotation):LabelE=
     resolveType(new Scope,typeAnnotation,labelPosisition = true)
 
   private def resolve(typeIdentifierScope: Scope[TypeIdentifierDeclarationPoint],
                       valueIdentifier: Scope[Boolean],
-                      expression: ObSecGAstExprNode):ObSecGExpr =
+                      expression: AstNode):EObSecExpr =
     resolveInternal(typeIdentifierScope,valueIdentifier,expression).setAstNode(expression)
 
 
 
   private def resolveInternal(typeIdentifierScope: Scope[TypeIdentifierDeclarationPoint],
                               valueIdentifier: Scope[Boolean],
-                              expression: ObSecGAstExprNode):ObSecGExpr =expression match{
+                              expression: AstNode):EObSecExpr =expression match{
     case VariableNode(n) =>
       if(valueIdentifier.contains(n))
         Var(n)
@@ -49,7 +49,6 @@ class ObSecGIdentifierResolver {
             val methodLabelDefinitionScope = new NestedScope(typeIdentifierScope)
             var methodValueVariableScope = new NestedScope(objectScope)
 
-            addMethodLabelVariable(methodLabelDefinitionScope , meth.name, resolvedSelfType.privateType)
             //add method to scope
             meth.args.elems.foreach(x=> liftError(methodValueVariableScope.add(x.name,true),x))
 
@@ -128,41 +127,6 @@ class ObSecGIdentifierResolver {
   }
 
 
-  private def addMethodLabelVariable(typeIdentifierScope: Scope[TypeIdentifierDeclarationPoint],
-                                     name: String,
-                                     containerType : TypeG): Unit = containerType match {
-    case ObjectType(self,methods) =>
-      if (methods.map(x => x.name).distinct.lengthCompare(methods.size) == 0) {
-        val possibleMethods = methods.filter(m => m.name == name)
-        if (possibleMethods.size == 1) {
-          val methodDeclarationG = possibleMethods.head
-          methodDeclarationG.mType.typeVars.foreach(labelVar =>
-            typeIdentifierScope.add(labelVar.typeVar,if(labelVar.isAster) LowLabelDeclarationPoint else LabelDeclarationPoint)
-          )
-          Unit
-        }
-      }
-      else
-        throw ResolverError.duplicatedMethodInObjectType(methods.reverse.groupBy(identity).collect({case (x,List(_,_,_*)) => x.astNode}).head)
-      //if it is not an object, it is then a type reference to self variable or type alias
-    case TypeVar(vNama) =>
-      val definitionPoint =  typeIdentifierScope.lookup(vNama)
-      definitionPoint match{
-        case TypeDeclarationPoint(ObjectType(self,methods)) =>
-          if (methods.map(x => x.name).distinct.lengthCompare(methods.size) == 0) {
-            val possibleMethods = methods.filter(m => m.name == name)
-            if (possibleMethods.size == 1) {
-              val methodDeclarationG = possibleMethods.head
-              methodDeclarationG.mType.typeVars.foreach(labelVar =>
-                typeIdentifierScope.add(labelVar.typeVar,if(labelVar.isAster) LowLabelDeclarationPoint else LabelDeclarationPoint)
-              )
-            }
-          }
-          Unit
-        case _ => Unit
-      }
-    case _ => Unit
-  }
 
   private def resolveMethodDefinition(typeIdentifierScope: Scope[TypeIdentifierDeclarationPoint],
                                       valueIdentifier: Scope[Boolean],
@@ -172,7 +136,7 @@ class ObSecGIdentifierResolver {
 
   private def resolveType(typeIdentifierScope: Scope[TypeIdentifierDeclarationPoint],
                           typeAnnotation: TypeAnnotation,
-                          labelPosisition: Boolean):LabelG = (typeAnnotation match{
+                          labelPosisition: Boolean):LabelE = (typeAnnotation match{
 
     case ObjectTypeNode(selfVar,methods) =>
       val objectTypeScope = new NestedScope(typeIdentifierScope)
@@ -208,7 +172,7 @@ class ObSecGIdentifierResolver {
 
 
   private def resolveMethodDeclaration(typeIdentifierScope: Scope[TypeIdentifierDeclarationPoint],
-                                       methodDeclaration: MethodDeclarationNode):MethodDeclarationG = {
+                                       methodDeclaration: MethodDeclarationNode):MethodDeclarationE = {
     val methodLabelScope = new NestedScope(typeIdentifierScope)
     //process each parameter, add to the scope and the process the otherone
     val resolvedLabelVars =  methodDeclaration.mType.typeVars.map(labelVar => {
@@ -216,11 +180,9 @@ class ObSecGIdentifierResolver {
         throw ResolverError.variableAlreadyDefined(labelVar,labelVar.name)
       else
         methodLabelScope.add(labelVar.name,if(labelVar.isAster) LowLabelDeclarationPoint else LabelDeclarationPoint)
-        resolveLabelVariableDeclaration(methodLabelScope,labelVar)
     })
-    MethodDeclarationG(methodDeclaration.name.name,
-      MTypeG(
-        resolvedLabelVars,
+    MethodDeclarationE(methodDeclaration.name.name,
+      MTypeE(
         methodDeclaration.mType.domain.map(st=>resolveAnnotatedFacetedType(methodLabelScope,st)),
         resolveAnnotatedFacetedType(methodLabelScope,methodDeclaration.mType.codomain)
       )).setMethodNameNode(methodDeclaration.name).setAstNode(methodDeclaration)
@@ -234,58 +196,35 @@ class ObSecGIdentifierResolver {
   }
 
   private def resolveAnnotatedFacetedType(typeIdentifierScope: Scope[TypeIdentifierDeclarationPoint],
-                                          annotatedFacetedType: AnnotatedFacetedType): STypeG={
+                                          annotatedFacetedType: AnnotatedFacetedType): STypeE={
     val privateType = resolveType(typeIdentifierScope,annotatedFacetedType.left,labelPosisition = false)
     privateType match {
-      case g: TypeG =>
+      case g: TypeE =>
         (annotatedFacetedType.right match{
-          case LowLabelNode => STypeG(g,g)
-          case HighLabelNode => STypeG(g,ObjectType.top)
-          case ImplicitLabelNode => STypeG(g,ImplicitLabel)
-          case _ => STypeG(g,
+          case LowLabelNode => STypeE(g,g)
+          case HighLabelNode => STypeE(g,ObjectType.top)
+          case _ => STypeE(g,
             resolveType(typeIdentifierScope, annotatedFacetedType.right,labelPosisition = true))
         }).setAstNode(annotatedFacetedType)
       case _ => throw ResolverError.invalidTypeForPrivateFacet(annotatedFacetedType)
     }
   }
-  private def resolveLabelVariableDeclaration(typeIdentifierScope: Scope[TypeIdentifierDeclarationPoint],
-                                              labelVariableDeclarationNode: LabelVariableDeclarationNode): BoundedLabelVar
-  = (labelVariableDeclarationNode match{
-    case SimpleLabelVariableDeclarationNode(s)=>
-      BoundedLabelVar(s,Bottom,ObjectType.top)
-    case BoundedLabelVariableDeclaration(s,lower,upper)=>
-      BoundedLabelVar(s,
-        resolveType(typeIdentifierScope,lower,labelPosisition = true),
-        resolveType(typeIdentifierScope,upper,labelPosisition = true)
-      )
-    case SubLabelVariableDeclaration(s,upper)=>
-      BoundedLabelVar(s,
-        Bottom,
-        resolveType(typeIdentifierScope,upper,labelPosisition = true)
-      )
-    case SuperLabelVariableDeclaration(s,lower)=>
-      BoundedLabelVar(s,
-        resolveType(typeIdentifierScope,lower,labelPosisition = true)
-        ,ObjectType.top
-      )}).setAstNode(labelVariableDeclarationNode).setAster(labelVariableDeclarationNode.isAster)
 
-  private def resolveBuiltinNamedTypes(typeName:String,labelPosition:Boolean): Either[LabelG,String]={
+  private def resolveBuiltinNamedTypes(typeName:String,labelPosition:Boolean): Either[LabelE,String]={
     if(typeName == "Int")
       Left(IntADT)
     else if(typeName=="String")
       Left(StringADT)
     else if(typeName == "Bool")
       Left(BoolADT)
-    else if(typeName == "StrList")
-      Left(StringListType)
     else if(typeName == "Top")
       Left(ObjectType.top)
     else Right(typeName)
   }
 }
-object ObSecGIdentifierResolver{
-  def apply(expression: ObSecGAstExprNode):ObSecGExpr=
-    new ObSecGIdentifierResolver().resolve(expression)
+object IdentifierResolver{
+  def apply(expression: AstNode):EObSecExpr=
+    new IdentifierResolver().resolve(expression)
 }
 
 
