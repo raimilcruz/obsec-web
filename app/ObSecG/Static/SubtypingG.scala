@@ -144,16 +144,11 @@ class AmadioCardelliSubtypingG(
           else{
             val bounds1 = labelVariableEnv.lookup(gl1.name)
             val bounds2 = labelVariableEnv.lookup(gl2.name)
-            val set = innerSubType(
-              labelVariableEnv,
-              newSet,
-              bounds2.lower,
-              bounds1.lower, deep + 1)
             innerSubType(
               labelVariableEnv,
-              set,
+              newSet,
               bounds1.upper,
-              bounds2.upper, deep + 1)
+              bounds1.lower, deep + 1)
           }
         case (gl1: LabelVar, t) =>
           if(printRules) println(s"$spaces [LabelL]")

@@ -8,75 +8,33 @@ import org.scalatest.{FlatSpec, Matchers}
 
 class SubtypingSpec extends FlatSpec with Matchers with ElementServiceBaseSpec {
 
-
-  /*"Subtyping T1 <: T1 v T2" must "work" in{
-
-    val env = Environment.empty[TypeVarBounds]()
-    var judgements = new GObSecGJudgmentImpl(new ErrorCollector)
-    var subtypingChecker = new AmadioCardelliSubtypingG(judgements,judgements.errorCollector)
-    //Int <: Int v String
-    assert(subtypingChecker.<::(env,IntType,UnionLabel(IntType,StringType))== SubtypingSuccess)
-  }
-  "Subtyping T2 <: T1 v T2" must "work" in{
-
-    val env = Environment.empty[TypeVarBounds]()
-    var judgements = new GObSecGJudgmentImpl(new ErrorCollector)
-    var subtypingChecker = new AmadioCardelliSubtypingG(judgements,judgements.errorCollector)
-
-    assert(subtypingChecker.<::(env,StringType,UnionLabel(IntType,StringType)) == SubtypingSuccess)
-  }
-
-  "Subtyping T1 v T2 <: T where T1 <: T and T2 <:T" must "work" in{
-
-    val env = Environment.empty[TypeVarBounds]()
-    var judgements = new GObSecGJudgmentImpl(new ErrorCollector)
-    var subtypingChecker = new AmadioCardelliSubtypingG(judgements,judgements.errorCollector)
-
-    assert(subtypingChecker.<::(env,UnionLabel(StringType,StringType),StringType)== SubtypingSuccess)
-  }
-  "Subtyping T1 v T2 <: T where T1 <: T and T2 </:T" must "not work" in{
-
-    val env = Environment.empty[TypeVarBounds]()
-    var judgements = new GObSecGJudgmentImpl(new ErrorCollector)
-    var subtypingChecker = new AmadioCardelliSubtypingG(judgements,judgements.errorCollector)
-
-    assert(subtypingChecker.<::(env,UnionLabel(StringType,IntType),StringType).isInstanceOf[SubtypingFail])
-  }
-  "Subtyping T1 v T2 <: T where T1 </: T and T2 <:T" must "not work" in{
-
-    val env = Environment.empty[TypeVarBounds]()
-    var judgements = new GObSecGJudgmentImpl(new ErrorCollector)
-    var subtypingChecker = new AmadioCardelliSubtypingG(judgements,judgements.errorCollector)
-
-    assert(subtypingChecker.<::(env,UnionLabel(IntType,StringType),StringType).isInstanceOf[SubtypingFail])
-  }
-
-  "Subtyping between union type and label variable" must "work" in{
-
-    val left  =  UnionLabel(IntType,LabelVar("T"))
-    val rigth  =  LabelVar("T1")
-
+  "Subtyping between Int and X:Int..Top" must "work" in{
     val env = Environment.empty[TypeVarBounds]().
-      extend("T",TypeVarBounds(IntType,OT("X2",List()))).
-      extend("T1",TypeVarBounds(LabelVar("T"),OT("X2",List())))
+      extend("X",TypeVarBounds(IntADT,ObjectType.top))
 
     var judgements = new GObSecGJudgmentImpl(new ErrorCollector)
     var subtypingChecker = new AmadioCardelliSubtypingG(judgements,judgements.errorCollector)
-    //T: Int .. Top, T1: T ..Top
-    assert(subtypingChecker.<::(env,left,rigth) == SubtypingSuccess)
-  }*/
-  "Subtyping between Int and type variable bound" must "work" in{
 
-    val left  =  IntADT
+    assert(subtypingChecker.<::(env,IntADT,LabelVar("X")) == SubtypingSuccess)
+  }
+  "Subtyping between X:Int..Top and Top" must "work" in{
     val env = Environment.empty[TypeVarBounds]().
-      extend("T",TypeVarBounds(IntADT,OT("X2",List()))).
-      extend("T1",TypeVarBounds(LabelVar("T"),OT("X2",List())))
+      extend("X",TypeVarBounds(IntADT,ObjectType.top))
 
     var judgements = new GObSecGJudgmentImpl(new ErrorCollector)
     var subtypingChecker = new AmadioCardelliSubtypingG(judgements,judgements.errorCollector)
-    //T: Int .. Top, T1: T ..Top
-    //assert(subtypingChecker.<::(env,left,ObjectType.top))
-    assert(subtypingChecker.<::(env,IntADT,LabelVar("T")) == SubtypingSuccess)
+
+    assert(subtypingChecker.<::(env,LabelVar("X"),ObjectType.top) == SubtypingSuccess)
+  }
+  "Subtyping between X:Int..Top and Y:Top.. Top" must "work" in{
+    val env = Environment.empty[TypeVarBounds]().
+      extend("X",TypeVarBounds(IntADT,ObjectType.top))
+      .extend("Y",TypeVarBounds(ObjectType.top,ObjectType.top))
+
+    var judgements = new GObSecGJudgmentImpl(new ErrorCollector)
+    var subtypingChecker = new AmadioCardelliSubtypingG(judgements,judgements.errorCollector)
+    
+    assert(subtypingChecker.<::(env,LabelVar("X"),LabelVar("Y")) == SubtypingSuccess)
   }
 
   "String <: [== : String<I -> String<I]" must "work" in{
