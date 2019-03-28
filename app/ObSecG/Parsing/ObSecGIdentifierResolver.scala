@@ -23,6 +23,11 @@ class ObSecGIdentifierResolver {
   def resolveType(typeAnnotation: TypeAnnotation):LabelG=
     resolveType(new Scope,typeAnnotation,labelPosisition = true)
 
+  def resolveSType(annotatedFacetedType: AnnotatedFacetedType):STypeG=
+    STypeG(
+      resolveType(new Scope,annotatedFacetedType.left,labelPosisition = false).asInstanceOf[TypeG],
+      resolveType(new Scope,annotatedFacetedType.right,labelPosisition = true))
+
   private def resolve(typeIdentifierScope: Scope[TypeIdentifierDeclarationPoint],
                       valueIdentifier: Scope[Boolean],
                       expression: ObSecGAstExprNode):ObSecGExpr =

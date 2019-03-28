@@ -1,5 +1,6 @@
 package ObSecG.Static
 
+import Common.Environment
 import ObSecG.Ast._
 
 /**
@@ -7,6 +8,15 @@ import ObSecG.Ast._
   * in the paper.
   */
 trait IAuxiliaryFunctions extends Environments {
+  def mSig(labelVarEnvironment: LabelVarEnvironment, theType: LabelG, name: String):MTypeG
+  def mInU(labelVarEnvironment: LabelVarEnvironment,m: String, theType:LabelG): Boolean
+
+  //shortcuts
+  def mSig(theType: LabelG, name: String):MTypeG =
+    mSig(Environment.empty[TypeVarBounds](),theType,name)
+  def mInU(m: String, theType:LabelG): Boolean =
+    mInU(Environment.empty[TypeVarBounds](),m,theType)
+
   /**
     * Computes the upper bound of a type (variable) according the
     * generic type variable environment
@@ -37,6 +47,23 @@ trait IAuxiliaryFunctions extends Environments {
 }
 
 class AuxiliaryFunctions extends IAuxiliaryFunctions {
+
+  def mSig(labelVarEnvironment: LabelVarEnvironment, theType: LabelG, methodName: String): MTypeG = theType match{
+    case o: ObjectType => o.methSig(methodName)
+    case p: PrimType =>
+      println(s"!!!! Method $methodName in label $theType")
+      p.methods.find(method => method.name == methodName).get.mType
+    case l:LabelVar => mSig(labelVarEnvironment,tUpperBound(labelVarEnvironment,theType),methodName)
+    case _ => throw new NotImplementedError(s"m in U, unsupported case for $theType")
+  }
+  def mInU(labelVarEnvironment: LabelVarEnvironment,m: String, theType:LabelG): Boolean = theType match{
+    case p: PrimType=> p.methods.count(sig => sig.name == m) >=0
+    case ot: ObjectType => ot.containsMethod(m)
+    case l:LabelVar => mInU(labelVarEnvironment,m,tUpperBound(labelVarEnvironment,theType))
+    case _ => throw new NotImplementedError(s"m in U, unsupported case for $theType")
+  }
+
+
   /**
     * Computes the upper bound of a type (variable) according the
     * generic type variable environment

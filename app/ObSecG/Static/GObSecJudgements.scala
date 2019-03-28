@@ -50,10 +50,6 @@ trait GObSecJudgements extends Environments{
 trait GObSecJudgmentsExtensions extends GObSecJudgements{
   def isWellFormed(labelVarEnvironment: LabelVarEnvironment,
                    stype: STypeG):Boolean
-    = isWellFormed(labelVarEnvironment,stype.privateType) &&
-     isWellFormed(labelVarEnvironment,stype.publicType)
-
-
   def <::(labelVariableEnv:LabelVarEnvironment, s1:STypeG,s2:STypeG):SubtypingResult =
     <::(labelVariableEnv,s1.privateType, s2.privateType) &&
         <::(labelVariableEnv,s1.publicType, s2.publicType)
@@ -85,6 +81,12 @@ class GObSecGJudgmentImpl(val errorCollector: ErrorCollector) extends GObSecJudg
     * @return
     */
   override def alphaEq(t1: LabelG, t2: LabelG): Boolean = ???
+
+  def isWellFormed(labelVarEnvironment: LabelVarEnvironment,
+                   stype: STypeG):Boolean   = {
+    val wellFormedChecker = new WellFormedCheckerG(this,errorCollector)
+    wellFormedChecker.isWellFormed(labelVarEnvironment,stype)
+  }
 
   override def isWellFormed(labelVarEnvironment: LabelVarEnvironment, theType: LabelG): Boolean = {
     val wellFormedChecker = new WellFormedCheckerG(this,errorCollector)

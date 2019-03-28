@@ -228,7 +228,8 @@ object StringADT extends PrimType{
   override def methods: List[MethodDeclarationG] = List(
     MethodDeclarationG("==",MTypeG(List(),List(StringADT.st),BoolADT.st).setPrimitive(true)),
     MethodDeclarationG("length",MTypeG(List(),List(),IntADT.st).setPrimitive(true)),
-    MethodDeclarationG("hash",MTypeG(List(),List(),IntADT.st).setPrimitive(true))
+    MethodDeclarationG("hash",MTypeG(List(),List(),IntADT.st).setPrimitive(true)),
+      MethodDeclarationG("first",MTypeG(List(),List(),StringADT.st).setPrimitive(true))
   )
 
 }
@@ -418,7 +419,7 @@ case class StringGListType(elemPolicy: LabelG) extends TypeG with IObject with I
 
   override def toString: String = s"StrList[$elemPolicy]"
 
-  override def prettyPrint(buffer: StringBuilder): Unit = buffer.append(s"StrList${elemPolicy.prettyPrint()}")
+  override def prettyPrint(buffer: StringBuilder): Unit = buffer.append(s"StrList[${elemPolicy.prettyPrint()}]")
 }
 
 

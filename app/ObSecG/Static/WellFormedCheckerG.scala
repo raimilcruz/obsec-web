@@ -19,8 +19,7 @@ class WellFormedCheckerG(judgements: GObSecJudgements, errorCollector: ErrorColl
   extends IWellFormedCheckerG(judgements,errorCollector) {
 
   def isWellFormed(stype: STypeG): Boolean =
-    //isWellFormed(stype.privateType) && isWellFormed(stype.publicType)
-  throw new NotImplementedError()
+    isWellFormed(Environment.empty[TypeVarBounds](),stype)
 
   def isWellFormed(genVarEnv: LabelVarEnvironment,
                    stype: STypeG): Boolean =
@@ -38,17 +37,17 @@ class WellFormedCheckerG(judgements: GObSecJudgements, errorCollector: ErrorColl
                            s: STypeG): Boolean =
     isWellFormed(genVarEnv,objectEnv,s.privateType) &&
       isWellFormed(genVarEnv,objectEnv,s.publicType) &&
-      (
-        /*if(s.publicType == ImplicitLabel)
-          true
-        else*/
-        ( judgements.<::(genVarEnv, closeType(objectEnv,s.privateType),closeType(objectEnv,s.publicType)) == SubtypingSuccess
+      (s match{
+        //case STypeG(p:PrimType,obj@ObjectType(x, methods)) => true
+        case _ =>
+          ( judgements.<::(genVarEnv, closeType(objectEnv,s.privateType),closeType(objectEnv,s.publicType)) == SubtypingSuccess
           || {
           errorCollector.report(s"Private facet must be subtype of public facet in security type: ${s.astNode.source}")
           false
-          }
-        )
-      )
+        })
+      })
+
+
 
    private def isWellFormed(genVarEnv: LabelVarEnvironment,
                              objectEnv: SelfDefinitionEnvironment,

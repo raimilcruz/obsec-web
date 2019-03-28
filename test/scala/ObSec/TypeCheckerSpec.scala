@@ -43,12 +43,12 @@ class TypeCheckerSpec extends FlatSpec {
       }
     }
   }
-  it should "throw TypeError if an object has repeated methods" in {
+  it should "throw CommonError if an object has repeated methods" in {
     var expr = ObSecParser("{s : {ot X {add : Int<Int -> Int<Int}}<{ot X} => {add x = x.+(x)}{add x = x.-(x)}}")
     expr match {
       case Left(x) => fail("parsing error")
       case Right(ast) => {
-        intercept[TypeErrorG] {
+        intercept[CommonError] {
           TypeChecker(ast)
         }
       }

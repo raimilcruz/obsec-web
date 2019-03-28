@@ -44,7 +44,7 @@ export default class LanguagePad extends React.Component {
         executionState: 0,
         executionResult: "",
         typingState: 0,
-        defaultProgram: null,
+        programId: null,
         expressionType: "",
         syntaxOpen: false,
         markers:[],
@@ -109,7 +109,7 @@ export default class LanguagePad extends React.Component {
                             this.setState({
                                 loadingExamples: false,
                                 examples: res.body.examples,
-                                defaultProgram: (res.body.examples.length>0?res.body.examples[0].id:null),
+                                programId: (res.body.examples.length>0?res.body.examples[0].id:null),
                                 program: (res.body.examples.length>0?res.body.examples[0].program:null),
                                 desc:(res.body.examples.length>0?res.body.examples[0].desc:null)
                             }, () => {
@@ -150,9 +150,9 @@ export default class LanguagePad extends React.Component {
         ));
     };
 
-    changeDefaultProgram = (event, index, programValue) => {
+    changeSelectedProgram = (event, index, programValue) => {
         var p = this.findProgramByValue(programValue);
-        this.setState({program: p.program, desc: p.desc,typingState:0,markers:[]})
+        this.setState({programId:programValue, program: p.program, desc: p.desc,typingState:0,markers:[]})
     };
 
     typecheck = () => {
@@ -168,8 +168,6 @@ export default class LanguagePad extends React.Component {
                             this.setState({
                                 expressionType: res.body.expressionType,
                                 typingState: 1
-                            }, () => {
-                                //TODO: Do extra things here if needed
                             })
                         }
 
@@ -178,7 +176,6 @@ export default class LanguagePad extends React.Component {
                                 error: res.body.issue.message,
                                 analysisIssue: res.body.issue,
                                 typingState: -1
-                            }, () => {
                             })
                         }
                         else {
@@ -207,9 +204,6 @@ export default class LanguagePad extends React.Component {
                                 error: res.body.error,
                                 executionResult: res.body.result,
                                 executionState: 1
-                            }, () => {
-                                //TODO: extra things here
-
                             })
                         }
                         else {
@@ -260,8 +254,8 @@ export default class LanguagePad extends React.Component {
                         this.state.loadingExamples?
                             <div>Loading programs</div>
                             :
-                            <SelectField value={this.state.defaultProgram}
-                                         onChange={this.changeDefaultProgram}
+                            <SelectField value={this.state.programId}
+                                         onChange={this.changeSelectedProgram}
                                          floatingLabelText="Preloaded examples"
                                          autoWidth={true} fullWidth={true}>
                                 {this.examplesItems()}

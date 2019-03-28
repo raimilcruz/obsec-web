@@ -53,15 +53,15 @@ class TypeChecker(judgements: GObSecJudgmentsExtensions,
 
       val privateFacet = auxiliaryFunctions.tUpperBound(genVarEnv, s1.privateType)
       //println("typeCheck:" + s"private facet:$privateFacet")
-      if(mInU(m,privateFacet)){
+      if(auxiliaryFunctions.mInU(m,privateFacet)){
 
         //case for object types
         //case for primitive types
-        var mType = methSig(privateFacet,m)
+        var mType = auxiliaryFunctions.mSig(privateFacet,m)
         //println(s"Method type : ${mType}")
         val publicFacet = auxiliaryFunctions.tUpperBound(genVarEnv, s1.publicType)
-        if (mInU(m,publicFacet)) {
-          mType = methSig(publicFacet,m)
+        if (auxiliaryFunctions.mInU(m,publicFacet)) {
+          mType = auxiliaryFunctions.mSig(publicFacet,m)
         }
 
         //check subtyping for method constraints
@@ -97,7 +97,7 @@ class TypeChecker(judgements: GObSecJudgmentsExtensions,
           }
         }
 
-        if (mInU(m,publicFacet))
+        if (auxiliaryFunctions.mInU(m,publicFacet))
           closedSignature.codomain
         else
           STypeG(closedSignature.codomain.privateType,ObjectType.top)
@@ -133,7 +133,7 @@ class TypeChecker(judgements: GObSecJudgmentsExtensions,
       //each method must be well-typed with respect the object type
       val privObjectType = stype.privateType.asInstanceOf[ObjectType]
       for (m <- methods) {
-        val mType = privObjectType.methSig(m.name)
+        val mType = auxiliaryFunctions.mSig(Environment.empty[TypeVarBounds](), privObjectType,m.name)
         //TODO: Check this in the ResolverIdentifier
         if (mType.domain.size != m.args.size)
           throw CommonError.genericError(m.astNode,s"Method '${m.name}': Mismatch in amount of arguments between definition and signature")
@@ -215,18 +215,6 @@ class TypeChecker(judgements: GObSecJudgmentsExtensions,
       throw new NotImplementedError("Type checker: ConstListExpr case not implemented")
   },expr.astNode)
 
-  private def mInU(m: String, u:LabelG): Boolean = u match{
-    case p: PrimType=> p.methods.count(sig => sig.name == m) >=0
-    case ot: ObjectType => ot.containsMethod(m)
-    case _ => throw new NotImplementedError(s"m in U, unsupported case for $u")
-  }
-  private def methSig(u: LabelG, m: String): MTypeG = u match{
-    case p: PrimType =>
-      println(s"!!!! Method${m} in label ${u}")
-      p.methods.find(method => method.name == m).get.mType
-    case ot: ObjectType=> ot.methods.find(method => method.name == m).get.mType
-    case _ => throw new NotImplementedError(s"methSig, unsupported case for $u")
-  }
   def instantiateMethodSignature(mType: MTypeG, actualTypes: NodeList[LabelG], argTypes: List[STypeG]):MTypeG ={
     val closedDomain = mType.domain.map(t=> closeGenType(t, mType.typeVars.zip(actualTypes)))
     val closedCodomain = closeGenType(mType.codomain, mType.typeVars.zip(actualTypes))

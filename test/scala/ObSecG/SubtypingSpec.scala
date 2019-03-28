@@ -33,7 +33,7 @@ class SubtypingSpec extends FlatSpec with Matchers with ElementServiceBaseSpec {
 
     var judgements = new GObSecGJudgmentImpl(new ErrorCollector)
     var subtypingChecker = new AmadioCardelliSubtypingG(judgements,judgements.errorCollector)
-    
+
     assert(subtypingChecker.<::(env,LabelVar("X"),LabelVar("Y")) == SubtypingSuccess)
   }
 

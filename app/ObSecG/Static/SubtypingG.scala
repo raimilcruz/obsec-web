@@ -56,6 +56,7 @@ class AmadioCardelliSubtypingG(
 
   def <::(labelVariableEnv:LabelVarEnvironment,t1: LabelG, t2: LabelG): SubtypingResult =
     try {
+      print("######### Subtyping root judgment ##########")
       val subtypingAssumptions = labelVariableEnv.toList.foldLeft(Set[(LabelG, LabelG)]())(
         (prevSet,tv)=> {
           prevSet + Tuple2(LabelVar(tv._1),tv._2.upper) + Tuple2(tv._2.lower,LabelVar(tv._1))
@@ -66,9 +67,10 @@ class AmadioCardelliSubtypingG(
       case x: SubtypingError => SubtypingFail(x.t1,x.t2).setMessage(x.message)
     }
 
-  def <::(labelVariableEnv:LabelVarEnvironment,s1: STypeG, s2: STypeG): SubtypingResult =
+  def <::(labelVariableEnv:LabelVarEnvironment,s1: STypeG, s2: STypeG): SubtypingResult = {
+    //print("######### Subtyping root judgment ##########")
     <::(labelVariableEnv,s1.privateType, s2.privateType) &&
-      <::(labelVariableEnv,s1.publicType, s2.publicType)
+      <::(labelVariableEnv,s1.publicType, s2.publicType)}
 
   private def <::(labelVariableEnv:LabelVarEnvironment,
                   alreadySeen: SubtypingAssumptions,
@@ -102,10 +104,10 @@ class AmadioCardelliSubtypingG(
     val spaces = (1 to deep).foldLeft("")((acc,x)=>acc+" ")
     println(spaces + " **********************")
     println(spaces + deep)
-    println(s"$spaces label env: ${labelVariableEnv.prettyPrint}")
-    println(s"$spaces Already seen: ${alreadySeen.mkString(";")}")
+    println(s"$spaces Label env: ${labelVariableEnv.prettyPrint}")
+    println(s"$spaces Already seen: ${alreadySeen.map(p => p._1.prettyPrint() +"<:"+ p._2.prettyPrint()).mkString(";")}")
 
-    println(s"$spaces st goal: ${t1.prettyPrint()} and ${t2.prettyPrint()}")
+    println(s"$spaces Goal: ${t1.prettyPrint()} and ${t2.prettyPrint()}")
     println(spaces + " *********************")
 
     if (alreadySeen.exists((x) => TypeEquivalenceG.alphaEq(x._1, t1) &&
@@ -120,22 +122,7 @@ class AmadioCardelliSubtypingG(
           if(printRules) println(s"$spaces [TypeEq]")
           newSet
         //little optimization
-        case (_,_) if TypeEquivalenceG.alphaEq(t1,t2) =>newSet
-       /* case (union@UnionLabel(t11,t12),_)=>
-          if(printRules) println(s"$spaces [UnionL]")
-
-          val set = innerSubType(labelVariableEnv,newSet,t11,t2,deep+1)
-          innerSubType(labelVariableEnv,set,t12,t2,deep+1)
-        case (_,union@UnionLabel(t21,t22))=>
-          if(printRules) println(s"$spaces [UnionR]")
-
-          //it should be one or the other one
-          try {
-            innerSubType(labelVariableEnv, newSet, t1, t21,deep+1)
-          }
-          catch {
-            case x: SubtypingError => innerSubType(labelVariableEnv,newSet,t1,t22,deep+1)
-          }*/
+        case (_,_) if TypeEquivalenceG.alphaEq(t1,t2) => newSet
         case (gl1:LabelVar,gl2:LabelVar) =>
           if(printRules) println(s"$spaces [Label]")
           //little optimization
@@ -250,6 +237,9 @@ class AmadioCardelliSubtypingG(
         case (_, ot2@ObjectType(_, _)) /*if !ot2.isPrimitive */ =>
           if(printRules) println(s"$spaces [ObjR]")
           innerSubType(labelVariableEnv,newSet, t1, unfold(ot2),deep+1)
+        case (_, ot2:IBuiltinObject) /*if !ot2.isPrimitive */ => //hack to create some builtin object that are not primitive types
+          if(printRules) println(s"$spaces [ObjRBuiltin]")
+          innerSubType(labelVariableEnv,newSet, t1, ot2.toObjType,deep+1)
         /*case (_, ot2@ObjectType(_, _)) if ot2.isPrimitive  =>
           if(printRules) println(s"$spaces [ObjRPrim]")
           //both type should be equivalent, but not only with alphaEq.
