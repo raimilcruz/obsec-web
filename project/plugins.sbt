@@ -19,3 +19,6 @@ addSbtPlugin("org.irundaia.sbt" % "sbt-sassify" % "1.4.2")
 
 //coverage plugin
 addSbtPlugin("org.scoverage" % "sbt-scoverage" % "1.5.1")
+
+//coverall plugin
+addSbtPlugin("org.scoverage" % "sbt-coveralls" % "1.2.7")
