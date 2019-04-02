@@ -1,4 +1,7 @@
 
+[![Build Status](https://travis-ci.com/raimilcruz/obsec-web.svg?token=jhJHNfzf8dVnKKPhxozx&branch=master)](https://travis-ci.com/raimilcruz/obsec-web.svg?token=jhJHNfzf8dVnKKPhxozx&branch=master)
+
+
 # ObSec Pad:
 
 **ObSec** is a simple object-oriented language that supports type-based declassification
