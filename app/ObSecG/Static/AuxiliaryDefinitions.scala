@@ -4,10 +4,16 @@ import Common.Environment
 import ObSecG.Ast._
 
 /**
-  * We create this trait to group all the auxiliary definition of the model
-  * in the paper.
+  * Groups all the auxiliary definition of the model in the paper.
   */
 trait IAuxiliaryFunctions extends Environments {
+  /**
+    * Returns the signatures of the method `name` from the type `theType`
+    * @param labelVarEnvironment The type variable environment
+    * @param theType The type
+    * @param name
+    * @return
+    */
   def mSig(labelVarEnvironment: LabelVarEnvironment, theType: LabelG, name: String):MTypeG
   def mInU(labelVarEnvironment: LabelVarEnvironment,m: String, theType:LabelG): Boolean
 

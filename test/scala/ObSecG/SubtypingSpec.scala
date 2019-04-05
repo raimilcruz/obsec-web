@@ -77,4 +77,17 @@ class SubtypingSpec extends FlatSpec with Matchers with ElementServiceBaseSpec {
     assert(subtypingChecker.<::(Environment.empty[TypeVarBounds](),StringGListType(ObjectType.top),StringGListType(StringADT)) != SubtypingSuccess)
 
   }
+  "Subtyping by Alpha Eq with generic variables 2" must "work" in{
+    var t1 = ObSecGParser.parseType("{ot a {m[X:a..Top]: Top -> a<X}}")
+    var t2 = ObSecGParser.parseType("{ot a {m[X:a..Top]: Top -> {ot b {m[Y:b..Top]: b -> b<Y}}<X}}")
+    (t1,t2) match {
+      case (Right(t11),Right(t22)) =>
+        val resolver = new ObSecGIdentifierResolver()
+        var judgements = new GObSecGJudgmentImpl(new ErrorCollector)
+        var subtypingChecker = new AmadioCardelliSubtypingG(judgements,judgements.errorCollector)
+
+        assert(subtypingChecker.<::(Environment.empty[TypeVarBounds](),resolver.resolveType(t11),resolver.resolveType(t22)) == SubtypingSuccess)
+      case (_,_) => fail("types are not recognized!!")
+    }
+  }
 }
