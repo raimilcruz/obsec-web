@@ -199,10 +199,10 @@ object ObSecGParser extends StandardTokenParsers with PackratParsers with Implic
   lazy val intType : PackratParser[TypeAnnotation] = INT ^^ {_=> TypeIdentifier(INT)}
   lazy val stringType : PackratParser[TypeAnnotation] = STRING ^^ {_=> TypeIdentifier(STRING)}
   lazy val booleanType : PackratParser[TypeAnnotation] = BOOLEAN ^^ {_=> TypeIdentifier(BOOLEAN)}
-  lazy val stringListType : PackratParser[TypeAnnotation] =  stringListStringType //| stringListGType//STRLIST ^^ {_=> StringListType}
+  lazy val stringListType : PackratParser[TypeAnnotation] =  stringListGType //| stringListStringType//STRLIST ^^ {_=> StringListType}
 
   lazy val stringListStringType : PackratParser[TypeAnnotation] = STRLIST ^^ {_=>  TypeIdentifier(STRLIST)}
-  //lazy val stringListGType : PackratParser[TypeAnnotation] = (STRLIST~"[") ~> (privateType <~"]") ^^ (t => StringGListType(t))
+  lazy val stringListGType : PackratParser[TypeAnnotation] = (STRLIST~"[") ~> (privateType <~"]") ^^ (t => InstantiatedStringListType(t))
 
 
 

@@ -1,7 +1,7 @@
 let{
     type StringEq = [{== : String<I -> Bool<I}]
     deftype AuthServer {
-        {login: StringEq<StringEq String -> Int}
+        {login: String<StringEq String -> Int}
     }
     val auth =  new {z : AuthServer<L =>
                 def login password guess = if password.==(guess) then 1 else 0

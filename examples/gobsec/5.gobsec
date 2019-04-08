@@ -1,9 +1,6 @@
 let {
-    type StringHashEq = [{hash : -> Int<[{== : Int<H -> Bool<I}]}]
-    type AuthServer = [{login : String<StringHashEq String -> Int<L}]
-    val auth =  new {z : AuthServer<L =>
-            def login password guess = if password.hash().==[Int](guess.hash()) then 1 else 0
-    }
+    type StringEqBad = [{== : String<H -> Bool<L}]
+    type AuthServer = [{login : String<StringEq String -> Int<L}]
 }
 in
-    auth.login("qwe123","qwe123")
+    "focus on well-formedness of type above"

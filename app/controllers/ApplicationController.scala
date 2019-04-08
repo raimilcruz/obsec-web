@@ -9,10 +9,15 @@ import play.api.mvc._
 @Singleton
 class ApplicationController @Inject()(configuration: play.api.Configuration) extends Controller {
   def index(prod: Int) = Action { implicit request =>
-    Ok(views.html.index(prod,
+    /*Ok(views.html.index(prod,
       IndexModel(
         "ObSec Pad",
         "GObSec Pad, an online interpreter to experiment with GObSec, " +
-          "a security typed-language with type-base declassification")))
+          "a security typed-language with type-base declassification")))*/
+    Ok(views.html.index(prod,
+      IndexModel(
+        "GObSec Pad",
+        "GObSec Pad, an online interpreter to experiment with GObSec, " +
+          "a security typed-language with polymorphic relaxed noninterference")))
   }
 }

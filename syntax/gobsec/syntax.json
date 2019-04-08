@@ -14,7 +14,7 @@
       "item": "String",
       "expanded":true
     },{
-      "item": "StrList",
+      "item": "StrList<X>",
       "expanded":true
     },"X","OT"],
     "category":"Types"
@@ -37,14 +37,15 @@
   },
   "Bool":{
     "expanded": true,
-    "expansion": "[...]"
+    "expansion": "[(eliminate with the if expression)]"
   },
   "String":{
     "expanded": true,
-    "expansion": "[...]"
+    "expansion": "[{==  : String<* -> Bool<*} \r\n {hash : -> Int<*}\r\n {length : -Int<*}]"
+
   },
-  "StrList":{
+  "StrList<X>":{
     "expanded": true,
-    "expansion": "[...]"
+    "expansion": "[{isEmpty  : -> Bool<Bool} \r\n {head : -> String<X}\r\n {tail : -> StrList<X>}]"
   }
 }
