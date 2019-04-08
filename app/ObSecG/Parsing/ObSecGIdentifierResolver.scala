@@ -204,6 +204,9 @@ class ObSecGIdentifierResolver {
           else
             throw ResolverError.typeIsNotDefined(typeAnnotation,n)
       }
+    case InstantiatedStringListType(typeVariable)=>
+      val actualType = resolveType(typeIdentifierScope,typeVariable,labelPosisition = false)
+      StringGListType(actualType)
     /*case UnionTypeAnnotation(left,right)=>
       UnionLabel(resolveType(typeIdentifierScope,left,labelPosisition = false),
         resolveType(typeIdentifierScope,right,labelPosisition = false))*/
@@ -281,8 +284,6 @@ class ObSecGIdentifierResolver {
       Left(StringADT)
     else if(typeName == "Bool")
       Left(BoolADT)
-    else if(typeName == "StrList")
-      Left(StringListType)
     else if(typeName == "Top")
       Left(ObjectType.top)
     else Right(typeName)

@@ -364,7 +364,7 @@ trait IBuiltinObject{
   def toObjType : ObjectType
 }
 
-case object StringListType extends PrimType /*with IObject  with IBuiltinObject*/{
+/*case object StringListType extends PrimType /*with IObject  with IBuiltinObject*/{
   /*override def methSig(x: String): MTypeG = x match {
     case "isEmpty" => MTypeG(List(), List(), STypeG(BoolADT, BoolADT))
     case "head" => MTypeG(List(), List(), STypeG(StringADT, StringADT))
@@ -393,7 +393,7 @@ case object StringListType extends PrimType /*with IObject  with IBuiltinObject*
     MethodDeclarationG("head", MTypeG(List(), List(), StringADT.st).setPrimitive(true)),
     MethodDeclarationG("tail", MTypeG(List(), List(), StringListType.st).setPrimitive(true))
   )
-}
+}*/
 
 /**
   *
@@ -403,7 +403,7 @@ case class StringGListType(elemPolicy: LabelG) extends TypeG with IObject with I
   override def methSig(x: String): MTypeG = x match {
     case "isEmpty" => MTypeG(List(), List(), STypeG(BoolADT, BoolADT))
     case "head" => MTypeG(List(), List(), STypeG(StringADT, elemPolicy))
-    case "tail" => MTypeG(List(), List(), STypeG(StringGListType(elemPolicy), StringGListType(elemPolicy)))
+    case "tail" => MTypeG(List(), List(), STypeG(StringGListType(elemPolicy).asInstanceOf[TypeG], StringGListType(elemPolicy)))
   }
 
   override def containsMethod(x: String): Boolean = x match {

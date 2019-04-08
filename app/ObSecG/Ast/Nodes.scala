@@ -126,6 +126,10 @@ case class UnionTypeAnnotation(left:TypeAnnotation,right: TypeAnnotation) extend
 sealed trait ObjectTypeAnnotation extends TypeAnnotation{
   def methods: List[MethodDeclarationNode]
 }
+case class InstantiatedStringListType(actualType:TypeAnnotation)
+ extends TypeAnnotation {
+  override def children: List[ObSecGAstNode] = List(actualType)
+}
 case class ObjectTypeNode(selfVar: String,
                           methods: List[MethodDeclarationNode])
   extends ObjectTypeAnnotation {
