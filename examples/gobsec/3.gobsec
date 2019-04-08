@@ -1,6 +1,6 @@
 let {
     type StringEqBad = [{== : String<H -> Bool<L}]
-    type AuthServer = [{login : String<StringEq String -> Int<L}]
+    type AuthServer = [{login : String<StringEqBad String -> Int<L}]
 }
 in
     "focus on well-formedness of type above"

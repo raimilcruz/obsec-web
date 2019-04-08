@@ -56,7 +56,7 @@ class AmadioCardelliSubtypingG(
 
   def <::(labelVariableEnv:LabelVarEnvironment,t1: LabelG, t2: LabelG): SubtypingResult =
     try {
-      print("######### Subtyping root judgment ##########")
+      //print("######### Subtyping root judgment ##########")
       val subtypingAssumptions = labelVariableEnv.toList.foldLeft(Set[(LabelG, LabelG)]())(
         (prevSet,tv)=> {
           prevSet + Tuple2(LabelVar(tv._1),tv._2.upper) + Tuple2(tv._2.lower,LabelVar(tv._1))
@@ -81,18 +81,6 @@ class AmadioCardelliSubtypingG(
     innerSubType(labelVariableEnv,set, s1.privateType, s2.privateType,deep)
   }
 
-  private def equivalentTypeVariablesAndConstraints(m11: MethodDeclarationG,
-                                                    m2: MethodDeclarationG):Boolean = {
-    /*if(m11.mType.typeVars.lengthCompare(m2.mType.typeVars.size) != 0)
-      false
-    m11.mType.typeVars.zip(m2.mType.typeVars).forall(p =>
-      p._1.typeVar == p._2.typeVar ||
-        TypeEquivalenceG.alphaEq(p._1.typeBound, p._1.typeBound)
-    )*/
-    throw new Error("Not implemented: equivalentTypeVariablesAndConstraints")
-  }
-
-
 
   private def innerSubType(labelVariableEnv: Environment[TypeVarBounds],
                            alreadySeen: SubtypingAssumptions,
@@ -100,15 +88,15 @@ class AmadioCardelliSubtypingG(
                            t2: LabelG,
                            deep:Int): SubtypingAssumptions= {
 
-    val printRules = true
+    val printRules = false
     val spaces = (1 to deep).foldLeft("")((acc,x)=>acc+" ")
-    println(spaces + " **********************")
+    /*println(spaces + " **********************")
     println(spaces + deep)
     println(s"$spaces Label env: ${labelVariableEnv.prettyPrint}")
     println(s"$spaces Already seen: ${alreadySeen.map(p => p._1.prettyPrint() +"<:"+ p._2.prettyPrint()).mkString(";")}")
 
     println(s"$spaces Goal: ${t1.prettyPrint()} and ${t2.prettyPrint()}")
-    println(spaces + " *********************")
+    println(spaces + " *********************")*/
 
     if (alreadySeen.exists((x) => TypeEquivalenceG.alphaEq(x._1, t1) &&
       TypeEquivalenceG.alphaEq(x._2, t2)))
@@ -206,7 +194,7 @@ class AmadioCardelliSubtypingG(
             set = set.union(newSet)
             //if(mt1.isPrimitive){
             if(mt1.computedIsPrimitive){
-              println("!!!!!! is primitive !!!!")
+              //println("!!!!!! is primitive !!!!")
               if(ProtectsJudgement.isSoundMethodSignature(mt2)){
                 for ((mt2A,mt1A) <- mt2Renamed.domain.zip(mt1.domain)) {
                   set = innerSubType(extendedGenVarEnv,set, mt2A.privateType, mt1A.privateType,deep+1)

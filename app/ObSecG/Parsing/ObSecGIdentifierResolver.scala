@@ -101,6 +101,11 @@ class ObSecGIdentifierResolver {
             letTypeScope.add(node.name, defTypeDeclaration)
             val objectType = ObjectType(node.name,node.methods.map(m=> resolveMethodDeclaration(letTypeScope,m)))
             defTypeDeclaration.definingType = objectType
+          case node: TemplateDefTypeNode =>
+            val defTypeDeclaration = TypeDeclarationPoint(null)
+            letTypeScope.add(node.name, defTypeDeclaration)
+            val objectType = ObjectType(node.name,node.methods.map(m=> resolveMethodDeclaration(letTypeScope,m)))
+            defTypeDeclaration.definingType = objectType
 
         }
         resolveDeclaration(letTypeScope,valueIdentifier,d).setAstNode(d)
@@ -126,8 +131,12 @@ class ObSecGIdentifierResolver {
                          declaration: DeclarationNode): Declaration= declaration match{
     case DefTypeNode(typeName,methods)=>
       TypeDefinition(typeName,methods.map(m=> resolveMethodDeclaration(typeIdentifierScope,m)))
+    case TemplateDefTypeNode(typeName,typeVar,methods)=>
+      TypeDefinition(typeName,methods.map(m=> resolveMethodDeclaration(typeIdentifierScope,m)))
     case TypeAliasDeclarationNode(typeAlias,objType)=>
       TypeAlias(typeAlias,resolveType(typeIdentifierScope,objType,labelPosisition = false).asInstanceOf[ObjectType])
+    case LocalDeclarationNode(name,expr)=>
+      LocalDeclaration(name,resolve(typeIdentifierScope,valueIdentifier,expr))
     case LocalDeclarationNode(name,expr)=>
       LocalDeclaration(name,resolve(typeIdentifierScope,valueIdentifier,expr))
   }
@@ -204,15 +213,14 @@ class ObSecGIdentifierResolver {
           else
             throw ResolverError.typeIsNotDefined(typeAnnotation,n)
       }
-    case InstantiatedStringListType(typeVariable)=>
-      val actualType = resolveType(typeIdentifierScope,typeVariable,labelPosisition = false)
+    case InstantiatedTemplateType(template, actualTypeAnnotation)=>
+      val actualType = resolveType(typeIdentifierScope,actualTypeAnnotation,labelPosisition = false)
       StringGListType(actualType)
     /*case UnionTypeAnnotation(left,right)=>
       UnionLabel(resolveType(typeIdentifierScope,left,labelPosisition = false),
         resolveType(typeIdentifierScope,right,labelPosisition = false))*/
     case _ => throw new NotImplementedError("resolveType not implemented")
   }).setAstNode(typeAnnotation)
-
 
 
   private def resolveMethodDeclaration(typeIdentifierScope: Scope[TypeIdentifierDeclarationPoint],

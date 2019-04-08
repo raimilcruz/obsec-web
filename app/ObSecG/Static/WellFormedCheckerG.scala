@@ -76,6 +76,7 @@ class WellFormedCheckerG(judgements: GObSecJudgements, errorCollector: ErrorColl
                     isWellFormed(
                       methodLabelEnvironment,newEnv, m.mType.codomain))
             })
+      case StringGListType(elemPolicy) => isWellFormed(genVarEnv,objectEnv,elemPolicy)
      /* case UnionLabel(left,right)=>
         isWellFormed(genVarEnv,objectEnv,left) &&
           isWellFormed(genVarEnv,objectEnv,right)*/

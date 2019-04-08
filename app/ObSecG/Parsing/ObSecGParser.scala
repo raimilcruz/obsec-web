@@ -16,8 +16,10 @@ import scala.util.parsing.input.{NoPosition, Position, Positional}
   * Defining a parser for ObSec language
   */
 object ObSecGParser extends StandardTokenParsers with PackratParsers with ImplicitConversions with DebugPackratParsers{
-  lexical.reserved += ("if" , "then" , "else" , "true", "false", "let" ,"in", "type", "new", "def","val","deftype", "ot" , "Int" , "String" , "Bool", "StrList" , "L" , "H"  ,"mklist","I",
-    "cons",
+  lexical.reserved += ("if" , "then" , "else" , "true", "false", "let" ,"in", "type", "new", "def","val","deftype","template", "ot" , "Int" , "String" , "Bool", "StrList" , "L" , "H"  ,
+    "I",
+    /*"mklist",
+    "cons",*/
     "extends","super","low" )
   lexical.delimiters ++= (": . < > -> => + - * / ( ) [ ] { } , = ; <: .." split ' ')
 /*
@@ -91,7 +93,7 @@ object ObSecGParser extends StandardTokenParsers with PackratParsers with Implic
 
   def  program: PackratParser[ObSecGAstExprNode] = phrase(expr)//new Wrap("program",phrase(expr))
   lazy val expr : Parser[ObSecGAstExprNode] = {
-    myPositioned(valExpr) |||  varExpr ||| methodInvExpr | ifThenElse | letStarExpr | mkListExpr | consList
+    myPositioned(valExpr) |||  varExpr ||| methodInvExpr | ifThenElse | letStarExpr //| mkListExpr | consList
   }
 
   lazy val consList: Parser[ObSecGAstExprNode] =
@@ -111,6 +113,10 @@ object ObSecGParser extends StandardTokenParsers with PackratParsers with Implic
 
   lazy val defTypeDecl : PackratParser[DefTypeNode] =
     "deftype" ~> ident ~ (LEFTBRACKET  ~> (methodList <~ RIGHTBRACKET)) ^^ {case tName ~ methodList =>  DefTypeNode(tName,methodList)}
+
+  lazy val templateDecl : PackratParser[TemplateDefTypeNode] =
+    "template" ~> ident ~ ("[" ~> typeVarBound <~ "]") ~ (LEFTBRACKET  ~> (methodList <~ RIGHTBRACKET)) ^^
+      {case tName ~ typeVar ~ mList =>  TemplateDefTypeNode(tName,typeVar,mList)}
 
 
   lazy val localDecl : PackratParser[LocalDeclarationNode] =
@@ -187,22 +193,23 @@ object ObSecGParser extends StandardTokenParsers with PackratParsers with Implic
 
   lazy val labelType : PackratParser[TypeAnnotation] ={
     myPositioned(objType) |  myPositioned(lowLabel) | myPositioned(highLabel) | myPositioned(implictLabel) |
-      myPositioned(primType)  | myPositioned(varType)
+      myPositioned(primType)  /*| myPositioned(instantiatedType)*/ |  myPositioned(varType)
   }
   lazy val unionLabel :  PackratParser[UnionTypeAnnotation]={
     ((LEFTPAREN  ~> myPositioned(labelType)) <~ COMMMA) ~ (myPositioned(labelType) <~ RIGHTPAREN) ^^ {case left ~ right=> UnionTypeAnnotation(left,right)}
   }
 
   lazy val primType : PackratParser[TypeAnnotation] = {
-    intType | booleanType | stringListType | stringType
+    intType | booleanType | /*stringListType |*/ stringType
   }
   lazy val intType : PackratParser[TypeAnnotation] = INT ^^ {_=> TypeIdentifier(INT)}
   lazy val stringType : PackratParser[TypeAnnotation] = STRING ^^ {_=> TypeIdentifier(STRING)}
   lazy val booleanType : PackratParser[TypeAnnotation] = BOOLEAN ^^ {_=> TypeIdentifier(BOOLEAN)}
-  lazy val stringListType : PackratParser[TypeAnnotation] =  stringListGType //| stringListStringType//STRLIST ^^ {_=> StringListType}
+ // lazy val stringListType : PackratParser[TypeAnnotation] =  stringListGType //| stringListStringType//STRLIST ^^ {_=> StringListType}
 
   lazy val stringListStringType : PackratParser[TypeAnnotation] = STRLIST ^^ {_=>  TypeIdentifier(STRLIST)}
-  lazy val stringListGType : PackratParser[TypeAnnotation] = (STRLIST~"[") ~> (privateType <~"]") ^^ (t => InstantiatedStringListType(t))
+  lazy val instantiatedType : PackratParser[TypeAnnotation] = simpleIdentifier  ~ ("[" ~> labelType <~  "]")  ^^
+    {case t ~ a=> InstantiatedTemplateType(t,a)}
 
 
 

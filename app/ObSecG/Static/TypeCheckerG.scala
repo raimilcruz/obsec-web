@@ -43,7 +43,8 @@ class TypeChecker(judgements: GObSecJudgmentsExtensions,
                 scope: TypeEnvironment,
                 aliasScope: TypeAliasScope,
                 expr: ObSecGExpr): STypeG =
-    wrapError[STypeG](expr match {
+    //wrapError[STypeG](
+      expr match {
     case Var(x) => scope.lookup(x)
     case p:PrimitiveLiteral => typePrimitives(p)
     case methInv@MethodInv(e1, types, args, m) => {
@@ -65,7 +66,7 @@ class TypeChecker(judgements: GObSecJudgmentsExtensions,
         }
 
         //check subtyping for method constraints
-        print(s"mType.typeVars.size != types.size. typevars: ${mType.typeVars}   types: $types")
+        //print(s"mType.typeVars.size != types.size. typevars: ${mType.typeVars}   types: $types")
         if (mType.typeVars.size != types.size)
           throw TypeErrorG.actualTypeParametersSizeError(
             if(types.isEmpty)methInv.methodNameNode else types.astNode,
@@ -144,7 +145,7 @@ class TypeChecker(judgements: GObSecJudgmentsExtensions,
 
         var methodGenVarEnv = auxiliaryFunctions.multiExtend(genVarEnv, mType.typeVars)
         var s = typeCheck(methodGenVarEnv, methodScope, aliasScope, m.mBody)
-        print(s"$s <:: ${mType.codomain}")
+        //print(s"$s <:: ${mType.codomain}")
         if (judgements.<::(methodGenVarEnv, s, mType.codomain).isInstanceOf[SubtypingFail])
           throw TypeErrorG.returnTypeError(m.mBody.astNode, m.name, s, mType.codomain)
       }
@@ -213,7 +214,7 @@ class TypeChecker(judgements: GObSecJudgmentsExtensions,
       val tList = typeCheck(genVarEnv, scope, aliasScope, list)
       val tElem = typeCheck(genVarEnv, scope, aliasScope, elem)
       throw new NotImplementedError("Type checker: ConstListExpr case not implemented")
-  },expr.astNode)
+  }//,expr.astNode)
 
   def instantiateMethodSignature(mType: MTypeG, actualTypes: NodeList[LabelG], argTypes: List[STypeG]):MTypeG ={
     val closedDomain = mType.domain.map(t=> closeGenType(t, mType.typeVars.zip(actualTypes)))

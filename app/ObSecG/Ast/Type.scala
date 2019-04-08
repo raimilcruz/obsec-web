@@ -229,7 +229,8 @@ object StringADT extends PrimType{
     MethodDeclarationG("==",MTypeG(List(),List(StringADT.st),BoolADT.st).setPrimitive(true)),
     MethodDeclarationG("length",MTypeG(List(),List(),IntADT.st).setPrimitive(true)),
     MethodDeclarationG("hash",MTypeG(List(),List(),IntADT.st).setPrimitive(true)),
-      MethodDeclarationG("first",MTypeG(List(),List(),StringADT.st).setPrimitive(true))
+    MethodDeclarationG("first",MTypeG(List(),List(),StringADT.st).setPrimitive(true)),
+    MethodDeclarationG("concat",MTypeG(List(),List(StringADT.st),StringADT.st).setPrimitive(true))
   )
 
 }
@@ -421,6 +422,14 @@ case class StringGListType(elemPolicy: LabelG) extends TypeG with IObject with I
 
   override def prettyPrint(buffer: StringBuilder): Unit = buffer.append(s"StrList[${elemPolicy.prettyPrint()}]")
 }
+case class TemplateObjectType(typeVariable: BoundedLabelVar,objType:ObjectType)
+/*case class TemplateInstantiation(template:TemplateObjectType, actualType: LabelG) extends TypeG with IObject{
+  override def methSig(x: String): MTypeG =TypeSubstG.substLabel(template.objType.methSig(x),template.typeVariable,actualType)
+
+  override def containsMethod(x: String): Boolean = ???
+
+  override def prettyPrint(buffer: StringBuilder): Unit = ???
+}*/
 
 
 

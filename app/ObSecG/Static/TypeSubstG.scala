@@ -67,6 +67,8 @@ class TypeSubstG(auxiliaryFunctions: IAuxiliaryFunctions) extends ITypeSubsG {
                 m.mType.codomain.map(facet => substRecVar(substRecVar(facet, y, TypeVar(newVar)),x, t2))
             ))))//.setIsPrimitive(ot.isPrimitive)
       }
+    case StringGListType(elemPolicy)=> StringGListType(substRecVar(elemPolicy,x,t2))
+
   }
   def substLabel(containerType: LabelG, labelVar: BoundedLabelVar, actualType: LabelG): LabelG = {
     if (labelVar.isAster && TypeEquivalenceG.alphaEq(labelVar.lowerBound,actualType)) {

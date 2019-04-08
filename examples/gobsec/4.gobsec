@@ -1,9 +1,36 @@
-let {
-    type StringHashEq = [{hash : -> Int<[{== : Int<I -> Bool<I}]}]
-    type AuthServer = [{login : String<StringHashEq String -> Int<L}]
-    val auth =  new {z : AuthServer<L =>
-            def login password guess = if password.hash().==(guess.hash()) then 1 else 0
+let{
+    val l =  new {
+      z : [
+            {empty[X: String .. Top] : -> [a {isEmpty: -> Bool<Bool} {head: -> String<X} {tail: -> a<a}]<L}
+            {const[X: String .. Top] : String<X   [a {isEmpty: -> Bool<Bool} {head: -> String<X} {tail: -> a<a}]<L ->
+                                                [a {isEmpty: -> Bool<Bool} {head: -> String<X} {tail: -> a<a}]<L}
+          ]<L
+      =>
+      def empty = new {
+        z1: [a {isEmpty: -> Bool<Bool} {head: -> String<X} {tail: -> a<a}]<L
+        =>
+        def isEmpty = true
+        def head = z1.head()
+        def tail = z1.tail()
+      }
+      def const x l = new {
+        z1: [a {isEmpty: -> Bool<Bool} {head: -> String<X} {tail: -> a<a}]<L
+        =>
+        def isEmpty = false
+        def head = x
+        def tail = l
+      }
     }
 }
 in
-    auth.login("qwe123","qwe123")
+ let{
+   type Concater = [{concat[T: String..Top]: [a {isEmpty: -> Bool<Bool} {head: -> String<T} {tail: -> a<a}] [a {isEmpty: -> Bool<Bool} {head: -> String<T} {tail: -> a<a}]
+                                          -> [a {isEmpty: -> Bool<Bool} {head: -> String<T} {tail: -> a<a}] }]
+    val concater = new {
+      z: Concater<Concater
+      =>
+      def concat l1 l2 = if l1.isEmpty() then l2
+                         else l.const[T](l1.head(),z.concat[T](l1.tail(),l2))
+    }
+ }
+ in concater.concat[String](l.const[String]("a",l.empty[String]()),l.const[String]("b",l.empty[String]())).tail().head()

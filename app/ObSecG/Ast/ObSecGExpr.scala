@@ -123,6 +123,7 @@ sealed trait Declaration extends GObSecElement
 case class LocalDeclaration(variable:String,rExpr:ObSecGExpr) extends Declaration
 case class TypeAlias(aliasName: String,objType: ObjectType) extends Declaration
 case class TypeDefinition(name:String,methods:List[MethodDeclarationG]) extends Declaration
+case class TypeTemplateDefinition(name:String,typeVariable: BoundedLabelVar,methods:List[MethodDeclarationG]) extends Declaration
 
 
 trait NodeConverts{

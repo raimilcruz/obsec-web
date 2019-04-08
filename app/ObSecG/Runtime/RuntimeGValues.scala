@@ -46,8 +46,10 @@ package ObSec.Runtime {
     override def invoke(m: String, args: List[RuntimeGValue], eval: Evaluator): RuntimeGValue = {
       m match {
         case "length" => RuntimeGInt(v.length)
-        case "==" => RuntimeGBoolean(v == args(0).asInstanceOf[RuntimeGStr].v)
+        case "==" => RuntimeGBoolean(v == args.head.asInstanceOf[RuntimeGStr].v)
         case "hash" => RuntimeGInt(v.hashCode)
+        case "first" => RuntimeGStr(v.head.toString)
+        case "concat" => RuntimeGStr(v.concat(args.head.asInstanceOf[RuntimeGStr].v))
         case _ => throw new StuckError()
       }
     }

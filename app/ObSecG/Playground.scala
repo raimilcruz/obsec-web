@@ -10,7 +10,7 @@ import ObSecG.Static.TypeCheckerG
 
 object Playground{
   def main(args:Array[String]):Unit= {
-    val program = "let{\n    deftype StrEqList{\n        {isEmpty: -> Bool<I}\n        {head: -> String<I }\n        {tail: -> StrList<StrEqList}\n    }\n}\nin\n1"
+    val program = "let{\n    type StringEq = [{==  : String<I -> Bool<I}]\n    deftype StrEqList{\n        {isEmpty: -> Bool<L}\n        {head: -> String<StringEq }\n        {tail: -> StrList[String]<StrEqList}\n    }\n    val listHelper =  new {z : [{contains[X:String..Top] : StrList[X]<StrEqList -> Bool<L}]<L  =>\n                          def contains myList  =\n                              if myList.isEmpty()\n                              then false\n                              else\n                                if myList.head().==[String](\"a\")\n                                then true\n                                else z.contains(myList.tail())\n                    }\n    }\nin\n    listHelper.contains(mklist[StringEq](\"b\",\"c\",\"a\"))"
     ObSecGParser(program) match{
       case Right(ast)=>
         val expr = ObSecGIdentifierResolver(ast)

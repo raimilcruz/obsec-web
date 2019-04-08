@@ -1,10 +1,66 @@
 {
   "S":{
-    "items": ["T","U"],
+    "items": ["T<U","P<I"],
     "category":"Security types"
   },
   "T":{
-    "items": [{
+    "items": ["OT","P","a"],
+    "category":"Types"
+  },
+  "U,A,B":{
+    "items": ["T","X"],
+    "category":"Policies"
+  },
+  "OT":{
+    "items": ["[a M*]","[M*]"],
+    "category":"Object Types"
+  },
+  "M":{
+    "items": ["{name [LD*]: S* -> S} | {name : S* -> S}"],
+    "category":"Method signatures"
+  },
+  "LD":{
+    "items": ["X: A..B" , "X"],
+    "category":"Type variable declarations"
+  },
+  "t":{
+    "items":[
+      "o", "x" , "t.m(t)" , "p" , "if t then t else t ", " let { TD* TA* VD* } in t"
+    ],
+    "category":"Terms"
+  },
+  "o":{
+    "items":[
+      "new { x : S => (def name x* = t)* }"
+    ],
+    "category":"Objects"
+  },
+  "TD":{
+    "items":[
+      "deftype ID{ M* }"
+    ],
+    "category":"Type Declarations"
+  },
+  "TA":{
+    "items":[
+      "type X = OT"
+    ],
+    "category":"Type Aliases"
+  },
+  "VD":{
+    "items":[
+      "val x = t"
+    ],
+    "category":"Value declarations"
+  },
+  "p":{
+    "items":[
+      "b", "n" , "s"
+    ],
+    "category":"Primitive values"
+  },
+  "P":{
+    "items":[{
       "item": "Bool",
       "expanded":true
     },{
@@ -13,27 +69,36 @@
     },{
       "item": "String",
       "expanded":true
-    },{
-      "item": "StrList<X>",
-      "expanded":true
-    },"X","OT"],
-    "category":"Types"
+    }],
+    "category": "Primitive types"
   },
-  "U":{
-    "items": ["T","L"],
-    "category":"Labels"
+  "a,x,X,m,ID":{
+    "items":[
+      "identifiers"
+    ],
+    "category":"Identifiers"
   },
-  "OT":{
-    "items": ["[X M*]","[M*]"],
-    "category":"Object Types"
+  "b":{
+    "items":[
+      "true", "false"
+    ],
+    "category":"Booleans"
   },
-  "M":{
-    "items": ["{name [LD*]: S* -> S}"],
-    "category":"Method signatures"
+  "n":{
+    "items":[
+      "natural numbers"
+    ],
+    "category":"Natural numbers"
+  },
+  "s":{
+    "items":[
+      "string literals"
+    ],
+    "category":"String literals"
   },
   "Int":{
     "expanded": true,
-    "expansion": "[{+  : Int<* -> Int<*} \r\n {- : Int<* -> Int<*}\r\n {== : Int<* -> Bool<*}]"
+    "expansion": "[{+  : Int<I -> Int<I} \r\n {- : Int<I -> Int<I}\r\n {== : Int<I -> Bool<I}]"
   },
   "Bool":{
     "expanded": true,
@@ -41,7 +106,7 @@
   },
   "String":{
     "expanded": true,
-    "expansion": "[{==  : String<* -> Bool<*} \r\n {hash : -> Int<*}\r\n {length : -Int<*}]"
+    "expansion": "[{==  : String<I -> Bool<I} \r\n {hash : -> Int<I}\r\n {length : -> Int<I}\r\n {first : -> String<I}\r\n {concat : String<I -> String<I}]"
 
   },
   "StrList<X>":{

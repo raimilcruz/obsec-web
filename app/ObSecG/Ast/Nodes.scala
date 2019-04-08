@@ -86,6 +86,9 @@ case class TypeAliasDeclarationNode(aliasName: String,objType: ObjectTypeAnnotat
 case class DefTypeNode(name:String,methods:List[MethodDeclarationNode]) extends DeclarationNode {
   override def children: List[ObSecGAstNode] = methods
 }
+case class TemplateDefTypeNode(name:String,typeVar: LabelVariableDeclarationNode,methods:List[MethodDeclarationNode]) extends DeclarationNode {
+  override def children: List[ObSecGAstNode] = methods
+}
 
 
 
@@ -126,7 +129,7 @@ case class UnionTypeAnnotation(left:TypeAnnotation,right: TypeAnnotation) extend
 sealed trait ObjectTypeAnnotation extends TypeAnnotation{
   def methods: List[MethodDeclarationNode]
 }
-case class InstantiatedStringListType(actualType:TypeAnnotation)
+case class InstantiatedTemplateType(identifier: SimpleIdentifier, actualType:TypeAnnotation)
  extends TypeAnnotation {
   override def children: List[ObSecGAstNode] = List(actualType)
 }

@@ -37,14 +37,14 @@ The following instructions are Unix valid commands. If you have Windows installe
     ```
 
 # Deploy instructions
-To generate a deployable .zip file follows these instructions.
+To generate a deployable .zip file follow these instructions.
 1.  Run the script file `make` of the "node" folder:
     ```sh
     ./node/make
     ```
 2. Run
     ```sh
-    sbt run
+    sbt dist
     ```
    The deployable file will be generated in the folder 
    `target/universal`
