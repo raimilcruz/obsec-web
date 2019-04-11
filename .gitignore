@@ -33,3 +33,4 @@ project/.sbtserver.lock
 
 /node/build/*
 /public/javascripts/app.js
+/public/generated/*
