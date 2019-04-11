@@ -2,12 +2,13 @@ package controllers
 
 import java.nio.file.Paths
 
+import play.{Environment}
 import Common.{AstNode, ParserError, ThrowableAnalysisError}
 import models._
 import play.api.libs.json.{Json, _}
 import play.api.mvc._
 
-abstract class BaseLanguageController (configuration: play.api.Configuration) extends Controller {
+abstract class BaseLanguageController (configuration: play.api.Configuration,environment:Environment) extends Controller {
 
   implicit val fReads = Json.reads[Program]
   implicit val errorPositionFormat = Json.format[UIErrorPosition]
@@ -90,7 +91,7 @@ abstract class BaseLanguageController (configuration: play.api.Configuration) ex
 
   protected def examplesFromConfiguration(exampleDirectoryConfigurationKey:String,
                                           exampleExtensions: String):List[Example] = {
-    val currentDirectory = new java.io.File(".").getCanonicalPath
+    val currentDirectory = environment.rootPath().getAbsolutePath
     val exampleDir = configuration.underlying.getString(exampleDirectoryConfigurationKey)
     val exampleDirFullPath = Paths.get(currentDirectory, exampleDir)
     val exampleHelper = new ExampleHelper(exampleDirFullPath.toString, exampleExtensions)
@@ -98,7 +99,7 @@ abstract class BaseLanguageController (configuration: play.api.Configuration) ex
   }
 
   protected def syntaxFromConfiguration(syntaxFileConfigurationKey:String):SyntaxModel = {
-    val currentDirectory = new java.io.File(".").getCanonicalPath
+    val currentDirectory = environment.rootPath().getAbsolutePath
     val syntaxFile = configuration.underlying.getString(syntaxFileConfigurationKey)
     val syntaxFileFullPath = Paths.get(currentDirectory, syntaxFile)
     val exampleHelper = new SyntaxHelper(syntaxFileFullPath.toString)

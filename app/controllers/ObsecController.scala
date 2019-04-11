@@ -9,9 +9,10 @@ import ObSec.Parsing._
 import ObSec.Runtime._
 import ObSec.Static._
 import models._
+import play.{Application, Environment}
 
 @Singleton
-class ObsecController @Inject()(configuration: play.api.Configuration) extends BaseLanguageController (configuration){
+class ObsecController @Inject()(configuration: play.api.Configuration,application:Environment) extends BaseLanguageController (configuration,application){
 
   override protected def getExamples:List[Example] = {
     examplesFromConfiguration("languagepad.obsec.exampleDirectory",".obsec")

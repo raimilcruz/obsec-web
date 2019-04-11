@@ -8,10 +8,11 @@ import ObSecG.Parsing._
 import ObSecG.Runtime.InterpreterG
 import ObSecG.Static.TypeCheckerG
 import models._
+import play.{Application, Environment}
 
 
 @Singleton
-class EObsecController @Inject()(configuration: play.api.Configuration) extends BaseLanguageController(configuration) {
+class EObsecController @Inject()(configuration: play.api.Configuration,application:Environment) extends BaseLanguageController(configuration,application) {
 
   override protected def getExamples : List[Example] = {
     examplesFromConfiguration("languagepad.eobsec.exampleDirectory",".eobsec")

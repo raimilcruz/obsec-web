@@ -19,12 +19,13 @@ import models.JsonFormatters.JudgmentJsonReaders._
 import models.JsonFormatters.Typing.LambdaCalculusParser
 import models.judgment.JudgmentPremiseApi
 import models.judgment.GlobalAdapters._
+import play.{Application, Environment}
 
 import scala.collection.mutable
 
 
 @Singleton
-class GObsecController @Inject()(configuration: play.api.Configuration) extends BaseLanguageController(configuration) {
+class GObsecController @Inject()(configuration: play.api.Configuration,application:Environment) extends BaseLanguageController(configuration,application) {
 
   override protected def getExamples : List[Example] = {
     examplesFromConfiguration("languagepad.gobsec.exampleDirectory",".gobsec")
