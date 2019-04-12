@@ -19,6 +19,6 @@ libraryDependencies ++= Seq(
 resolvers += "scalaz-bintray" at "http://dl.bintray.com/scalaz/releases"
 resolvers += Resolver.url("Typesafe Ivy releases", url("https://repo.typesafe.com/typesafe/ivy-releases"))(Resolver.ivyStylePatterns)
 
-mappings in Universal ++= directory("Syntax")
-mappings in Universal ++= directory("Examples")
+mappings in Universal ++= directory("syntax")
+mappings in Universal ++= directory("examples")
 
