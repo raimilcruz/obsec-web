@@ -1,8 +1,10 @@
 package controllers
 
+import java.io.File
 import java.nio.file.Paths
 
-import play.{Environment}
+import play.Environment
+import play.Play
 import Common.{AstNode, ParserError, ThrowableAnalysisError}
 import models._
 import play.api.libs.json.{Json, _}
@@ -91,7 +93,7 @@ abstract class BaseLanguageController (configuration: play.api.Configuration,env
 
   protected def examplesFromConfiguration(exampleDirectoryConfigurationKey:String,
                                           exampleExtensions: String):List[Example] = {
-    val currentDirectory = environment.rootPath().getAbsolutePath
+    val currentDirectory = PathHelper.getActualRootFolder(environment)
     val exampleDir = configuration.underlying.getString(exampleDirectoryConfigurationKey)
     val exampleDirFullPath = Paths.get(currentDirectory, exampleDir)
     val exampleHelper = new ExampleHelper(exampleDirFullPath.toString, exampleExtensions)
@@ -99,10 +101,32 @@ abstract class BaseLanguageController (configuration: play.api.Configuration,env
   }
 
   protected def syntaxFromConfiguration(syntaxFileConfigurationKey:String):SyntaxModel = {
-    val currentDirectory = environment.rootPath().getAbsolutePath
+    val currentDirectory = PathHelper.getActualRootFolder(environment)
     val syntaxFile = configuration.underlying.getString(syntaxFileConfigurationKey)
     val syntaxFileFullPath = Paths.get(currentDirectory, syntaxFile)
     val exampleHelper = new SyntaxHelper(syntaxFileFullPath.toString)
     exampleHelper.syntax()
+  }
+}
+object PathHelper{
+  /**
+    * Hack to get the application root folder. For some reason that I haven't understood
+    * yet, Environment.rootPath() keeps returning the running path, which (at least in Windows)
+    * is not necesarily the same that the application root folder.
+    * @param environment
+    * @return
+    */
+  def getActualRootFolder(environment: Environment):String={
+    val resourcePath = environment.classLoader().getResource("public").getPath
+    //println("'Public' resource uri" + resourcePath)
+    //remove file:/
+    val pathWithoutProtocol = resourcePath.substring("file:/".length)
+    //println("Resource uri no protocol" + pathWithoutProtocol)
+    val pathWithoutResource = pathWithoutProtocol.substring(0,pathWithoutProtocol.length - "public".length - 2)
+    //println("Lib folder" + pathWithoutResource)
+
+    val rootFolder = new File(pathWithoutResource).getParentFile.getParentFile
+    //println(s"Root Folder: $rootFolder")
+    rootFolder.getAbsolutePath
   }
 }
