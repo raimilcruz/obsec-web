@@ -105,6 +105,8 @@ abstract class BaseLanguageController (configuration: play.api.Configuration,env
     val syntaxFile = configuration.underlying.getString(syntaxFileConfigurationKey)
     val syntaxFileFullPath = Paths.get(currentDirectory, syntaxFile)
     val exampleHelper = new SyntaxHelper(syntaxFileFullPath.toString)
+    println("Syntax file from config:" + syntaxFile);
+    println("Syntax full file" + syntaxFileFullPath);
     exampleHelper.syntax()
   }
 }
@@ -118,15 +120,16 @@ object PathHelper{
     */
   def getActualRootFolder(environment: Environment):String={
     val resourcePath = environment.classLoader().getResource("public").getPath
-    //println("'Public' resource uri" + resourcePath)
+    println("'Public' resource uri" + resourcePath)
     //remove file:/
-    val pathWithoutProtocol = resourcePath.substring("file:/".length)
-    //println("Resource uri no protocol" + pathWithoutProtocol)
+    val pathWithoutProtocol = resourcePath.substring("file:".length)
+    println("Resource uri no protocol" + pathWithoutProtocol)
     val pathWithoutResource = pathWithoutProtocol.substring(0,pathWithoutProtocol.length - "public".length - 2)
-    //println("Lib folder" + pathWithoutResource)
+    println("Lib folder" + pathWithoutResource)
 
     val rootFolder = new File(pathWithoutResource).getParentFile.getParentFile
-    //println(s"Root Folder: $rootFolder")
-    rootFolder.getAbsolutePath
+    println(s"Root Folder: $rootFolder")
+	println(s"Root Folder: ${rootFolder.getAbsolutePath}")
+    rootFolder.toString
   }
 }
