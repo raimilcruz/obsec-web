@@ -1,5 +1,4 @@
-
-[![Build Status](https://travis-ci.com/raimilcruz/obsec-web.svg?token=jhJHNfzf8dVnKKPhxozx&branch=master)](https://travis-ci.com/raimilcruz/obsec-web.svg?token=jhJHNfzf8dVnKKPhxozx&branch=master)
+[![Build Status](https://travis-ci.com/raimilcruz/obsec-web.svg?token=jhJHNfzf8dVnKKPhxozx&branch=master)](https://travis-ci.com/raimilcruz/obsec-web)
 
 
 # ObSec Pad:
