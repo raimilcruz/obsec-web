@@ -6,7 +6,9 @@
 
 **ObSec** is a simple object-oriented language that supports type-based declassification
 
-We provide an **online [ObSec Pad](https://pleiad.cl/obsec/)** that is ready to use, with predefined examples and it is always up-to-date
+We provide an **online [ObSec Pad](https://pleiad.cl/obsec/)** that is ready to use, with predefined examples and it is always up-to-date.
+Alternatively you can access to the ObSec Pad at 
+[https://obsec-calculi.herokuapp.com/gobsec/](https://obsec-calculi.herokuapp.com/gobsec/)
 
 ## Local execution of the ObSec Pad
 
