@@ -119,17 +119,21 @@ object PathHelper{
     * @return
     */
   def getActualRootFolder(environment: Environment):String={
-    val resourcePath = environment.classLoader().getResource("public").getPath
-    println("'Public' resource uri" + resourcePath)
-    //remove file:/
-    val pathWithoutProtocol = resourcePath.substring("file:".length)
-    println("Resource uri no protocol" + pathWithoutProtocol)
-    val pathWithoutResource = pathWithoutProtocol.substring(0,pathWithoutProtocol.length - "public".length - 2)
-    println("Lib folder" + pathWithoutResource)
+    if(environment.isProd) {
+      val resourcePath = environment.classLoader().getResource("public").getPath
+      println("'Public' resource uri" + resourcePath)
+      //remove file:/
+      val pathWithoutProtocol = resourcePath.substring("file:".length)
+      println("Resource uri no protocol" + pathWithoutProtocol)
+      val pathWithoutResource = pathWithoutProtocol.substring(0, pathWithoutProtocol.length - "public".length - 2)
+      println("Lib folder" + pathWithoutResource)
 
-    val rootFolder = new File(pathWithoutResource).getParentFile.getParentFile
-    println(s"Root Folder: $rootFolder")
-	println(s"Root Folder: ${rootFolder.getAbsolutePath}")
-    rootFolder.toString
+      val rootFolder = new File(pathWithoutResource).getParentFile.getParentFile
+      println(s"Root Folder: $rootFolder")
+      println(s"Root Folder: ${rootFolder.getAbsolutePath}")
+      rootFolder.toString
+    }
+    else
+      environment.getFile("/").toString
   }
 }

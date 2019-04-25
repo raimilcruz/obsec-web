@@ -1,1 +1,38 @@
-1
+let{ 
+  type AccountStore = exists X super String.[
+	   {getPassword : String -> String<X}
+	   {encrypt : String<X -> Int<L}
+	]
+	type AccountStoreImpl = [
+	   {getPassword : String -> String}
+	   {encrypt : String -> Int}
+	]
+
+	deftype AuthServer {
+		{login: String String -> Int}
+	}
+	deftype Binder{
+		{bind: AccountStoreImpl with String as AccountStore -> AuthServer<L}
+	}
+	val binder = new {
+		z: Binder<L
+		=>
+		def bind store =
+			new {z : AuthServer<L =>
+                def login guessPass userName =
+					if store.encrypt(store.getPassword(userName)).==(store.encrypt(guessPass))
+					then 1 else 0
+			}
+	}
+}
+in
+ let{
+	val accountStoreImpl = new {
+		z : AccountStoreImpl<L
+		=>
+		def getPassword s = "qwe123"
+		def encrypt s = s.length()
+	}
+ }
+ in
+	binder.bind(accountStoreImpl).login("qwe123","john")

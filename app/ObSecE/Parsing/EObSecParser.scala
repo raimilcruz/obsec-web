@@ -1,7 +1,7 @@
-package EObSec.Parsing
+package ObSecE.Parsing
 
 import Common.{DebugPackratParsers, OffsetPositional, ParserError}
-import ObSecG.Ast._
+import ObSecE.Ast._
 
 import scala.util.parsing.combinator.syntactical.StandardTokenParsers
 import scala.util.parsing.combinator.{ImplicitConversions, PackratParsers}
@@ -11,10 +11,16 @@ import scala.util.parsing.input.NoPosition
 /**
   * Defining a parser for ObSec language
   */
-object Parser extends StandardTokenParsers with PackratParsers with ImplicitConversions with DebugPackratParsers{
-  lexical.reserved += ("if" , "then" , "else" , "true", "false", "let" ,"in", "type", "new", "def","val","deftype", "ot" , "Int" , "String" , "Bool", "StrList" , "L" , "H"  ,"mklist","I",
-    "cons",
-    "extends","super","low" )
+object EObSecParser extends StandardTokenParsers with PackratParsers with ImplicitConversions with DebugPackratParsers{
+  lexical.reserved += ("if" , "then" , "else" , "true", "false", //booleans
+    "let" ,"in", "type","val","deftype", //syntactic sugar to easy type and value declarations
+    "ot" ,"new", "def", //object instances
+    "exists","with","as" ,"glob", "super" ,//existential faceted types
+    "Int" , "String" , "Bool", "StrList" , //primitive types
+    "L" , "H"  , //label shortcuts
+    "mklist","cons",  //builtin lists
+    "I", "extends","super","low" // generic labels
+  )
   lexical.delimiters ++= (": . < > -> => + - * / ( ) [ ] { } , = ; <: .." split ' ')
 /*
 
@@ -83,27 +89,28 @@ object Parser extends StandardTokenParsers with PackratParsers with ImplicitConv
     case ns: NoSuccess => ns
   })
 
-  implicit def listToNodeList[T <: ObSecGAstNode](list:List[T]) = AstNodeList(list)
+  implicit def listToNodeList[T <: EObSecNode](list:List[T]) = AstNodeList(list)
+  //implicit def listToNodeList2[T <: AstNode](list:List[T]):AstNodeList[T] = AstNodeList(list)
 
-  def  program: PackratParser[ObSecGAstExprNode] = phrase(expr)//new Wrap("program",phrase(expr))
-  lazy val expr : Parser[ObSecGAstExprNode] = {
+  def  program: PackratParser[EObSecNode] = phrase(expr)//new Wrap("program",phrase(expr))
+  lazy val expr : Parser[EObSecNode] = {
     myPositioned(valExpr) |||  varExpr ||| methodInvExpr | ifThenElse | letStarExpr | mkListExpr | consList
   }
 
-  lazy val consList: Parser[ObSecGAstExprNode] =
+  lazy val consList: Parser[EObSecNode] =
     (("cons" ~ LEFTPAREN) ~> ((expr <~ ",") ~ expr)) <~ RIGHTPAREN ^^ {case elem~l => ConsListOperatorNode(elem,l)}
 
-  lazy val mkListExpr : Parser[ObSecGAstExprNode] =
+  lazy val mkListExpr : Parser[EObSecNode] =
      MKLIST ~> ((LEFTSBRACKET ~> myPositioned(labelType)) <~ RIGHTSBRACKET) ~ ((LEFTPAREN ~> repsep(myPositioned(expr), ",")) <~ RIGHTPAREN)^^
       {case label~ l => ListLiteral(label,l)}
 
-  lazy val letStarExpr :PackratParser[ObSecGAstExprNode] =
+  lazy val letStarExpr :PackratParser[EObSecNode] =
     ((LET ~ LEFTBRACKET )~> (rep(myPositioned(typeDecl)) ~ rep(myPositioned(localDecl)))) ~ ((RIGHTBRACKET ~ IN) ~> myPositioned(expr)) ^^
       {case  tDecls ~ decls ~ expr => LetStarExpressionNode(tDecls ++ decls,expr)}
 
   lazy val typeDecl : PackratParser[DeclarationNode] = myPositioned(defTypeDecl) | myPositioned(typeAliasDecl)
   lazy val typeAliasDecl : PackratParser[TypeAliasDeclarationNode] =
-    (("type" ~> ident <~ EQUALSSIGN) ~ objType) ^^ {case id ~ t => TypeAliasDeclarationNode(id,t)}
+    (("type" ~> ident <~ EQUALSSIGN) ~ ( objType | existentialType )) ^^ {case id ~ t => TypeAliasDeclarationNode(id,t)}
 
   lazy val defTypeDecl : PackratParser[DefTypeNode] =
     "deftype" ~> ident ~ (LEFTBRACKET  ~> (methodList <~ RIGHTBRACKET)) ^^ {case tName ~ methodList =>  DefTypeNode(tName,methodList)}
@@ -119,31 +126,28 @@ object Parser extends StandardTokenParsers with PackratParsers with ImplicitConv
     (("val" ~> identifier <~ EQUALSSIGN) ~ expr) ^^ {case id ~ expr => LocalDeclarationNode(id,expr)}
 
 
-  lazy val valExpr :  Parser[ObSecGAstExprNode] = myPositioned(objectExpr) | myPositioned(objectExpr2) | myPositioned(primVal)
+  lazy val valExpr :  Parser[EObSecNode] = myPositioned(objectExpr) | myPositioned(objectExpr2) | myPositioned(primVal)
 
-  def varExpr : PackratParser[ObSecGAstExprNode] =  identifier ^^ (vName => VariableNode(vName))
+  def varExpr : PackratParser[EObSecNode] =  identifier ^^ (vName => VariableNode(vName))
 
 
-  lazy val methodInvExpr :PackratParser[MethodInvocationNode]= myPositioned(methodInvExpr2 | methodInvExpr1)
+  lazy val methodInvExpr :PackratParser[MethodInvocationNode]= myPositioned(methodInvExpr1)
 
   lazy val methodInvExpr1 :PackratParser[MethodInvocationNode]={
     (myPositioned(expr) <~ DOT) ~ extendedIdentifier ~ ((LEFTPAREN ~> repsep(myPositioned(expr), COMMMA)) <~ RIGHTPAREN)^^
-      {case e1 ~ id ~ args => MethodInvocationNode(e1,List(),args,id)}
+      {case e1 ~ id ~ args => MethodInvocationNode(e1,args,id)}
   }
-  lazy val methodInvExpr2 :PackratParser[MethodInvocationNode]={
-    (myPositioned(expr) <~ DOT) ~ extendedIdentifier ~ ((LEFTSBRACKET ~> repsep(myPositioned(labelType) ,COMMMA)) <~ RIGHTSBRACKET) ~ ((LEFTPAREN ~> repsep(myPositioned(expr), COMMMA)) <~ RIGHTPAREN)^^
-      {case e1 ~ id ~ types  ~ args => MethodInvocationNode(e1,types,args,id)}
-  }
+
 
   lazy val ifThenElse :PackratParser[IfExpressionNode]= {
     (IF ~> myPositioned(expr)) ~ (THEN ~> myPositioned(expr)) ~ (ELSE ~> myPositioned(expr)) ^^ {case c ~ e1 ~ e2 => IfExpressionNode(c,e1,e2)}
   }
 
-  lazy val  objectExpr: PackratParser[ObSecGAstExprNode] = {
+  lazy val  objectExpr: PackratParser[EObSecNode] = {
     ((LEFTBRACKET ~> identifier) <~ COLON) ~ myPositioned(stype) ~ ((RARROW ~> methodDefs) <~ RIGHTBRACKET) ^^
-      {case self ~ stype ~ methodDefs => ObjectDefinitionNode(self,stype,methodDefs)}
+      {case self ~ sType ~ methodDefs => ObjectDefinitionNode(self,sType,methodDefs)}
   }
-  lazy val  objectExpr2: PackratParser[ObSecGAstExprNode] = {
+  lazy val  objectExpr2: PackratParser[EObSecNode] = {
     "new" ~> (((LEFTBRACKET ~> identifier) <~ COLON) ~ stype ~ ((RARROW ~> methodDefs) <~ RIGHTBRACKET)) ^^
       {case self ~ stype ~ methodDefs => ObjectDefinitionNode(self,stype,methodDefs)}
   }
@@ -160,15 +164,24 @@ object Parser extends StandardTokenParsers with PackratParsers with ImplicitConv
     "def" ~> (extendedIdentifier ~ rep(myPositioned(simpleIdentifier))) ~ ((EQUALSSIGN ~> myPositioned(expr) )) ^^
       { case mName ~ args ~ expr => MethodDefinitionNode(mName,args,expr)}
   }
-  lazy val stype : PackratParser[AnnotatedFacetedType] = myPositioned(stypeX | publicTypeShortcut )
+  lazy val stype : PackratParser[AnnotatedFacetedType] = myPositioned(stypeSubtyping | stypeExistential | publicTypeShortcut )
 
-  lazy val stypeX : PackratParser[AnnotatedFacetedType] ={
+  lazy val stypeSubtyping : PackratParser[AnnotatedFacetedType] ={
     ((myPositioned(privateType) <~ LESSTHAN) ~ myPositioned(labelType)) ^^
-      {case t1 ~ t2  => AnnotatedFacetedType(t1,t2)
+      {case t1 ~ t2  => AnnotatedSubtypingFacetedType(t1,t2)
     }
   }
-  lazy val publicTypeShortcut: PackratParser[AnnotatedFacetedType] ={
-    myPositioned(privateType) ^^ {t1  => AnnotatedFacetedType(t1,t1)}
+
+  lazy val stypeExistential : PackratParser[AnnotatedExistentialFacetedType] ={
+    (((myPositioned(privateType) <~ "with") ~ repsep(myPositioned(privateType),",") <~ "as") ~ myPositioned(existentialTypeFacet)) ^^
+      {case t1 ~ implTypes ~ t2  => AnnotatedExistentialFacetedType(t1,implTypes,t2)
+      }
+  }
+  lazy val existentialTypeFacet : PackratParser[TypeAnnotation] =
+    myPositioned(varType | existentialType)
+
+  lazy val publicTypeShortcut: PackratParser[AnnotatedSubtypingFacetedType] ={
+    myPositioned(privateType) ^^ {t1  => AnnotatedSubtypingFacetedType(t1,t1)}
   }
 
   lazy val privateType : PackratParser[TypeAnnotation] ={
@@ -178,15 +191,27 @@ object Parser extends StandardTokenParsers with PackratParsers with ImplicitConv
   lazy val varType : PackratParser[TypeIdentifier] = identifier ^^
     { id => TypeIdentifier(id)}
 
+  lazy val existentialType : PackratParser[ExistentialTypeNode] =
+    ("exists" ~> repsep(myPositioned(existentialVarDeclaration),",") <~ ".") ~ (LEFTSBRACKET ~> methodList <~ RIGHTSBRACKET) ^^
+      {case tVarList ~ record => ExistentialTypeNode(tVarList,record)}
+
+  lazy val existentialVarDeclaration:PackratParser[ExistentialVariableDeclarationNode]=
+    myPositioned(existentialVarGlobal | existentialVarNoGlobal)
+
+  lazy val existentialVarNoGlobal:PackratParser[ExistentialVariableDeclarationNode]={
+    (identifier <~"super")~ myPositioned(labelType)  ^^
+      {case typeVarName ~ lowerBound => ExistentialVariableDeclarationNode(typeVarName,lowerBound)}
+  }
+  lazy val existentialVarGlobal:PackratParser[ExistentialVariableDeclarationNode]={
+   ("glob" ~> myPositioned(existentialVarNoGlobal)) ^^ (labelVarDefinition => labelVarDefinition.toAster)
+  }
+
 
 
 
   lazy val labelType : PackratParser[TypeAnnotation] ={
-    myPositioned(objType) |  myPositioned(lowLabel) | myPositioned(highLabel) | myPositioned(implictLabel) |
-      myPositioned(primType)  | myPositioned(varType)
-  }
-  lazy val unionLabel :  PackratParser[UnionTypeAnnotation]={
-    ((LEFTPAREN  ~> myPositioned(labelType)) <~ COMMMA) ~ (myPositioned(labelType) <~ RIGHTPAREN) ^^ {case left ~ right=> UnionTypeAnnotation(left,right)}
+    myPositioned(objType) |  myPositioned(lowLabel) | myPositioned(highLabel) |
+      myPositioned(primType)  | myPositioned(varType) | myPositioned(existentialType)
   }
 
   lazy val primType : PackratParser[TypeAnnotation] = {
@@ -204,9 +229,8 @@ object Parser extends StandardTokenParsers with PackratParsers with ImplicitConv
 
   lazy val lowLabel : PackratParser[TypeAnnotation]= LOW ^^ {_ => LowLabelNode}
   lazy val highLabel : PackratParser[TypeAnnotation]= HIGH ^^ {_ => HighLabelNode}
-  lazy val implictLabel : PackratParser[TypeAnnotation] = IMPLICIT_LABEL ^^   { _ => ImplicitLabelNode}
 
-  lazy val primVal :  Parser[ObSecGAstExprNode] =
+  lazy val primVal :  Parser[EObSecNode] =
     myPositioned(stringLiteralExpr) | myPositioned(integerExpr) | myPositioned(boolExpr)
 
   //lazy val stringLiteralExpr : PackratParser[ObSecGExpr] = stringLit ^^ {s => StringExpr(s.substring(1,s.length-1))}
@@ -232,43 +256,11 @@ object Parser extends StandardTokenParsers with PackratParsers with ImplicitConv
     rep(myPositioned(methodSignature))
   }
   lazy val methodSignature : PackratParser[MethodDeclarationNode]=
-    myPositioned(methodSignature1) | myPositioned(methodSignature2)
-
-  lazy val methodSignature1 : PackratParser[MethodDeclarationNode]={
-    ((LEFTBRACKET ~> extendedIdentifier) ~ ("[" ~> typeVarBounds <~  "]") <~ COLON) ~ (rep(myPositioned(stype)) <~ ARROW) ~ (myPositioned(stype) <~ RIGHTBRACKET) ^^
-      {case  mName ~ typeParamaters ~ argTypes ~ t2 =>
-        MethodDeclarationNode(mName,MethodTypeNode(typeParamaters,argTypes,t2))}
-  }
+    myPositioned(methodSignature2)
 
   lazy val methodSignature2 : PackratParser[MethodDeclarationNode]={
     ((LEFTBRACKET ~> extendedIdentifier)  <~ COLON) ~ (rep(myPositioned(stype)) <~ ARROW) ~ (myPositioned(stype) <~ RIGHTBRACKET) ^^
-      {case  mName  ~ argTypes ~ t2 => MethodDeclarationNode(mName,MethodTypeNode(List(),argTypes,t2))}
-  }
-
-  lazy val typeVarBounds : PackratParser[List[LabelVariableDeclarationNode]]={
-    repsep(myPositioned(typeVarBound),",")
-  }
-  lazy val typeVarBound:PackratParser[LabelVariableDeclarationNode]={
-    /*myPositioned(typeVarBoundAster) |*/ myPositioned(typeVarBoundNoAster)
-  }
-  lazy val typeVarBoundNoAster:PackratParser[LabelVariableDeclarationNode]={
-    myPositioned(upperConstraint) | myPositioned(lowerConstraint) | myPositioned(boundConstraint)
-  }
- /* lazy val typeVarBoundAster:PackratParser[LabelVariableDeclarationNode]={
-    ("low" ~> myPositioned(typeVarBound)) ^^ (labelVarDefinition => labelVarDefinition.toAster)
-  }*/
-  lazy val upperConstraint:PackratParser[SubLabelVariableDeclaration]={
-    ((identifier <~ "extends") ~ myPositioned(labelType)) ^^
-    {case id ~ rawType => SubLabelVariableDeclaration(id,rawType)}
-  }
-
-  lazy val lowerConstraint:PackratParser[SuperLabelVariableDeclaration]={
-    ((identifier <~ "super") ~ myPositioned(labelType)) ^^
-      {case id ~ rawType => SuperLabelVariableDeclaration(id,rawType)}
-  }
-  lazy val boundConstraint:PackratParser[BoundedLabelVariableDeclaration]={
-    ((identifier <~ ":") ~ (myPositioned(labelType) <~ "..") ~ myPositioned(labelType)) ^^
-      {case id ~ lower ~ upper => BoundedLabelVariableDeclaration(id,lower,upper)}
+      {case  mName  ~ argTypes ~ t2 => MethodDeclarationNode(mName,MethodTypeNode(argTypes,t2))}
   }
 
 
@@ -278,7 +270,7 @@ object Parser extends StandardTokenParsers with PackratParsers with ImplicitConv
     * @param string The program source
     * @return An AST
     */
-  def apply(string: String): Either[ParserError, ObSecGAstExprNode] = {
+  def apply(string: String): Either[ParserError, EObSecNode] = {
     //parseAll(program,string) match {
     phrase(expr) (new lexical.Scanner(string)) match {
       case x: NoSuccess => Left(ParserError("["+x.next.pos+"] failure: "+x.msg,x.next.pos,x.next.rest.pos,x.next.offset))
@@ -294,6 +286,13 @@ object Parser extends StandardTokenParsers with PackratParsers with ImplicitConv
   def parseType(string:String):Either[ParserError, TypeAnnotation] = {
     //parseAll(singleType,string) match {
     phrase(privateType) (new lexical.Scanner(string)) match {
+      case x: NoSuccess => Left(ParserError("["+x.next.pos+"] failure: "+x.msg,x.next.pos,x.next.rest.pos,x.next.offset))
+      case Success(result, next) => Right(result)
+    }
+  }
+  def parseLabelType(string:String):Either[ParserError, TypeAnnotation] = {
+    //parseAll(singleType,string) match {
+    phrase(labelType) (new lexical.Scanner(string)) match {
       case x: NoSuccess => Left(ParserError("["+x.next.pos+"] failure: "+x.msg,x.next.pos,x.next.rest.pos,x.next.offset))
       case Success(result, next) => Right(result)
     }

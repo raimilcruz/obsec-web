@@ -81,7 +81,7 @@ case class Obj(selfName: String, selfAscription: STypeE, methods: List[MethodDef
   * @param args The actual arguments
   * @param method The method to invoke
   */
-case class MethodInv(e1: EObSecExpr, types:NodeList[LabelE], args: NodeList[EObSecExpr], method: String) extends EObSecExpr {
+case class MethodInv(e1: EObSecExpr,args: NodeList[EObSecExpr], method: String) extends EObSecExpr {
   var methodNameNode :AstNode = NoAstNode
   def setMethodNameNode(methodName:SimpleIdentifier):MethodInv={
     if(methodNameNode eq NoAstNode) methodNameNode = methodName
@@ -89,7 +89,7 @@ case class MethodInv(e1: EObSecExpr, types:NodeList[LabelE], args: NodeList[EObS
   }
 
   def map[T](f: EObSecExpr => EObSecExpr) =
-    MethodInv(f(e1), types, NodeList(args.elems.map(f)), method).setAstNode(astNode)
+    MethodInv(f(e1), NodeList(args.elems.map(f)), method).setAstNode(astNode)
 
   //override def toString: String = s"${e1}.$method(${if(args.size==0)"" else args(0) + args.drop(1).foldLeft("")((acc,x)=> acc+","+ x)})"
 }
@@ -128,7 +128,9 @@ case class LetStarExpr(declarations: List[Declaration],body:EObSecExpr) extends 
 
 sealed trait Declaration extends EObSecElement
 case class LocalDeclaration(variable:String,rExpr:EObSecExpr) extends Declaration
-case class TypeAlias(aliasName: String,objType: ObjectType) extends Declaration
+
+//type alias to object type or existential type
+case class TypeAlias(aliasName: String,objType: LabelE) extends Declaration
 case class TypeDefinition(name:String,methods:List[MethodDeclarationE]) extends Declaration
 
 

@@ -2,6 +2,7 @@ package Common
 
 case class DefaultErrorCode(code: ErrorCodesEnum, message: String) extends ErrorCode
 
+object GeneralError extends ErrorCodesEnum
 object DuplicatedMethodInObjectType extends ErrorCodesEnum
 object DuplicatedMethodInObject extends ErrorCodesEnum
 object InvalidTypeForPrivateFacet extends  ErrorCodesEnum
@@ -10,6 +11,10 @@ object TypeIsNotDefined extends ErrorCodesEnum
 object VariableIsNotDefined extends ErrorCodesEnum
 
 object ResolverErrorCodes{
+  def generalError =
+    DefaultErrorCode(GeneralError,
+    "%s")
+
   def duplicatedMethodInObjectType =
     DefaultErrorCode(DuplicatedMethodInObjectType,
       "Duplicated method in object type")
@@ -33,10 +38,14 @@ object ResolverErrorCodes{
   def variableIsNotDefined =
     DefaultErrorCode(VariableIsNotDefined,
       "Variable %s is not defined")
+
 }
 
 case class ResolverError(analysisError: AnalysisError) extends ThrowableAnalysisError
 object ResolverError{
+  def generalError(astNode:AstNode,errorMessage:String):ResolverError =
+    resolverError(astNode,ResolverErrorCodes.variableIsNotDefined,List(errorMessage))
+
   def variableNotDefined(expression: AstNode,variableName:String): ResolverError =
     resolverError(expression,ResolverErrorCodes.variableIsNotDefined,List(variableName))
 
