@@ -1,7 +1,7 @@
 package ObSecG.Static
 
 
-import Common.{EmptyEnvironment, Environment, ErrorCollector}
+import Common.{EmptyEnvironment, Environment, ErrorCollector,SubtypingSuccess}
 import ObSecG.Ast._
 
 abstract class IWellFormedCheckerG(judgements: GObSecJudgements, errors: ErrorCollector)

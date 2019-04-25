@@ -1,9 +1,9 @@
-package EObSec.Parsing
+package ObSecE.Parsing
 
 import Common._
 import ObSecE.Ast._
 
-class IdentifierResolver {
+class EOBSecIdentifierResolver {
 
   /**
     * This method performs the following tasks:
@@ -11,9 +11,10 @@ class IdentifierResolver {
     *  a)LabelVar is the type variable references a label variable definition
     *  b)TypeVar is the type variable references a self variable or a type alias
     *
-    * 2. Returns the ast model, compating several surface expression
+    * 2. Returns the ast model, compacting several surface expressions
     * 3. Checks trivial conditions:
     *   a)Repeated methods
+    *   b)Repeated type variables
     * @param expression The ast model
     * @return
     */
@@ -23,10 +24,15 @@ class IdentifierResolver {
   def resolveType(typeAnnotation: TypeAnnotation):LabelE=
     resolveType(new Scope,typeAnnotation,labelPosisition = true)
 
-  private def resolve(typeIdentifierScope: Scope[TypeIdentifierDeclarationPoint],
+  def resolveAnnotatedFacetedType(annotatedFacetedType: AnnotatedFacetedType): STypeE=
+    resolveAnnotatedFacetedType(new Scope,annotatedFacetedType)
+
+  //exposed for unit-testing purposes
+  def resolve(typeIdentifierScope: Scope[TypeIdentifierDeclarationPoint],
                       valueIdentifier: Scope[Boolean],
                       expression: AstNode):EObSecExpr =
     resolveInternal(typeIdentifierScope,valueIdentifier,expression).setAstNode(expression)
+
 
 
 
@@ -46,13 +52,17 @@ class IdentifierResolver {
         Obj(self,
           resolvedSelfType,
           methods.map(meth => {
-            val methodLabelDefinitionScope = new NestedScope(typeIdentifierScope)
+            val methodExistentialVariablesScope = new NestedScope(typeIdentifierScope)
             var methodValueVariableScope = new NestedScope(objectScope)
 
+            //add existential variables of formal parameters to scope.
+            addExistentialVariablesOfMethodArguments(
+              methodExistentialVariablesScope,
+              meth.name,resolvedSelfType.privateType)
             //add method to scope
             meth.args.elems.foreach(x=> liftError(methodValueVariableScope.add(x.name,true),x))
 
-            resolveMethodDefinition(methodLabelDefinitionScope ,methodValueVariableScope, meth)
+            resolveMethodDefinition(methodExistentialVariablesScope ,methodValueVariableScope, meth)
           })
         )
       }
@@ -60,10 +70,9 @@ class IdentifierResolver {
         print(methods)
         throw ResolverError.duplicatedMethodInObject(methods.reverse.groupBy(identity).collect({case (x,List(_,_,_*)) => x}).head)
       }
-    case MethodInvocationNode(e1,actualTypes,actualArguments,name)=>
+    case MethodInvocationNode(e1,actualArguments,name)=>
       MethodInv(
         resolve(typeIdentifierScope,valueIdentifier,e1),
-        NodeList(actualTypes.elems.map(at=> resolveType(typeIdentifierScope,at,labelPosisition = true))).setAstNode(actualTypes),
         NodeList(actualArguments.elems.map(aa => resolve(typeIdentifierScope,valueIdentifier,aa))).setAstNode(actualArguments),
         name.name
       ).setMethodNameNode(name)
@@ -88,10 +97,10 @@ class IdentifierResolver {
         d match {
           case node: LocalDeclarationNode => letValueIdentifierScope.add(node.variable, true)
           case node: TypeAliasDeclarationNode =>
-            val typeAliasDeclaration= TypeDeclarationPoint(resolveType(letTypeScope,node.objType,labelPosisition = true).asInstanceOf[ObjectType])
-            letTypeScope.add(node.aliasName, typeAliasDeclaration)
+            val resolvedType = resolveType(letTypeScope,node.objType,labelPosisition = true)
+            letTypeScope.add(node.aliasName, TypeAliasDeclarationPoint(resolvedType))
           case node: DefTypeNode =>
-            val defTypeDeclaration = TypeDeclarationPoint(null)
+            val defTypeDeclaration = TypeDefDeclarationPoint(null)
             letTypeScope.add(node.name, defTypeDeclaration)
             val objectType = ObjectType(node.name,node.methods.map(m=> resolveMethodDeclaration(letTypeScope,m)))
             defTypeDeclaration.definingType = objectType
@@ -115,13 +124,59 @@ class IdentifierResolver {
     }
   }
 
+
+
+  private def addExistentialVariablesOfMethodArguments(typeIdentifierScope: NestedScope[TypeIdentifierDeclarationPoint],
+                                                       name: String, theType: LabelE) =
+    typeFromScope(typeIdentifierScope,theType) match{
+      case ObjectType(self,methods)=>
+        methods.find(m => m.name == name) match {
+          case Some(methodDeclarationG)=>
+            methodDeclarationG.mType.domain
+              .filter(x=> x.isInstanceOf[ESTypeE]).map(x=> x.asInstanceOf[ESTypeE])
+              .foreach(existentialST =>
+                  addExistentialVariablesOfExistentialST(typeIdentifierScope,existentialST)
+            )
+          case None => Unit
+       }
+      case _ => Unit
+  }
+
+  private def typeFromScope(typeIdentifierScope: NestedScope[TypeIdentifierDeclarationPoint],
+                            theType: LabelE) = theType match{
+    case tI@TypeId(name)=>
+      if(!typeIdentifierScope.contains(name))
+        throw ResolverError.typeIsNotDefined(tI.astNode,name)
+      typeIdentifierScope.lookup(name) match {
+        case TypeAliasDeclarationPoint(definingType)=> definingType
+        case TypeDefDeclarationPoint(definingType)=> definingType
+        case _ => throw ResolverError.generalError(tI.astNode,"Internal error: a type identifier" +
+          "should point to a type alias or type definition")
+      }
+    case t => t
+  }
+  private def addExistentialVariablesOfExistentialST(typeIdentifierScope: NestedScope[TypeIdentifierDeclarationPoint],
+                                                     existentialST: ESTypeE): Unit = existentialST match{
+    case ESTypeE(priv,impl,existentialFacet) =>
+      typeFromScope(typeIdentifierScope,existentialFacet) match{
+        case ExistentialType(typeVars,methods)=>
+          typeVars.foreach(existentialVar =>
+            typeIdentifierScope.add(existentialVar.name,
+              if(existentialVar.isAster)
+                LowLabelDeclarationPoint
+              else LabelDeclarationPoint)
+          )
+        case _ => Unit
+      }
+  }
+
   private def resolveDeclaration(typeIdentifierScope: Scope[TypeIdentifierDeclarationPoint],
                          valueIdentifier: Scope[Boolean],
                          declaration: DeclarationNode): Declaration= declaration match{
     case DefTypeNode(typeName,methods)=>
       TypeDefinition(typeName,methods.map(m=> resolveMethodDeclaration(typeIdentifierScope,m)))
-    case TypeAliasDeclarationNode(typeAlias,objType)=>
-      TypeAlias(typeAlias,resolveType(typeIdentifierScope,objType,labelPosisition = false).asInstanceOf[ObjectType])
+    case TypeAliasDeclarationNode(typeAlias,aliasType)=>
+      TypeAlias(typeAlias,resolveType(typeIdentifierScope,aliasType,labelPosisition = false))
     case LocalDeclarationNode(name,expr)=>
       LocalDeclaration(name,resolve(typeIdentifierScope,valueIdentifier,expr))
   }
@@ -134,38 +189,65 @@ class IdentifierResolver {
     MethodDef(md.name,md.args.elems.map(x=>x.name),resolve(typeIdentifierScope,valueIdentifier,md.mBody)).setAstNode(md)
   }
 
-  private def resolveType(typeIdentifierScope: Scope[TypeIdentifierDeclarationPoint],
+  def checkDuplicatedMethodDeclarationName(methods: List[MethodDeclarationNode]):Unit = {
+    if (methods.map(x => x.name).distinct.lengthCompare(methods.size) != 0)
+      throw ResolverError.duplicatedMethodInObjectType(methods.reverse.groupBy(identity).collect({case (x,List(_,_,_*)) => x}).head)
+  }
+
+  def resolveType(typeIdentifierScope: Scope[TypeIdentifierDeclarationPoint],
                           typeAnnotation: TypeAnnotation,
                           labelPosisition: Boolean):LabelE = (typeAnnotation match{
 
     case ObjectTypeNode(selfVar,methods) =>
+      checkDuplicatedMethodDeclarationName(methods)
       val objectTypeScope = new NestedScope(typeIdentifierScope)
-      val selfDeclarationPoint  = TypeDeclarationPoint(null)
+      val selfDeclarationPoint  = ObjectDeclarationPoint(null)
       objectTypeScope.add(selfVar,selfDeclarationPoint)
       val objectType = ObjectType(selfVar,methods.map(m=> resolveMethodDeclaration(objectTypeScope,m)))
-      selfDeclarationPoint.definingType = objectType
+      selfDeclarationPoint.definingOhjectType = objectType
       objectType
     case NoRecursiveObjectTypeNode(methods)=> resolveType(typeIdentifierScope,ObjectTypeNode("gen",methods),labelPosisition)
     case TypeIdentifier(n) =>
+
+      def typeFromDefinitionPoint(definitionPoint: TypeIdentifierDeclarationPoint) = {
+        definitionPoint match {
+          case TypeAliasDeclarationPoint(_) => TypeId(n)
+          case TypeDefDeclarationPoint(_) => TypeId(n)
+          case LabelDeclarationPoint => LabelVar(n)
+          case LowLabelDeclarationPoint => LabelVar(n).setAster(true)
+          case ObjectDeclarationPoint(_) => TypeVar(n)
+        }
+      }
       val namedType = resolveBuiltinNamedTypes(n,labelPosisition)
       namedType match{
         case Left(t)=>t
         case Right(_) =>
           if(typeIdentifierScope.contains(n)) {
-            val definitionPoint = typeIdentifierScope.lookup(n)
-            definitionPoint match{
-              case TypeDeclarationPoint(_) => TypeVar(n)
-              case LabelDeclarationPoint => LabelVar(n)
-              case LowLabelDeclarationPoint => LabelVar(n).setAster(true)
-              case _ => TypeVar(n)
-            }
+            typeFromDefinitionPoint(typeIdentifierScope.lookup(n))
           }
           else
             throw ResolverError.typeIsNotDefined(typeAnnotation,n)
       }
-    /*case UnionTypeAnnotation(left,right)=>
-      UnionLabel(resolveType(typeIdentifierScope,left,labelPosisition = false),
-        resolveType(typeIdentifierScope,right,labelPosisition = false))*/
+    case ExistentialTypeNode(typeVars,methods)=>
+      checkDuplicatedMethodDeclarationName(methods)
+      val existentialTypeScope = new NestedScope(typeIdentifierScope)
+      //add variables to scope
+      typeVars.elems.foreach(tv => {
+        if(existentialTypeScope.contains(tv.name))
+          throw ResolverError.variableAlreadyDefined(tv,tv.name)
+        else
+            existentialTypeScope.add(tv.name,
+              if(tv.isAster)
+                LowLabelDeclarationPoint
+              else LabelDeclarationPoint)
+        }
+      )
+      val existentialType =
+        ExistentialType(
+          typeVars.elems.map(x=>EVarDecl(x.name,
+            resolveType(typeIdentifierScope,x.lowerBound,labelPosisition=true).asInstanceOf[TypeE]).setAster(x.isAster)),
+          methods.map(m=> resolveMethodDeclaration(existentialTypeScope,m)))
+      existentialType
     case _ => throw new NotImplementedError("resolveType not implemented")
   }).setAstNode(typeAnnotation)
 
@@ -175,12 +257,6 @@ class IdentifierResolver {
                                        methodDeclaration: MethodDeclarationNode):MethodDeclarationE = {
     val methodLabelScope = new NestedScope(typeIdentifierScope)
     //process each parameter, add to the scope and the process the otherone
-    val resolvedLabelVars =  methodDeclaration.mType.typeVars.map(labelVar => {
-      if(methodLabelScope.contains(labelVar.name))
-        throw ResolverError.variableAlreadyDefined(labelVar,labelVar.name)
-      else
-        methodLabelScope.add(labelVar.name,if(labelVar.isAster) LowLabelDeclarationPoint else LabelDeclarationPoint)
-    })
     MethodDeclarationE(methodDeclaration.name.name,
       MTypeE(
         methodDeclaration.mType.domain.map(st=>resolveAnnotatedFacetedType(methodLabelScope,st)),
@@ -195,19 +271,30 @@ class IdentifierResolver {
     newScope
   }
 
-  private def resolveAnnotatedFacetedType(typeIdentifierScope: Scope[TypeIdentifierDeclarationPoint],
-                                          annotatedFacetedType: AnnotatedFacetedType): STypeE={
-    val privateType = resolveType(typeIdentifierScope,annotatedFacetedType.left,labelPosisition = false)
-    privateType match {
-      case g: TypeE =>
-        (annotatedFacetedType.right match{
-          case LowLabelNode => STypeE(g,g)
-          case HighLabelNode => STypeE(g,ObjectType.top)
-          case _ => STypeE(g,
-            resolveType(typeIdentifierScope, annotatedFacetedType.right,labelPosisition = true))
-        }).setAstNode(annotatedFacetedType)
-      case _ => throw ResolverError.invalidTypeForPrivateFacet(annotatedFacetedType)
-    }
+   private def resolveAnnotatedFacetedType(typeIdentifierScope: Scope[TypeIdentifierDeclarationPoint],
+                                          annotatedFacetedType: AnnotatedFacetedType): STypeE= annotatedFacetedType match{
+    case AnnotatedSubtypingFacetedType(left,right)=>
+      val privateType = resolveType(typeIdentifierScope,left,labelPosisition = false)
+      privateType match {
+        case g: TypeE =>
+          (right match{
+            case LowLabelNode => FTypeE(g,g)
+            case HighLabelNode => FTypeE(g,ObjectType.top)
+            case _ => FTypeE(g,
+              resolveType(typeIdentifierScope, right,labelPosisition = true))
+          }).setAstNode(annotatedFacetedType)
+        case _ => throw ResolverError.invalidTypeForPrivateFacet(annotatedFacetedType)
+      }
+    case AnnotatedExistentialFacetedType(concrete,impl,existential) =>
+      val privateType = resolveType(typeIdentifierScope,concrete,labelPosisition = false)
+      val implTypes = impl.map(x => resolveType(typeIdentifierScope, x,labelPosisition = false))
+      var existentialType = resolveType(typeIdentifierScope, existential,labelPosisition = true)
+      (privateType,implTypes,existentialType) match {
+        case (g: TypeE,i:List[TypeE],e:ExistentialFacet) =>
+          ESTypeE(g,i,e).setAstNode(annotatedFacetedType)
+        case (_,i:TypeE,e:ExistentialFacet) => throw ResolverError.invalidTypeForPrivateFacet(annotatedFacetedType)
+        case (g: TypeE,_,e:ExistentialFacet) => throw EObSecResolverError.invalidTypeForImplementationType(annotatedFacetedType)
+      }
   }
 
   private def resolveBuiltinNamedTypes(typeName:String,labelPosition:Boolean): Either[LabelE,String]={
@@ -222,14 +309,20 @@ class IdentifierResolver {
     else Right(typeName)
   }
 }
-object IdentifierResolver{
+object EOBSecIdentifierResolver{
   def apply(expression: AstNode):EObSecExpr=
-    new IdentifierResolver().resolve(expression)
+    new EOBSecIdentifierResolver().resolve(expression)
+  def apply(typeNode: TypeAnnotation): LabelE =
+    new EOBSecIdentifierResolver().resolveType(typeNode)
+  def apply(typeNode: AnnotatedFacetedType): STypeE =
+    new EOBSecIdentifierResolver().resolveAnnotatedFacetedType(typeNode)
 }
 
 
 sealed trait TypeIdentifierDeclarationPoint
-case class TypeDeclarationPoint(var definingType:ObjectType) extends TypeIdentifierDeclarationPoint
+case class TypeAliasDeclarationPoint(var definingType:LabelE) extends TypeIdentifierDeclarationPoint
+case class TypeDefDeclarationPoint(var definingType:ObjectType) extends TypeIdentifierDeclarationPoint
+case class ObjectDeclarationPoint(var definingOhjectType: ObjectType) extends TypeIdentifierDeclarationPoint
 case object LabelDeclarationPoint extends TypeIdentifierDeclarationPoint
 case object LowLabelDeclarationPoint extends TypeIdentifierDeclarationPoint
 case object AnythingElse extends TypeIdentifierDeclarationPoint

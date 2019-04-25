@@ -1,6 +1,6 @@
 package ObSecG.Parsing
 
-import Common.{TypeAnnotation => _, _}
+import Common._
 import ObSecG.Ast._
 
 class ObSecGIdentifierResolver {

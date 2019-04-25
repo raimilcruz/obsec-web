@@ -38,7 +38,7 @@ const AppRoutes = (
           <IndexRoute component={GLanguagePad} />
           {/*<Route path={"/generic"} component={GLanguagePad}/>*/}
             {/*<Route path={"/obsec"} component={LanguagePad}/>*/}
-            {/*<Route path={"/eobsec"} component={ELanguagePad}/>*/}
+            {<Route path={"/eobsec"} component={ELanguagePad}/>}
             {/*<Route path={"/eqjudgment"} component={EqJudgmentManager}/>*/}
             {/*<Route path={"/typingjudgment"} component={TypingJudgmentManager}/>*/}
         </Route>

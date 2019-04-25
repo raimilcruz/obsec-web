@@ -30,4 +30,3 @@ trait AstNode extends OffsetPositional{
 object NoAstNode extends AstNode {
   override def children: List[AstNode] = List()
 }
-trait TypeAnnotation extends AstNode

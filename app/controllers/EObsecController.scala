@@ -3,10 +3,10 @@ package controllers
 import javax.inject._
 
 import Common.{AstNode, ParserError}
-import ObSecG.Ast.ObSecGAstExprNode
-import ObSecG.Parsing._
-import ObSecG.Runtime.InterpreterG
-import ObSecG.Static.TypeCheckerG
+import ObSecE.Ast.EObSecNode
+import ObSecE.Parsing._
+import ObSecE.Runtime._
+import ObSecE.Static.EObSecTypeChecker
 import models._
 import play.{Application, Environment}
 
@@ -23,9 +23,18 @@ class EObsecController @Inject()(configuration: play.api.Configuration,applicati
     syntaxFromConfiguration("languagepad.eobsec.syntaxFile")
   }
 
-  override protected def typeOf(term:AstNode):String= ???
-  override protected def run(term:AstNode):String= ???
-  override protected def parse(p: String): Either[ParserError, AstNode] = ???
+  override protected def typeOf(term:AstNode):String= {
+    var modelTerm = EOBSecIdentifierResolver(term.asInstanceOf[EObSecNode])
+    val aType = EObSecTypeChecker(modelTerm)
+    val stringBuilder = new StringBuilder
+    aType.prettyPrint(stringBuilder)
+    stringBuilder.toString
+  }
+  override protected def run(term:AstNode):String= {
+    val modelTerm = EOBSecIdentifierResolver(term.asInstanceOf[EObSecNode])
+    EObSecInterpreter.run(modelTerm).toString
+  }
+  override protected def parse(p: String): Either[ParserError, AstNode] = EObSecParser(p)
 
 }
 

@@ -1,6 +1,6 @@
 package ObSecG.Static
 
-import Common.{Environment, ErrorCollector}
+import Common.{Environment, ErrorCollector,SubtypingSuccess}
 import ObSecG.Ast._
 
 trait SoundResult

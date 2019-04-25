@@ -1,6 +1,6 @@
 package ObSecG.Static
 
-import Common.{Environment, ErrorCollector}
+import Common.{Environment, ErrorCollector,SubtypingResult,SubtypingFail,SubtypingSuccess}
 import ObSecG.Ast._
 
 case class RecordTypeG(methods: List[MethodDeclarationG]) extends TypeG with Primitable{
@@ -16,21 +16,7 @@ case class RecordTypeG(methods: List[MethodDeclarationG]) extends TypeG with Pri
   }
 }
 
-sealed trait SubtypingResult {
-  def &&(function: => SubtypingResult) : SubtypingResult
-}
-object SubtypingSuccess extends SubtypingResult {
-  override def &&(function: => SubtypingResult): SubtypingResult = function
-}
-case class SubtypingFail(left: LabelG, righ:LabelG) extends SubtypingResult {
-  override def &&(function: => SubtypingResult): SubtypingResult = this
 
-  var message:String = ""
-  def setMessage(s:String):SubtypingFail={
-    message = s
-    this
-  }
-}
 
 
 abstract class ISubtypingGObSec(

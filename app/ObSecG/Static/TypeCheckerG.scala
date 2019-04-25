@@ -93,7 +93,7 @@ class TypeChecker(judgements: GObSecJudgmentsExtensions,
           throw TypeErrorG.actualArgumentsSizeError(methInv.args,methInv.method)
         //check subtyping between $mType.domain and s2
         for ((actualT,formalT) <- argTypes.zip(closedSignature.domain)) {
-          if (judgements.<::(extendedGenVarEnv,actualT, formalT).isInstanceOf[SubtypingFail]) {
+          if (judgements.<::(extendedGenVarEnv,actualT, formalT).isInstanceOf[SubtypingFail[STypeG]]) {
             throw TypeErrorG.subTypingError(args.astNode, m, actualT,formalT)
           }
         }
@@ -146,7 +146,7 @@ class TypeChecker(judgements: GObSecJudgmentsExtensions,
         var methodGenVarEnv = auxiliaryFunctions.multiExtend(genVarEnv, mType.typeVars)
         var s = typeCheck(methodGenVarEnv, methodScope, aliasScope, m.mBody)
         //print(s"$s <:: ${mType.codomain}")
-        if (judgements.<::(methodGenVarEnv, s, mType.codomain).isInstanceOf[SubtypingFail])
+        if (judgements.<::(methodGenVarEnv, s, mType.codomain).isInstanceOf[SubtypingFail[STypeG]])
           throw TypeErrorG.returnTypeError(m.mBody.astNode, m.name, s, mType.codomain)
       }
       stype
